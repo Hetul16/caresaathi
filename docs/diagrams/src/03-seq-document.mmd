@@ -1,0 +1,32 @@
+sequenceDiagram
+  autonumber
+  actor F as Family member
+  participant W as Web app
+  participant A as API
+  participant S as Object storage
+  participant X as Extraction pipeline
+  participant M as Muse Spark 1.3
+  participant E as Safety engine
+  participant D as PostgreSQL
+  F->>W: Photo of a new prescription
+  W->>A: POST /documents
+  A->>S: Store file, SHA-256
+  A->>D: documents row (uploaded)
+  A-->>W: 202 document id
+  A->>X: Start extraction
+  X->>M: Image + JSON schema + instructions
+  M-->>X: Items with page, line, quote
+  X->>X: Validate schema, check every quote exists in the page text
+  X->>D: extractions row (raw output, validated)
+  X->>E: Compare with current care plan
+  E->>D: plan_changes (new, changed, stopped)
+  E->>D: Allergy check: find_allergy_conflicts per new medicine
+  alt Direct, family or unresolved match
+    E->>D: allergy_conflicts (open) + urgent outbox rows
+    E->>M: Word the flag and the question for the doctor
+    M-->>E: Plain-language text
+    E->>E: Output guard (source, no "safe", no dosing advice)
+  end
+  X->>D: Apply document-derived items (visit items wait for confirmation)
+  D-->>W: Notify family (in-app, WhatsApp if enabled)
+  W-->>F: What changed + red allergy banner, source on every line

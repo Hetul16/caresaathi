@@ -1,0 +1,97 @@
+erDiagram
+  patients ||--o{ care_plan_items : "versions"
+  source_refs ||--o{ care_plan_items : "every item has one"
+  care_plan_items ||--o{ medicine_ingredients : "split out"
+  drug_substances ||--o{ medicine_ingredients : "resolves to"
+  drug_families ||--o{ drug_family_members : "contains"
+  drug_substances ||--o{ drug_family_members : "belongs to"
+  patients ||--o{ allergies : "versions"
+  source_refs ||--o{ allergies : "source"
+  patients ||--|| allergy_status : "one state"
+  allergies ||--o{ allergy_conflicts : "flagged by"
+  care_plan_items ||--o{ allergy_conflicts : "new medicine"
+  extractions ||--o{ plan_changes : "proposes"
+  plan_changes }o--o| care_plan_items : "applied as"
+  generated_outputs ||--o{ output_sources : "cites"
+  source_refs ||--o{ output_sources : "cited by"
+  care_plan_items ||--o{ recovery_entries : "instruction behind alert"
+  care_plan_items {
+    uuid id PK
+    uuid item_key "stable across versions"
+    int version
+    bool is_current
+    plan_item_kind kind
+    plan_item_status status
+    jsonb details
+    alert_level alert_level "warning signs only"
+    uuid source_ref_id FK "required"
+  }
+  medicine_ingredients {
+    uuid id PK
+    uuid item_id FK
+    text ingredient_normalized
+    uuid substance_id FK "null means unresolved"
+  }
+  drug_families {
+    uuid id PK
+    text code
+    text review_status
+    text reviewed_by
+  }
+  drug_substances {
+    uuid id PK
+    text substance_normalized
+    text_array synonyms
+  }
+  allergies {
+    uuid id PK
+    uuid allergy_key
+    int version
+    text substance
+    uuid substance_id FK
+    uuid family_id FK
+    allergy_source source_type
+    uuid confirmed_by FK
+  }
+  allergy_status {
+    uuid patient_id PK
+    allergy_state state
+    uuid source_ref_id FK
+  }
+  allergy_conflicts {
+    uuid id PK
+    match_type match
+    conflict_status status
+    uuid flag_output_id FK
+  }
+  extractions {
+    uuid id PK
+    extraction_origin origin
+    jsonb raw_output
+    bool validated
+  }
+  plan_changes {
+    uuid id PK
+    change_type change_type
+    jsonb before_state
+    jsonb after_state
+    change_status status
+    uuid decided_by FK
+  }
+  generated_outputs {
+    uuid id PK
+    output_type output_type
+    lang_code language
+    guard_status guard_status
+    bool source_exempt
+  }
+  output_sources {
+    uuid output_id FK
+    uuid source_ref_id FK
+  }
+  recovery_entries {
+    uuid id PK
+    date entry_date
+    alert_level alert_level
+    uuid source_item_id FK
+  }

@@ -1,0 +1,92 @@
+erDiagram
+  users ||--o{ family_members : "is member"
+  patients ||--o{ family_members : "has"
+  patients ||--o{ devices : "paired phones"
+  patients ||--o{ care_providers : "doctors"
+  patients ||--o{ documents : "uploaded"
+  patients ||--o{ consents : "gives"
+  patients ||--o{ visits : "has"
+  consents ||--o{ visits : "patient consent"
+  consents ||--o{ visits : "doctor consent"
+  visits ||--o{ transcript_segments : "turns"
+  visits ||--o{ visit_speakers : "who is who"
+  documents ||--o{ source_refs : "page and line"
+  transcript_segments ||--o{ source_refs : "exact words"
+  messages ||--o{ source_refs : "family said"
+  users {
+    uuid id PK
+    citext email
+    text phone_e164
+    pref_lang preferred_language
+  }
+  patients {
+    uuid id PK
+    text full_name
+    date date_of_birth
+    pref_lang preferred_language
+    bool is_synthetic
+  }
+  family_members {
+    uuid id PK
+    uuid patient_id FK
+    uuid user_id FK
+    member_role member_role
+    invite_status status
+    bool can_approve
+  }
+  devices {
+    uuid id PK
+    uuid patient_id FK
+    bytea token_hash
+    uuid approved_by_member_id FK
+  }
+  documents {
+    uuid id PK
+    uuid patient_id FK
+    doc_type doc_type
+    bytea sha256
+    text storage_key
+    doc_status status
+  }
+  consents {
+    uuid id PK
+    consent_type consent_type
+    speaker_role subject_role
+    text given_by_name
+    timestamptz revoked_at
+  }
+  visits {
+    uuid id PK
+    uuid patient_consent_id FK
+    uuid doctor_consent_id FK
+    visit_status status
+    bool delete_audio_after_transcription
+  }
+  transcript_segments {
+    uuid id PK
+    uuid visit_id FK
+    text speaker_label
+    speaker_role mapped_role
+    int start_ms
+    text body
+  }
+  visit_speakers {
+    uuid id PK
+    uuid visit_id FK
+    text speaker_label
+    speaker_role role
+  }
+  source_refs {
+    uuid id PK
+    source_kind kind
+    uuid document_id FK
+    int page
+    uuid segment_id FK
+    text quote
+  }
+  messages {
+    uuid id PK
+    uuid conversation_id FK
+    media_kind media
+    text transcript
+  }

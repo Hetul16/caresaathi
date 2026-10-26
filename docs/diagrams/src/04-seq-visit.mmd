@@ -1,0 +1,31 @@
+sequenceDiagram
+  autonumber
+  actor F as Family member
+  participant W as Web app
+  participant A as API (WS /visits/stream)
+  participant D as PostgreSQL
+  participant T as Muse Voice Transcribe
+  participant M as Muse Spark 1.3
+  F->>W: Tap "Record visit"
+  W->>F: Show consent screen (doctor and patient)
+  F->>W: Confirm both consents
+  W->>A: POST /visits with consent details
+  A->>D: consents x2, visits row (needs both consent ids)
+  W->>A: Stream audio (WebSocket)
+  A->>T: PCM 16 kHz, DIARIZATION mode
+  T-->>A: Turns with speaker A, B, C
+  A->>D: transcript_segments (partials replaced by finals)
+  F->>W: Stop recording
+  A->>M: Transcript: map speakers to roles
+  M-->>A: A=doctor, B=patient, C=daughter
+  A->>D: visit_speakers (mapped_by model)
+  W->>F: Confirm or correct who is who
+  A->>M: Transcript + schema: instructions, medicines, tests, follow-ups, allergies
+  M-->>A: Items with the doctor's exact words
+  A->>A: Check each quote appears in a transcript segment
+  A->>D: plan_changes (pending, needs confirmation)
+  W->>F: Review list: confirm or reject each change
+  F->>W: Confirm
+  A->>D: Apply as new versions, audit rows, then delete audio if set
+  A->>M: Explain in the patient's language
+  A->>W: Spoken explanation for Papa that evening

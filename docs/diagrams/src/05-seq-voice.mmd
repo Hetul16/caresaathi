@@ -1,0 +1,29 @@
+sequenceDiagram
+  autonumber
+  actor P as Papa (Elder mode)
+  participant W as Web app
+  participant A as API (WS /voice)
+  participant T as Muse Voice Transcribe
+  participant G as Agent orchestrator
+  participant M as Muse Spark 1.3
+  participant E as Safety engine
+  participant S as TTS service
+  P->>W: Hold the big mic button and speak
+  W->>A: Audio chunks
+  A->>T: PCM 16 kHz, ENDPOINTING, language hints
+  T-->>A: Final transcript
+  A->>G: Message from device (paired patient)
+  G->>M: Care plan fields + question + tools
+  M-->>G: Tool call or answer
+  alt "Ask first" tool (message the doctor, share a card)
+    G->>E: Permission gate
+    E-->>G: Stored as awaiting_approval, family notified
+  else Automatic tool
+    G->>E: Run tool (read plan, set reminder)
+  end
+  G->>E: Output guard on the reply
+  E-->>G: pass (source attached) or blocked
+  G->>S: Reply text, slow pace
+  S-->>W: Audio
+  W-->>P: Spoken answer, large text, "Repeat that" button
+  Note over G,E: Medicine names are read back and matched against the written prescription

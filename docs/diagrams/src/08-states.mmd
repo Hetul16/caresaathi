@@ -1,0 +1,27 @@
+stateDiagram-v2
+  direction LR
+  state "Document" as DOC {
+    [*] --> uploaded
+    uploaded --> processing
+    processing --> extracted
+    processing --> needs_review: low confidence or schema error
+    processing --> failed
+    needs_review --> extracted: family corrects
+  }
+  state "Plan change" as PC {
+    [*] --> pending
+    pending --> applied: confirmed (or auto for documents)
+    pending --> rejected
+    pending --> superseded: newer change for same item
+  }
+  state "Action" as ACT {
+    [*] --> proposed
+    proposed --> awaiting_approval: ask-first tool
+    proposed --> executing: automatic tool
+    awaiting_approval --> approved: named approver
+    awaiting_approval --> refused
+    awaiting_approval --> expired
+    approved --> executing
+    executing --> done
+    executing --> failed
+  }

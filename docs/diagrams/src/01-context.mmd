@@ -1,0 +1,24 @@
+flowchart LR
+  papa["<b>Papa</b> (patient)<br/>speaks, hears answers"]
+  family["<b>Family member</b><br/>uploads papers, approves"]
+  attendant["<b>Attendant / nurse</b><br/>shift notes, check-ins"]
+  hospital["<b>Hospital staff</b><br/>scans the Emergency Card QR"]
+  subgraph cs["CareSaathi website (HTTPS)"]
+    web["Web app<br/>Elder mode and Family mode"]
+    core["API, agent and safety engine"]
+    data[("PostgreSQL<br/>and file storage")]
+  end
+  meta["<b>Meta Model API</b><br/>Muse Spark 1.3<br/>Muse Voice Transcribe<br/>SAM 3.1 (stretch)"]
+  tts["<b>Text-to-speech service</b><br/>Hindi, Marathi, English"]
+  wa["<b>WhatsApp Cloud API</b><br/>optional channel"]
+  papa --> web
+  family --> web
+  attendant --> web
+  hospital -->|"read-only link, no login"| web
+  web <--> core
+  core <--> data
+  core <-->|"documents, speech, reasoning"| meta
+  core -->|"spoken replies"| tts
+  core <-.->|"if approved by Oct 29"| wa
+  wa -.-> family
+  wa -.-> papa

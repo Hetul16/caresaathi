@@ -1,0 +1,97 @@
+erDiagram
+  patients ||--o{ conversations : "chats"
+  conversations ||--o{ messages : "contains"
+  generated_outputs ||--o{ messages : "reply"
+  patients ||--o{ agent_runs : "triggers"
+  agent_runs ||--o{ actions : "tool calls"
+  users ||--o{ actions : "approves"
+  patients ||--o{ reminders : "schedules"
+  family_members ||--o{ reminders : "assigned to"
+  patients ||--o{ outbox : "messages to send"
+  patients ||--o{ emergency_cards : "links"
+  emergency_cards ||--o{ emergency_card_access_log : "opened"
+  patients ||--o{ timeline_events : "history"
+  model_calls ||--o{ generated_outputs : "produced"
+  eval_runs ||--o{ eval_results : "cases"
+  conversations {
+    uuid id PK
+    channel_kind channel
+    text external_id
+  }
+  messages {
+    uuid id PK
+    message_direction direction
+    media_kind media
+    text transcript
+    text wa_message_id
+  }
+  agent_runs {
+    uuid id PK
+    text trigger
+    text status
+  }
+  actions {
+    uuid id PK
+    text tool
+    permission_level permission
+    action_status status
+    uuid approved_by FK
+    timestamptz approved_at
+  }
+  reminders {
+    uuid id PK
+    reminder_kind kind
+    timestamptz due_at
+    text recurrence_rule
+    text timezone
+    reminder_status status
+  }
+  outbox {
+    uuid id PK
+    channel_kind channel
+    text template
+    outbox_status status
+    text dedupe_key
+  }
+  emergency_cards {
+    uuid id PK
+    bytea token_hash "hash only"
+    timestamptz expires_at
+    timestamptz revoked_at
+  }
+  emergency_card_access_log {
+    bigint id PK
+    card_access_outcome outcome
+    bytea ip_hash
+  }
+  timeline_events {
+    uuid id PK
+    text event_type
+    text summary
+  }
+  model_calls {
+    uuid id PK
+    text model
+    text purpose
+    numeric cost_usd
+    int latency_ms
+  }
+  audit_log {
+    bigint id PK
+    actor_type actor_type
+    text action
+    jsonb before_state
+    jsonb after_state
+    bytea prev_hash
+    bytea row_hash
+  }
+  eval_runs {
+    uuid id PK
+    text suite
+    jsonb metrics
+  }
+  eval_results {
+    uuid id PK
+    text case_id
+    bool passed
+  }

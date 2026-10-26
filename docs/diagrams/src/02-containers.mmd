@@ -1,0 +1,69 @@
+flowchart TB
+  subgraph client["Browser (mobile-first website, optional PWA)"]
+    elder["Elder mode<br/>one big mic button"]
+    fam["Family mode<br/>care plan, approvals, visits"]
+    pub["Public card page<br/>read-only, /e/token"]
+  end
+  proxy["Reverse proxy<br/>TLS, rate limits, security headers"]
+  subgraph api["API process (FastAPI)"]
+    auth["Auth and request context<br/>sets RLS session values"]
+    rest["REST routers"]
+    ws["WebSockets<br/>/voice and /visits/stream"]
+    hook["Webhook<br/>/whatsapp"]
+  end
+  subgraph core["Domain services"]
+    agent["Agent orchestrator<br/>tool registry + permission gate"]
+    extract["Extraction pipeline<br/>document to sourced items"]
+    voice["Voice pipeline<br/>ffmpeg, ASR client, TTS client"]
+    visit["Visit pipeline<br/>consent, diarize, map roles, extract"]
+    card["Emergency Card service<br/>PDF, image, QR"]
+  end
+  subgraph safety["Safety engine (plain code, no model)"]
+    diff["Diff engine"]
+    allergy["Allergy matcher<br/>vetted drug-family list"]
+    guard["Output guard<br/>source required, forbidden phrases"]
+  end
+  subgraph worker["Worker process"]
+    sched["Scheduler<br/>APScheduler, Postgres job store"]
+    outbox["Outbox sender"]
+    evalh["Evaluation harness"]
+  end
+  subgraph data["Data"]
+    pg[("PostgreSQL 16<br/>RLS, audit log")]
+    obj[("Object storage<br/>MinIO or S3")]
+  end
+  subgraph ext["External services"]
+    meta["Meta Model API"]
+    ttsx["TTS provider"]
+    waapi["WhatsApp Cloud API"]
+  end
+  elder --> proxy
+  fam --> proxy
+  pub --> proxy
+  proxy --> auth
+  auth --> rest
+  auth --> ws
+  waapi -.-> hook
+  rest --> agent
+  ws --> voice
+  ws --> visit
+  hook --> agent
+  agent --> extract
+  agent --> card
+  extract --> diff
+  extract --> allergy
+  visit --> extract
+  agent --> guard
+  voice --> guard
+  extract --> meta
+  visit --> meta
+  voice --> meta
+  voice --> ttsx
+  outbox -.-> waapi
+  sched --> agent
+  sched --> outbox
+  core --> pg
+  safety --> pg
+  worker --> pg
+  core --> obj
+  card --> obj

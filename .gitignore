@@ -1,0 +1,23 @@
+# secrets and local settings
+.env
+.env.*
+!.env.example
+
+# data that must not be committed
+*.wav
+*.mp3
+*.m4a
+*.ogg
+data/private/
+# synthetic audio may be committed on purpose: use git add -f under data/synthetic/
+*.dump
+
+# build and tooling
+__pycache__/
+*.pyc
+node_modules/
+.next/
+dist/
+.venv/
+.pytest_cache/
+.DS_Store

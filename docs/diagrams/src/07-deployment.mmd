@@ -1,0 +1,26 @@
+flowchart LR
+  user["Phone or laptop browser"]
+  subgraph vps["One VPS or single host (Docker Compose)"]
+    caddy["Caddy<br/>HTTPS, auto certificates"]
+    web["Frontend<br/>static build or Next.js"]
+    api["API container<br/>FastAPI + uvicorn"]
+    wk["Worker container<br/>scheduler + outbox"]
+    pg[("PostgreSQL 16<br/>volume, nightly pg_dump")]
+    minio[("MinIO<br/>volume")]
+  end
+  backup[("Encrypted off-host backups")]
+  meta["Meta Model API"]
+  tts["TTS provider"]
+  wa["WhatsApp Cloud API"]
+  user -->|HTTPS| caddy
+  caddy --> web
+  caddy --> api
+  api --> pg
+  api --> minio
+  wk --> pg
+  wk --> minio
+  pg -.->|pg_dump| backup
+  api --> meta
+  api --> tts
+  wk -.-> wa
+  wa -.->|webhook| caddy

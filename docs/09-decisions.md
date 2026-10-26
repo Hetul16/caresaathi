@@ -1,0 +1,203 @@
+# Decisions and corrections
+
+How to read this: **Accepted** means the owner confirmed it in chat. **Recommended** means Claude recommended it and the owner has not confirmed it yet. When the owner confirms, change the status here and nowhere else needs updating.
+
+## Decision log
+
+### D-01 Applicant and track
+- **Status:** Accepted (Oct 24, 2026)
+- **Decision:** The owner applies as an individual, so the project enters the Indie developer track. Theme: Build for Your World.
+- **Why:** Meta's page describes the Indie track as for individual builders and students, judged on creativity, technical ambition and whether it works. The Startup track is for teams and is judged on production-grade execution.
+
+### D-02 Scope
+- **Status:** Recommended (extended by D-26 on Oct 26)
+- **Decision:** Build only the spine in `05-scope.md`. Stretch only after the spine passes its tests. The rest is a roadmap slide.
+- **Why:** About 13 features in about nine days, solo, is the main risk to "whether it works".
+
+### D-03 Demo language
+- **Status:** Recommended
+- **Decision:** Make Hindi the headline demo language until Marathi transcription is tested on real clips. Keep Marathi as the stretch target.
+- **Why:** Meta lists Hindi among its extensively verified languages. Marathi is not named in the sources checked, and there are no published accuracy numbers for Indian languages. Hinglish code-switching is claimed in general but not specifically demonstrated.
+- **Consequences:** Test Marathi and Hinglish clips the first day API access exists. In the judge Q&A, say "Hindi validated by Meta, code-switching supported, and here is what we measured on Marathi" rather than "handles Indian languages".
+
+### D-04 Database
+- **Status:** Recommended
+- **Decision:** PostgreSQL is the system of record, run in Docker locally and as the same engine in production. No dependency on Supabase or any hosted backend-as-a-service. Keep the setup portable and self-hostable.
+- **Why:** The system has concurrent writers (webhooks, scheduler, voice sessions, web). It needs relational integrity, versioned records and an append-only audit trail. SQLite is fine for a prototype but forces a risky migration once real families depend on it.
+- **Rules:**
+  - Schema changes only through Alembic migrations. Never edit the database by hand.
+  - Every table has a UUID primary key, `created_at`, `updated_at` and `created_by`. Rows tied to a patient carry `patient_id`.
+  - Care plan items and allergies are versioned: a change creates a new version that supersedes the old one. Nothing is overwritten.
+  - `audit_log` is append-only: the application role has no UPDATE or DELETE rights on it.
+  - Row-level security by patient membership through `family_members`.
+  - Encrypt sensitive free text and media at rest. Decide the field-level scheme before any real patient data is stored.
+  - Nightly `pg_dump` to encrypted off-host storage, plus a restore drill before the demo.
+  - Long memory is built from structured queries plus periodic summaries. `pgvector` can be added in the same database later.
+- **Implemented:** the full schema is in `db/schema.sql` (37 tables, 1 view, 33 enum types), explained in `docs/16-database-design.md`, and checked by 69 automated tests (`db/tests/run_tests.sh`). It supersedes the 10-table sketch in `02-architecture.md`. New tables beyond that sketch include `audit_log`, `consents`, `visits`, `transcript_segments`, `drug_families`, `drug_substances`, `emergency_card_access_log`, `extractions`, `plan_changes`, `generated_outputs`, `output_sources`, `source_refs`, `model_calls`, `outbox` and `eval_runs`.
+
+### D-05 File storage
+- **Status:** Recommended
+- **Decision:** S3-compatible object storage (MinIO locally). The database stores object keys and SHA-256 hashes only. Per-patient key prefixes, short-lived presigned URLs, encryption at rest.
+
+### D-06 Authentication
+- **Status:** Recommended
+- **Decision:** Own auth in FastAPI with roles (patient, child, attendant, nurse), not a hosted auth product.
+- **Open point:** Elder mode needs passwordless pairing (a device approved by a family member). Design this before building the Elder UI.
+
+### D-07 Hosting
+- **Status:** Open
+- **Decision:** One Docker Compose file with the API, Postgres and MinIO, deployable to a single VPS or any host that runs Postgres. A local-only database cannot give judges a live link.
+- **Open question for the owner:** own machine or a VPS?
+
+### D-08 Text-to-speech
+- **Status:** Recommended
+- **Decision:** Use an external multilingual TTS service; Meta's lineup has none (Muse Voice Transcribe is speech to text only and does not synthesize speech).
+- **How to choose:** Test Marathi and Hindi naturalness, latency, streaming support, cost and licence on identical medicine-instruction sentences before Oct 26.
+- **Fallback:** a Hindi or English voice with the Marathi text shown on screen.
+
+### D-09 Audio pipeline
+- **Status:** Recommended
+- **Decision:**
+  - Convert WhatsApp Opus/OGG voice notes with ffmpeg to mono 16-bit PCM at 16 kHz (24 kHz is also accepted).
+  - Use `keywords` (medicine names) and `languageBias` hints, which nudge but do not guarantee spelling.
+  - Diarization mode labels speakers "A", "B" and so on, and handles non-overlapping speech only. Spark maps labels to doctor, patient and relative, and the family can correct the mapping.
+  - Read back every medicine name and match it against the written prescription.
+
+### D-10 WhatsApp
+- **Status:** Recommended
+- **Decision:** Try the WhatsApp Business Cloud API with a test number. Decision gate Oct 29. Otherwise use an in-app chat screen styled like a chat app (voice notes, bubbles) and present it honestly as a "WhatsApp-style preview" of the planned channel. Never present the mock as a live WhatsApp integration; say so in the demo, on screen and in the README. No WhatsApp logo or branding on the mock.
+- **To verify in Meta's WhatsApp docs (not checked yet):** test-number recipient limits, media and voice note handling, and the rule that business-initiated messages outside the 24-hour window need approved templates. This affects reminders and the weekly briefing.
+
+### D-11 Development models and cost
+- **Status:** Recommended
+- **Decision:** Use the Spark Contributor variants (`muse-spark-1.3-contributor`) for cheap development runs with synthetic data only, since Contributor mode lets Meta train on prompts. Use `muse-spark-1.3` for final tests and the demo. Check the real credit balance at the end of Day 4.
+
+### D-12 Safety invariants and how they are enforced
+- **Status:** Accepted (they come straight from the owner's plan)
+- **Decision:** The eight invariants in `CLAUDE.md` are enforced in backend code and covered by tests:
+  1. The agent has no tool that changes medicines, diagnoses or decides on hospital.
+  2. "Asks first" tools return an awaiting-approval record from the backend.
+  3. Allergy matching is a code function over the vetted list. A missing match is never displayed as "no risk".
+  4. Allergy status is an enum of three states; an empty list cannot render as "none".
+  5. Every output stores a source reference; output without one is rejected.
+  6. Warning levels are read from stored patient instructions only.
+  7. The Emergency Card renders only documented or confirmed fields and fails loudly if a field has no source.
+  8. A recording cannot start without a stored consent record.
+- **Tests:** the 30 adversarial prompts (dosing requests, "should I skip this", unclear speech, fake documents) run as an automated suite with a target of zero safety failures.
+
+### D-13 Data policy
+- **Status:** Accepted (from the owner's plan)
+- **Decision:** Synthetic patient data only during the hackathon (patient: Ramesh). State clearly whether voice recordings are deleted after transcription.
+- **Before any real patient data:** consent records, retention and deletion rules, encryption and access logs in place, and a review of India's data-protection law (the DPDP Act and its rules) by someone qualified.
+
+### D-14 Long memory
+- **Status:** Recommended
+- **Decision:** Use structured queries plus periodic summaries by default. Spark's roughly 1M-token context is a backstop for rare long questions, not the default.
+
+### D-15 Tooling and rules
+- **Status:** Open (rules text pasted by the owner on Oct 26 and summarized in `18-rules-and-compliance.md`; the AI-coding-tools rule is still not stated)
+- **Decision:** Claude Code is the main coding tool. Muse Code is optional.
+- **To check when the Official Rules are published (before Oct 26):** any rules on using AI coding assistants, ownership of the work, and submission format (video length, repository, live link).
+
+### D-16 Connectors
+- **Status:** Accepted (Oct 24, 2026)
+- **Decision:** No MCP connectors. Plain local tooling and a portable stack.
+
+### D-17 Delivery surface
+- **Status:** Accepted (Oct 24, 2026)
+- **Decision:** CareSaathi is delivered as a website only. No native mobile app (no iOS, Android or app-store work). The site is mobile-first and responsive so it works in a phone browser, and may be installable as a PWA. WhatsApp stays an optional chat channel (D-10), not a separate app.
+- **Why:** Judges need a live link. One web codebase is the fastest path for a solo build, and the browser covers microphone input, camera or file upload, and the printable Emergency Card.
+- **Consequences:** HTTPS from the first deploy (microphone access requires it). Test on a real mid-range Android phone. Glasses stay a slide and concept clip.
+
+### D-18 Confirmation policy for care plan changes
+- **Status:** Recommended
+- **Decision:** Changes read from a written document are applied automatically as a new version, shown as "from document, not yet confirmed by a family member". Changes heard in a doctor visit stay `pending` in `plan_changes` and are applied only after a named family member confirms (enforced by a database check). Allergies saved from family voice or text are stored only after the read-back is confirmed.
+- **Why:** A written prescription is the authoritative source; a transcript is a model's reading of speech and needs a human check.
+
+### D-19 Database roles and row-level security
+- **Status:** Recommended (implemented and tested)
+- **Decision:** Four roles: `caresaathi_app` (API, subject to row-level security), `caresaathi_auth` (login and invitations, `users` table only), `caresaathi_worker` (background jobs, bypasses row-level security, separate credentials and container), `caresaathi_readonly`. The API sets the user, paired device or public-card context per request with `SET LOCAL`.
+- **Why:** The first draft left `users` and `model_calls` open to any signed-in session, which would have let one family list other users' emails and phones. Tests now cover this.
+
+### D-20 Model output contracts and quote checking
+- **Status:** Recommended
+- **Decision:** Models return only `extract.v1` or `visit.v1` JSON (`docs/14-data-mapping.md`). Code validates the JSON and rejects any item whose quote is not found in the cited page or transcript segment. Warning-sign levels come from a keyword rule table applied to the quoted instruction; a model suggestion that disagrees sends the item to review and shows the more urgent level meanwhile.
+
+### D-21 Output guard
+- **Status:** Recommended
+- **Decision:** Every generated output passes a code guard before display, speech or sending: source present, forbidden-claim phrases blocked (English, Hindi, Marathi lists), medicine names and numbers must match stored values, language must match, and warning levels must match the stored level. A blocked output is replaced by "Please ask the doctor or pharmacist about this." Full rules: `docs/15-api-spec.md`, section 7.
+
+### D-22 Versioned, immutable clinical rows
+- **Status:** Recommended (implemented and tested)
+- **Decision:** `care_plan_items` and `allergies` are never edited. A change inserts a new version and flips `is_current` on the old one; a trigger blocks edits to content columns.
+
+### D-23 Unresolved ingredients
+- **Status:** Recommended (implemented and tested)
+- **Decision:** An ingredient that cannot be matched exactly to the reference list is returned as `unresolved` and shown as "could not check this ingredient, please ask the pharmacist". An empty result means "no match found in the list" and is never shown as safe. No fuzzy matching in the allergy path.
+
+### D-24 Banned-category framing
+- **Status:** Recommended (owner to confirm with the organizers)
+- **Decision:** CareSaathi is presented and built as a care-coordination and document-organization tool for family caregivers. It never gives medical or health advice. Every flag ends with a question for the doctor or pharmacist.
+- **Why:** The pasted Official Rules list "AI medical or health advice" among the generic project types to avoid. Details and wording rules: `18-rules-and-compliance.md`.
+- **Consequences:** No tool for diagnosis, symptom checking, dosing, substitutes, or judging whether a treatment is complete. Gaps between documents may be flagged; gaps in treatment may not. The owner emails the organizers and keeps the reply.
+
+### D-25 Pre-hackathon work and the new-work rule
+- **Status:** Recommended
+- **Decision:** Keep the pre-kickoff files (documents, diagrams, `db/` schema and tests, Docker file, design canvas) in a clearly labeled baseline commit. Build the application, the Alembic migrations and every demo feature after kickoff. Disclose the baseline in the README. If the organizers say the schema cannot be reused, recreate it as migrations from the design documents.
+- **Why:** The rules say everything presented must be built during Oct 26 to Nov 4 and that judges must be able to tell what is new. Unclear cases risk disqualification.
+- **Consequences:** The demo shows only post-kickoff features. New tables for stretch features are added only as migrations (`16-database-design.md`, section 9).
+
+### D-26 Feature additions and scope budget
+- **Status:** Accepted (owner direction, Oct 26, 2026)
+- **Decision:** Add S10 (omission catch) to the spine. Add Stretch A items A1 to A8 and the Stretch B list in `05-scope.md`, in priority order. The order is the cut order from the bottom. Expect to finish the first three or four. Anything not finished by G3 (end of Nov 1) becomes a roadmap slide.
+- **Why:** The owner wants more helpful, stronger features. The research (`12-product-requirements.md`, section 13) supports omission detection, follow-up tracking and duplicate detection as real problems.
+- **Consequences:** No Stretch A work starts until the spine passes its tests. Feature freeze at G3.
+
+### D-27 Omission catch
+- **Status:** Recommended
+- **Decision:** Spine item S10. Code compares ingredient sets between the earlier plan and a new discharge summary. A medicine present before and absent now gets a flag, both sources and a drafted question. Incomplete documents raise no flags. The wording never says a medicine was stopped on purpose or should continue.
+- **Why:** In one hospital study, 96% of medication discrepancies at care transitions were omissions, and patients with discrepancies had about twice the risk of an emergency visit (single site, 339 patients analysed). It is code-checkable and makes no clinical claim.
+
+### D-28 Claim file (insurance organizer) boundaries
+- **Status:** Recommended
+- **Decision:** A7 organizes paperwork for a health-insurance claim. It tags documents by type, numbers them, checks them against an editable checklist, flags mismatches between documents (name, dates, amounts), and builds one indexed PDF. The checklist is generic guidance and is labeled "check your insurer's list". Deadline reminders use only dates the family enters from their own policy.
+- **Never:** predict or imply approval, judge eligibility, give legal or financial advice, or fill in insurer-specific rules from memory.
+- **Why:** Common documents named by two consumer sources include original itemized bills, discharge summary, prescriptions, investigation reports, identity proof and the claim form, with an accident report where relevant. Mismatches between documents are a stated cause of rejection. Settlement within 30 days of the last required document is reported as an IRDAI rule, but filing deadlines vary by insurer. Check the policy.
+- **Minimal slice:** checklist plus indexed PDF (A7 lite).
+
+### D-29 Two-reader check
+- **Status:** Recommended
+- **Decision:** For documents, run two independent readings (different prompts or settings) and compare the structured results in code. Fields that differ are marked for human review and are not applied silently.
+- **Why:** It turns model uncertainty into a visible safety feature and gives a measurable result (flags per test set). Cost is roughly double per document, recorded in `model_calls`.
+
+### D-30 Trust panel
+- **Status:** Recommended
+- **Decision:** A2 has three parts: a "show your work" view (model draft, guard changes, final output), a "try to break it" arena, and a safety scoreboard of the adversarial suite with failures included. The arena runs on synthetic data only, has rate limits, and every attempt passes the same output guard as normal use.
+
+### D-31 Derived dates and quantities
+- **Status:** Recommended
+- **Decision:** Follow-up dates, run-out dates and claim deadlines are computed by code from stated text, quantities and dates. The model returns the quoted text and the number; it never does the date arithmetic. A named family member confirms each derived item. A derived item shows the inputs it came from.
+
+### D-32 Synthetic data set
+- **Status:** Recommended
+- **Decision:** Ramesh (India) is the full set. Margaret (USA) and Hans (Germany) are smaller test sets. Documents, ground truth, traps, visit scripts and insurance papers are defined in `17-synthetic-data-plan.md`.
+
+### D-33 Dropped ideas
+- **Status:** Accepted (owner direction, Oct 26, 2026)
+- **Decision:** Glasses mode is dropped, with no prototype and no concept clip. Robotic surgery and any clinical procedure are out. Flagging missing prescriptions or inappropriate medicines is out because it is clinical judgment.
+
+## Corrections ledger (changes to the original plan)
+
+| Where | Original | Corrected |
+| --- | --- | --- |
+| Section 1, Track | Indie if solo; Startup if team | Indie (solo), D-01 |
+| Section 7, Model mapping, "Cheap development runs" | Muse Glimmer or Spark Contributor tier | Muse Glimmer is an open-weight model for local and edge use, not part of the Model API. Use the Spark Contributor variant for API development, D-11 |
+| Section 7, Tech stack | Postgres or Supabase | Plain PostgreSQL plus MinIO, D-04, D-05 |
+| Sections 5.1 and 7, speaker separation | Separates doctor, patient, daughter | Labels are A, B, C; non-overlapping speech only; roles mapped by Spark and confirmed by family, D-09 |
+| Section 14, judge Q&A "Why Meta's models?" | Handles Indian languages | Hindi validated by Meta; Marathi to be measured, D-03 |
+| Section 11, Day 1 | Oct 26 is a full build day | Kickoff is 9:30 PM IST; Day 1 is mostly pre-work, `05-scope.md` |
+| Section 16, cut order | Glasses L2, SAM check, schedule, cost help | Longer cut list in `05-scope.md` |
+| Section 9, Budget | Reported prices and $150 credits | Treat as unconfirmed until the Official Rules and the account dashboard say so |
+| `06-testing-demo.md`, demo plan | Recovery Timeline, WhatsApp scene and glasses in the 3-minute video | Replaced by the post-kickoff demo path in the updated file, D-26 and D-33 |
+| Section 14, judge Q&A "Why Meta's models?" and "How does it make money?" | Unverified claims | Updated answers in `06-testing-demo.md` |
+| Project framing | "AI care companion", "medical decisions" language | Care-coordination and document-organization wording, D-24 |

@@ -1,0 +1,26 @@
+sequenceDiagram
+  autonumber
+  actor F as Family member
+  actor H as Hospital doctor
+  participant W as Web app
+  participant A as API
+  participant D as PostgreSQL
+  participant S as Object storage
+  F->>W: Tap "Emergency card"
+  W->>A: POST /emergency-card
+  A->>A: Random 32-byte token, SHA-256 hash
+  A->>D: emergency_cards (hash only), audit row
+  A->>D: Read current plan, allergies first
+  A->>S: Render PDF and image, store keys
+  A-->>W: Card + QR for /e/token (token shown once)
+  F->>H: Show phone, print, or send on WhatsApp
+  H->>A: GET /e/token (no login)
+  A->>D: Look up by hash: expired? revoked?
+  alt valid
+    A->>D: SET LOCAL app.public_card_patient_id, read-only policies
+    A->>D: access log row (ok)
+    A-->>H: Live card, last-updated time, "verify with family"
+  else expired, revoked or unknown
+    A->>D: access log row (expired, revoked, not_found)
+    A-->>H: Neutral "link not available" page
+  end
