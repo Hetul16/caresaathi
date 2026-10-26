@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import type { Lang } from "@/lib/types";
 
 export function Logo() {
-  // Two figures sharing one roof line: a companion walking beside you.
+  // Two figures under one roof line: a companion walking beside you.
   return (
     <svg viewBox="0 0 40 40" aria-hidden="true">
       <rect x="1" y="1" width="38" height="38" rx="11" fill="var(--ink)" />
@@ -25,8 +26,12 @@ const LANGS: { code: Lang; label: string; name: string }[] = [
 
 export function SiteHeader() {
   const { lang, setLang, t } = useI18n();
-  const path = usePathname();
-  if (path?.startsWith("/e/")) return null; // the public Emergency Card is a clean, standalone page
+  const { status, user, logout } = useAuth();
+  const path = usePathname() ?? "";
+  const router = useRouter();
+  // Standalone pages: the public Emergency Card and the split-screen sign-in pages carry their own chrome.
+  if (path.startsWith("/e/") || path === "/login" || path === "/signup") return null;
+  const initials = (user?.display_name ?? "?").split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
   return (
     <header className="site-header">
       <div className="wrap">
@@ -34,12 +39,27 @@ export function SiteHeader() {
           <Logo />
           <span>{t("appName")}</span>
         </Link>
-        <div className="lang-switch" role="group" aria-label="Language">
-          {LANGS.map((l) => (
-            <button key={l.code} type="button" aria-pressed={lang === l.code} aria-label={l.name} onClick={() => setLang(l.code)}>
-              {l.label}
-            </button>
-          ))}
+        <div className="header-actions">
+          <div className="lang-switch" role="group" aria-label="Language">
+            {LANGS.map((l) => (
+              <button key={l.code} type="button" aria-pressed={lang === l.code} aria-label={l.name} onClick={() => setLang(l.code)}>
+                {l.label}
+              </button>
+            ))}
+          </div>
+          {status === "authed" ? (
+            <>
+              {!path.startsWith("/app") && <Link href="/app" className="btn btn-primary btn-sm">Open care plan</Link>}
+              <button className="avatar" onClick={async () => { await logout(); router.replace("/"); }} aria-label={`Signed in as ${user?.display_name}. Sign out`} title="Sign out">
+                {initials}
+              </button>
+            </>
+          ) : status === "anon" ? (
+            <>
+              <Link href="/login" className="btn btn-quiet btn-sm hide-sm">Sign in</Link>
+              <Link href="/signup" className="btn btn-primary btn-sm">Get started</Link>
+            </>
+          ) : null}
         </div>
       </div>
     </header>

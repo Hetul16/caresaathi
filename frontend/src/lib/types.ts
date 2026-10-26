@@ -76,7 +76,7 @@ export interface TimelineEvent {
 }
 
 export interface CarePlan {
-  patient: { id: string; name: string; age: number; preferred_language: Lang };
+  patient: { id: string; name: string; age: number | null; preferred_language: Lang };
   allergies: { state: AllergyState; items: Allergy[]; source_note?: string };
   open_conflicts: OpenConflict[];
   items: PlanItem[];
@@ -84,7 +84,7 @@ export interface CarePlan {
   omissions: OmissionFlag[];
   approvals: ApprovalAction[];
   timeline: TimelineEvent[];
-  last_updated_at: string;
+  last_updated_at: string | null;
   reference_list_reviewed: boolean;
 }
 

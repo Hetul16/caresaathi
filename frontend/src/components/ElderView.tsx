@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { mockPlan } from "@/lib/mock";
+import type { CarePlan } from "@/lib/types";
 import { speechLocale, useI18n } from "@/lib/i18n";
 import { spokenDose } from "@/lib/spoken";
 import { Icon } from "@/components/Icon";
@@ -9,15 +9,15 @@ import { VoiceOrb, useMicLevel, useSpeech, type OrbState } from "@/components/Vo
 
 const SLOTS = ["morning", "noon", "evening", "night"] as const;
 
-export default function ElderPage() {
+export function ElderView({ plan, emergencyHref }: { plan: CarePlan; emergencyHref: string }) {
   const { lang, t } = useI18n();
   const [listening, setListening] = useState(false);
   const { level, error } = useMicLevel(listening);
   const { speak, repeat, stop, speaking } = useSpeech(speechLocale[lang]);
 
   // The elder only hears medicines the family has confirmed, and nothing under an open conflict.
-  const conflictNames = mockPlan.open_conflicts.map((c) => c.medicine.toLowerCase());
-  const meds = useMemo(() => mockPlan.items.filter((i) => i.kind === "medicine"), []);
+  const conflictNames = plan.open_conflicts.map((c) => c.medicine.toLowerCase());
+  const meds = useMemo(() => plan.items.filter((i) => i.kind === "medicine"), [plan.items]);
   const held = meds.filter((m) => !m.confirmed || conflictNames.some((n) => n.startsWith(m.title.toLowerCase().split(" ")[0])));
   const heard = meds.filter((m) => !held.includes(m));
 
@@ -35,7 +35,7 @@ export default function ElderPage() {
 
   return (
     <div className="elder wrap">
-      <h1 className="elder-greet">{t("hello")}, Ramesh</h1>
+      <h1 className="elder-greet">{t("hello")}, {plan.patient.name.split(" ")[0]}</h1>
       <p className="elder-sub">{t("tagline")}</p>
 
       <VoiceOrb state={state} onToggle={toggle} level={level} />
@@ -79,7 +79,7 @@ export default function ElderPage() {
 
       <div className="sos-bar">
         <div className="wrap">
-          <Link href="/e/demo-token" className="btn sos"><Icon name="siren" /> {t("emergency")}</Link>
+          <Link href={emergencyHref} className="btn sos"><Icon name="siren" /> {t("emergency")}</Link>
         </div>
       </div>
     </div>
