@@ -186,6 +186,26 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Status:** Accepted (owner direction, Oct 26, 2026)
 - **Decision:** Glasses mode is dropped, with no prototype and no concept clip. Robotic surgery and any clinical procedure are out. Flagging missing prescriptions or inappropriate medicines is out because it is clinical judgment.
 
+### D-34 Background work starts after the request commits
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** A job that reads rows written in the same request starts from SQLAlchemy's `after_commit` event (`db.run_after_commit`), on a background thread. Starting it as a framework background task raced the commit: the pipeline found no document and returned without a trace. Threads are the interim; the persistent APScheduler job store (D-10) replaces them for retries and restarts.
+
+### D-35 Public Emergency Card lookup
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** The public link is checked and logged inside one SECURITY DEFINER function (`app_resolve_emergency_card`, migration 0003), so the web process needs no role that can read every card. Expired, revoked and unknown tokens return the same 404 body and the page shows one neutral message; each attempt writes an access row. The card is then read through a session whose row-level security shows only one patient's documented facts. The visitor's address is hashed into the log from `X-Forwarded-For` and never used for a decision. **Open:** per-IP rate limiting is not built.
+
+### D-36 Omission catch needs a whole document
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** `documents.completeness` is `complete` only when a "page N of M" marker shows every page is present; a missing page or an empty page gives `incomplete`; no marker gives `unknown`. Only `complete` lets the omission catch raise flags (invariant 10). A named member with approval rights can set the value by hand, and that is audited. The catch runs for discharge summaries only. The drafted question reuses the `doctor_question` output type and the guard's omission wording list.
+
+### D-37 Approved actions are recorded, not executed
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** An "asks first" request is stored as `awaiting_approval`. A named member with approval rights moves it to `approved` or `refused`, and the database refuses any other way past `awaiting_approval`. No executor (sending a message, sharing a link) is connected yet, so the screens say nothing is sent; wire executors only behind this gate.
+
+### D-38 Tests and object storage in this build
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** API tests run against a scratch database (`caresaathi_test`) cloned from the dev schema, grants, policies and drug list inside the same Postgres container, and are skipped when Docker is not available. The baseline `db/tests/run_tests.sh` drops cluster-wide roles, so it runs only in a throwaway container. The `minio/minio` image could not be pulled on the dev machine, so uploads use the local storage adapter behind the same interface until an S3-compatible service is chosen.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

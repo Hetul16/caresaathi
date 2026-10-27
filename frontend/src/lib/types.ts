@@ -53,6 +53,7 @@ export interface PendingChange {
 
 export interface OmissionFlag {
   id: string;
+  state?: "open" | "asked";
   medicine: string;
   previous_source: SourceRef;
   new_document: string;
@@ -86,15 +87,18 @@ export interface CarePlan {
   timeline: TimelineEvent[];
   last_updated_at: string | null;
   reference_list_reviewed: boolean;
+  can_approve?: boolean;           // live plans only: whether this member may confirm and approve
 }
 
 export interface EmergencyCardData {
-  patient: { name: string; age: number; blood_group?: string; language: Lang };
+  patient: { name: string; age: number | null; blood_group?: string | null; language: Lang };
   allergies: { state: AllergyState; items: Allergy[] };
   conditions: { title: string; source: SourceRef }[];
   medicines: { title: string; detail: string; source: SourceRef }[];
   recent_changes: string;
   providers: { name: string; hospital: string; phone: string }[];
   contacts: { name: string; relation: string; phone: string }[];
-  last_updated_at: string;
+  last_updated_at: string | null;
 }
+
+export interface CardLink { id: string; hint: string; status: "active" | "revoked" | "expired"; created_at: string; expires_at: string | null }

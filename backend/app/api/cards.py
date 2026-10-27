@@ -69,7 +69,8 @@ _NO_STORE = {"Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow"}
 
 @router.get("/e/{token}")
 def public_card(token: str, request: Request):
-    ip = request.client.host if request.client else ""
+    # The web server forwards the visitor's address. It only feeds a hashed access-log column, never a decision.
+    ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "")
     with request_session() as s:     # committed on exit, so the access row is kept for every outcome
         row = s.execute(text("SELECT r_patient_id, r_outcome FROM app_resolve_emergency_card(:h, :ip, :ua)"),
                         {"h": hash_token(token[:200]), "ip": hash_token(ip), "ua": request.headers.get("user-agent", "")}).first()

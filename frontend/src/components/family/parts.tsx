@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { Allergy, AllergyState, ApprovalAction, OmissionFlag, OpenConflict, PendingChange, PlanItem, TimelineEvent } from "@/lib/types";
 import { useI18n } from "@/lib/i18n";
 import { Icon, type IconName } from "../Icon";
@@ -51,7 +51,8 @@ export function AllergyBanner({ state, items, reviewed }: { state: AllergyState;
   );
 }
 
-export function ConflictCard({ c, onAsk }: { c: OpenConflict; onAsk: () => void }) {
+export function ConflictCard({ c, onAsk, onAck, askLabel = "Ask the doctor", note = "Nothing is sent until you approve it." }:
+  { c: OpenConflict; onAsk: () => void; onAck?: () => void; askLabel?: string; note?: string }) {
   return (
     <article className="card conflict" role="alert">
       <div className="item-top">
@@ -64,14 +65,15 @@ export function ConflictCard({ c, onAsk }: { c: OpenConflict; onAsk: () => void 
       <p>{c.flag}</p>
       <div className="question-box">{c.doctor_question}</div>
       <div className="item-foot">
-        <button className="btn btn-primary btn-sm" onClick={onAsk}><Icon name="stethoscope" /> Ask the doctor</button>
-        <span style={{ color: "var(--ink-3)", fontSize: 14.5 }}>Nothing is sent until you approve it.</span>
+        <button className="btn btn-primary btn-sm" onClick={onAsk}><Icon name={onAck ? "copy" : "stethoscope"} /> {askLabel}</button>
+        {onAck && <button className="btn btn-quiet btn-sm" onClick={onAck}><Icon name="check" /> I have seen this</button>}
+        <span style={{ color: "var(--ink-3)", fontSize: 14.5 }}>{note}</span>
       </div>
     </article>
   );
 }
 
-export function OmissionCard({ o, onAsk }: { o: OmissionFlag; onAsk: () => void }) {
+export function OmissionCard({ o, onAsk, onState }: { o: OmissionFlag; onAsk: () => void; onState?: (s: "asked" | "resolved") => void }) {
   return (
     <article className="card conflict" style={{ borderLeftColor: "var(--amber)" }}>
       <div className="item-top">
@@ -87,7 +89,10 @@ export function OmissionCard({ o, onAsk }: { o: OmissionFlag; onAsk: () => void 
       </div>
       <div className="question-box">{o.question}</div>
       <div className="item-foot">
-        <button className="btn btn-primary btn-sm" onClick={onAsk}><Icon name="stethoscope" /> Ask the doctor</button>
+        <button className="btn btn-primary btn-sm" onClick={onAsk}><Icon name={onState ? "copy" : "stethoscope"} /> {onState ? "Copy the question" : "Ask the doctor"}</button>
+        {onState && o.state !== "asked" && <button className="btn btn-quiet btn-sm" onClick={() => onState("asked")}>I have asked</button>}
+        {onState && <button className="btn btn-quiet btn-sm" onClick={() => onState("resolved")}><Icon name="check" /> Settled with the doctor</button>}
+        {o.state === "asked" && <span className="pill">Asked</span>}
       </div>
     </article>
   );
@@ -129,7 +134,7 @@ const levelPill: Record<NonNullable<PlanItem["alert_level"]>, [string, string]> 
   watch: ["pill pill-blue", "Keep watching"],
 };
 
-export function PlanItemCard({ i }: { i: PlanItem }) {
+export function PlanItemCard({ i, onConfirm }: { i: PlanItem; onConfirm?: (key: string) => void }) {
   const slots: ["morning" | "noon" | "evening" | "night", string][] = [["morning", "M"], ["noon", "N"], ["evening", "E"], ["night", "Ni"]];
   return (
     <article className={`card item ${i.confirmed ? "" : "unconfirmed"}`}>
@@ -154,6 +159,9 @@ export function PlanItemCard({ i }: { i: PlanItem }) {
       <div className="item-foot">
         <SourceChip source={i.source} />
         {i.confirmed_by && <span style={{ color: "var(--ink-3)", fontSize: 14 }}>Confirmed by {i.confirmed_by}</span>}
+        {onConfirm && !i.confirmed && !i.alert_level && (
+          <button className="btn btn-leaf btn-sm" onClick={() => onConfirm(i.item_key)}><Icon name="check" /> Confirm this is right</button>
+        )}
       </div>
     </article>
   );
@@ -162,6 +170,7 @@ export function PlanItemCard({ i }: { i: PlanItem }) {
 const toolName: Record<string, string> = {
   message_doctor_draft: "Message the doctor",
   send_family_message: "Message a family member",
+  share_emergency_card: "Share the Emergency Card",
 };
 
 export function ApprovalCard({ a, onDecide }: { a: ApprovalAction; onDecide: (id: string, d: "approve" | "refuse") => void }) {
@@ -200,7 +209,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
 
 export function useToast() {
   const [msg, setMsg] = useState<string | null>(null);
-  const show = (m: string) => { setMsg(m); window.setTimeout(() => setMsg(null), 3200); };
+  const show = useCallback((m: string) => { setMsg(m); window.setTimeout(() => setMsg(null), 3200); }, []);
   const node = msg ? (
     <div role="status" style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", background: "var(--ink)", color: "var(--paper)", padding: "12px 20px", borderRadius: 999, zIndex: 70, boxShadow: "var(--shadow-2)", fontWeight: 700 }}>
       {msg}

@@ -2,7 +2,7 @@
 
 Voice-first AI care companion for families looking after an elderly or chronically ill relative. Website only. Built for the Meta Global AI Developer Hackathon (Indie track). Synthetic data only.
 
-Status: documentation and the baseline database design are done and tested. Application code has not been written yet.
+Status (Oct 27, 2026): the backend and website run locally. Working: sign up and sign in, document upload (offline reader only, no live model yet), the sourced care plan, allergy conflicts found in code, confirmations, pending-change decisions, approvals, the Emergency Card (create, public link, revoke) and the omission catch. 90 backend tests pass against a real Postgres. Not built yet: the Doctor Visit Listener, spoken explanations, the chat channel, and any call to the live Meta models (not yet tested).
 
 ## What existed before the hackathon (Oct 24 to Oct 25, 2026)
 
