@@ -27,6 +27,7 @@ from ..safety.normalize import normalize_medicine_name, same_medicine, split_com
 from ..safety.text import normalize_text
 from ..safety.validate import ValidatedExtraction
 from .audit import timeline, write_audit
+from .guarding import guard_with_judge
 from .resolve import resolve_allergy, resolve_substance
 
 _NO_ALLERGY_LINE = re.compile(r"no known (?:drug )?allergies|nkda|no allergies", re.I)
@@ -325,9 +326,12 @@ def raise_conflicts_for_item(s: Session, patient_id: UUID, item_id: UUID, client
             facts = {"allergy": allergy["substance"], "medicine": item["title"], "match": r["match"]}
             flag_text, u1 = client.word("allergy_flag", facts, language)
             q_text, u2 = client.word("doctor_question", facts, language)
-            ctx = GuardContext(language=language, source_ids=source_ids)
-            flag_out = _store_output(s, patient_id, "allergy_flag", language, guard_output(flag_text, ctx), source_ids, record_model_call(s, patient_id, u1))
-            question_out = _store_output(s, patient_id, "doctor_question", language, guard_output(q_text, ctx), source_ids, record_model_call(s, patient_id, u2))
+            ctx = GuardContext(language=language, source_ids=source_ids, require_grounding=True,
+                               grounding_terms={allergy["substance"], item["title"], item["title"].split()[0]})
+            flag_res, _ = guard_with_judge(client, flag_text, ctx)
+            q_res, _ = guard_with_judge(client, q_text, ctx)
+            flag_out = _store_output(s, patient_id, "allergy_flag", language, flag_res, source_ids, record_model_call(s, patient_id, u1))
+            question_out = _store_output(s, patient_id, "doctor_question", language, q_res, source_ids, record_model_call(s, patient_id, u2))
         cid = s.execute(text("""
             INSERT INTO allergy_conflicts (patient_id, allergy_id, care_plan_item_id, ingredient_id, match, family_id,
                                            flag_output_id, question_output_id)

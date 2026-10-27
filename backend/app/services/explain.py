@@ -17,6 +17,7 @@ from ..clients.models import ModelClient
 from ..safety.guard import GuardContext, guard_output
 from ..safety.normalize import normalize_medicine_name
 from .audit import write_audit
+from .guarding import guard_with_judge
 from .errors import ServiceError
 from .readmodel import item_detail, source_of
 
@@ -53,9 +54,12 @@ def explain_item(s: Session, *, patient_id: UUID, item_key: UUID, language: str,
     mentions = [n for n in names if n and n in draft.lower()]
     ctx = GuardContext(language=language, source_ids=[str(row["source_ref_id"])], known_medicines=names, medicine_mentions=mentions,
                        stored_numbers={row["title"], detail or "", row["quote"] or ""},
-                       stored_alert_level=row["alert_level"], shown_alert_level=row["alert_level"] if row["alert_level"] else None)
-    result = guard_output(draft, ctx)
+                       stored_alert_level=row["alert_level"], shown_alert_level=row["alert_level"] if row["alert_level"] else None,
+                       require_grounding=True, grounding_terms=names | {normalize_medicine_name(row["title"]), row["title"].lower()})
+    result, judge_usage = guard_with_judge(client, draft, ctx)
     from .plan import record_model_call
+    if judge_usage is not None:
+        record_model_call(s, patient_id, judge_usage)
     oid = store_output(s, patient_id=patient_id, output_type="explanation", language=language, shown=result.text, draft=draft,
                        status="pass" if result.passed else "blocked", reasons=result.reasons, source_ref_ids=[row["source_ref_id"]],
                        model_call_id=record_model_call(s, patient_id, usage))

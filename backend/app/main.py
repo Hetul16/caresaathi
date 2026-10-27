@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from .api import assist, auth, cards, demo, members, patients, plan, tracking, visits
+from .api import assist, auth, cards, demo, members, patients, plan, tracking, trust, visits
 from .services.errors import ServiceError
 from .config import get_settings
 from .db import engine_app
@@ -67,6 +67,7 @@ app.include_router(visits.router, prefix="/api/v1")
 app.include_router(demo.router, prefix="/api/v1")
 app.include_router(members.router, prefix="/api/v1")
 app.include_router(assist.router, prefix="/api/v1")
+app.include_router(trust.router, prefix="/api/v1")
 
 
 @app.get("/healthz")

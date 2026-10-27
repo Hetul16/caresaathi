@@ -15,6 +15,7 @@ from ..safety.guard import GuardContext, guard_output
 from ..safety.normalize import normalize_medicine_name
 from ..safety.reconcile import MedItem, find_omissions
 from .audit import timeline, write_audit
+from .guarding import guard_with_judge
 from .errors import ServiceError
 from .plan import _store_output, ingredients_of, record_model_call
 from .resolve import resolve_substance
@@ -70,8 +71,10 @@ def raise_omission_flags(s: Session, *, patient_id: UUID, document_id: UUID, doc
                      {"i": prev_id, "d": document_id}).first():
             continue
         text_out, usage = client.word("omission_question", {"medicine": cand.title}, language)
-        ctx = GuardContext(language=language, source_ids=[cand.source_id], check_extra_wording=True)
-        qid = _store_output(s, patient_id, "doctor_question", language, guard_output(text_out, ctx), [cand.source_id],
+        ctx = GuardContext(language=language, source_ids=[cand.source_id], check_extra_wording=True, require_grounding=True,
+                           grounding_terms={cand.title, cand.title.split()[0]})
+        res, _ = guard_with_judge(client, text_out, ctx)
+        qid = _store_output(s, patient_id, "doctor_question", language, res, [cand.source_id],
                             record_model_call(s, patient_id, usage))
         fid = s.execute(text("""
             INSERT INTO reconciliation_flags (patient_id, previous_item_id, previous_source_ref_id, new_document_id,

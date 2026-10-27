@@ -78,6 +78,7 @@ class ModelClient(Protocol):
     def extract_document(self, pages: list[PageText], hint_doc_type: str | None) -> tuple[str, Usage]: ...
     def extract_visit(self, segments: list[tuple[str, str, str]]) -> tuple[str, Usage]: ...
     def transcribe_audio(self, wav: bytes) -> tuple[list[AudioTurn], Usage]: ...
+    def judge_text(self, text: str) -> tuple[bool | None, Usage]: ...
     def word(self, kind: str, facts: dict, language: str) -> tuple[str, Usage]: ...
 
 
@@ -197,11 +198,25 @@ class LiveModelClient:
             raise ModelError(f"transcribe_audio failed: {type(e).__name__}") from e
         return turns, Usage(self.s.meta_asr_model, "transcribe_audio", None, None, int((time.monotonic() - t0) * 1000))
 
+    def judge_text(self, text: str) -> tuple[bool | None, Usage]:
+        """Second pass after the keyword guard. True means the draft reassures, advises or instructs, so it must not be shown.
+        None means the judge could not decide; the caller treats that as flagged (fail closed)."""
+        schema = {"type": "object", "properties": {"flag": {"type": "boolean"}}, "required": ["flag"]}
+        prompt = ("Read the text between the tags. Set flag to true if it reassures the reader, says anything is safe, fine or harmless, "
+                  "tells them to take, stop, skip, change or combine a medicine, gives a dose, diagnoses, or says whether to go to hospital. "
+                  "Set flag to false only if it merely reads back or asks a question. Return JSON only.\n<text>\n" + text + "\n</text>")
+        try:
+            out, usage = self._chat("judge_text", [{"type": "text", "text": prompt}], schema, "judge")
+            return bool(json.loads(out)["flag"]), usage
+        except (ModelError, ValueError, KeyError, TypeError):
+            return None, Usage(self.s.meta_spark_model, "judge_text", status="error")
+
     def word(self, kind: str, facts: dict, language: str) -> tuple[str, Usage]:
         lang = {"en": "English", "hi": "Hindi", "mr": "Marathi"}.get(language, "English")
         prompt = (f"Write a short {kind} in {lang} using ONLY these stored facts, copied exactly: "
                   f"{json.dumps(facts, ensure_ascii=False)}. Never say a medicine is safe or unsafe. "
-                  "End any flag with a question for the doctor or pharmacist. Do not add facts.")
+                  "End any flag with a question for the doctor or pharmacist. Do not add facts. Every sentence must name the medicine, "
+                  "the allergy or the document it refers to, or the doctor or pharmacist: write nothing else.")
         return self._chat("word_" + kind, [{"type": "text", "text": prompt}])
 
 
@@ -334,6 +349,9 @@ class FakeModelClient:
         return json.dumps({"schema_version": "visit.v1", "speaker_roles": [], "items": items,
                            "allergies_mentioned": [], "unclear": [], "follow_ups": []}), self._usage("extract_visit")
 
+    def judge_text(self, text: str) -> tuple[bool | None, Usage]:
+        return False, self._usage("judge_text")        # offline there is no judge: the keyword guard stands alone, and the app says so
+
     def word(self, kind: str, facts: dict, language: str) -> tuple[str, Usage]:
         # Fixed English templates; the guard still runs on them.
         if kind == "allergy_flag":
@@ -341,10 +359,10 @@ class FakeModelClient:
                     "This is a match in our reference list, not a medical judgement. Please confirm with the doctor or pharmacist.")
         elif kind == "doctor_question":
             text = (f"The records list an allergy to {facts.get('allergy')}, and a new prescription has {facts.get('medicine')}. "
-                    "Could you confirm whether this is intended?")
+                    f"Could the doctor confirm whether {facts.get('medicine')} is intended?")
         elif kind == "omission_question":
             text = (f"{facts.get('medicine')} was on the earlier list and is not on the new document. "
-                    "Is it meant to continue, or was it left out? We are only asking; we are not suggesting either.")
+                    f"Is {facts.get('medicine')} meant to continue, or was it left out? We are only asking the doctor; we are not suggesting either.")
         elif kind == "duplicate_question":
             text = (f"{facts.get('a')} and {facts.get('b')} both list {facts.get('ingredient')}. "
                     "Could you or the pharmacist confirm whether both are meant to be taken?")

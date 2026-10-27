@@ -354,3 +354,28 @@ def test_normalize_text_nfkc():
 ])
 def test_detect_language_on_short_replies(text, lang):
     assert detect_language(text) == lang
+
+
+@pytest.mark.parametrize("text", [
+    "You'll be fine taking both together.", "You\u2019ll be fine.", "That is perfectly OK to take.", "Totally harmless, go ahead.",
+    "Feel free to drop the evening tablet.", "No problem taking them at the same time.", "It's fine to combine them.",
+    "Nothing wrong with that combination.", "You can go ahead and take it.", "Just leave out the second tablet.",
+    "There's nothing to be concerned about.", "Ye dawa bilkul theek hai, le lijiye.", "tension mat lo, sab theek rahega",
+    "Most people tolerate it without any trouble.", "I wouldn't lose sleep over it.", "Why not just try it and see?", "It won't hurt.",
+    "बिल्कुल ठीक है, ले लीजिए।", "इसमें कोई दिक्कत नहीं है।", "अगदी ठीक आहे, घ्या.",
+])
+def test_reassurance_paraphrases_are_blocked(text):
+    lang = "hi" if any("\u0900" <= c <= "\u097f" for c in text) else "en"
+    if lang == "hi" and "आहे" in text:
+        lang = "mr"
+    assert guard_output(text, GuardContext(language=lang, source_ids=["s"])).status == "blocked"
+
+
+@pytest.mark.parametrize("text", [
+    "Metformin 500 mg, 1-0-1, after food, as written in your discharge summary.", "No allergy is recorded. That does not mean there are none.",
+    "Nothing has been confirmed yet, so there is nothing to read out.", "Please ask the doctor or pharmacist if anything is unclear.",
+    "These follow-ups have been confirmed by your family.", "Take with water. Do not skip doses.", "The doctor wrote: review in 2 weeks.",
+    "This line could not be checked against the reference list. Please ask the pharmacist.",
+])
+def test_ordinary_read_backs_are_not_blocked_by_the_paraphrase_patterns(text):
+    assert guard_output(text, GuardContext(language="en", source_ids=["s"], stored_numbers={"500 mg 1-0-1 2 weeks"})).status == "pass"

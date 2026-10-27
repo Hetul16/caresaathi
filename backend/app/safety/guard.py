@@ -52,6 +52,34 @@ REFILL_FORBIDDEN = (
 
 _EXTRA_ALL = CLAIM_FORBIDDEN + OMISSION_FORBIDDEN + REFILL_FORBIDDEN
 
+# Implied reassurance and "go ahead" permission, which exact phrases miss ("you'll be fine", "perfectly OK to take", "feel free to drop").
+# Matched on normalized text. The families are deliberately broad: a false positive only replaces a draft with the safe fallback.
+_A = "['’]?"
+FORBIDDEN_PATTERNS: tuple[str, ...] = (
+    rf"\byou{_A}(?:ll| will|re| are)? (?:be )?(?:fine|ok|okay|alright|good|safe)\b",
+    r"\bperfectly (?:ok|okay|fine|safe|normal|harmless)\b",
+    r"\bharmless\b",
+    r"\bno (?:problem|issue|issues|harm|worries|trouble) (?:with|in|taking|at all)\b",
+    r"\bnothing (?:wrong|to be concerned|to worry|to fear|to be afraid)\b",
+    rf"\b(?:it{_A}s|it is|that is|that{_A}s|this is) (?:fine|ok|okay|alright|normal|good) to\b",
+    r"\b(?:fine|ok|okay|alright) to (?:combine|take|mix|use|skip|drop|stop)\b",
+    r"\bgo ahead and (?:take|use|combine|have|skip|drop|stop)\b",
+    r"\bfeel free to (?:skip|drop|stop|take|combine|reduce|double|leave)\b",
+    r"\b(?:leave out|drop|omit|cut out) (?:the|your|that|this) (?:\w+ ){0,2}(?:tablet|dose|pill|medicine|capsule)\b",
+    r"\btolerate[sd]? (?:it|this|that)\b",
+    r"\bwithout any (?:trouble|problem|risk|issue|side)\b",
+    r"\blose sleep\b",
+    r"\bjust try it\b",
+    r"\bwhy not just\b",
+    rf"\bwon{_A}t (?:hurt|harm)\b",
+    # romanised Hindi
+    r"\bbilkul theek\b", r"\btheek hai\b", r"\btension mat\b", r"\bsab theek\b", r"\bchinta mat\b", r"\bkoi dikkat nahi\b",
+    r"\bkhatra nahi\b", r"\bsurakshit hai\b",
+    # Devanagari
+    r"बिल्कुल ठीक", r"कोई दिक्कत नहीं", r"चिंता न करें", r"बेफिक्र", r"काही हरकत नाही", r"अगदी ठीक आहे", r"बिनधास्त", r"काळजी नको",
+)
+_PATTERNS = tuple(re.compile(x) for x in FORBIDDEN_PATTERNS)
+
 _DEVANAGARI = re.compile(r"[ऀ-ॿ]")
 # Function words that separate Marathi from Hindi (both use Devanagari).
 _MARATHI_HINTS = ("आहे", "आहेत", "आणि", "नाही", "करा", "तुम्ही", "माझ", "याबद्दल", "च्या", "कागदपत्र", "लिहिले", "तुमची", "तुमचे", "आणखी",
@@ -82,6 +110,28 @@ class GuardContext:
     shown_alert_level: str | None = None            # level the output claims
     source_exempt: bool = False                     # plain chat replies only
     check_extra_wording: bool = False               # claim, omission and refill lists
+    require_grounding: bool = False                 # every sentence must mention a stored fact or the doctor/pharmacist
+    grounding_terms: set[str] = field(default_factory=set)   # medicine, ingredient and allergy names from the stored record
+
+
+# Words that tie a sentence to the record or to the right person to ask. A sentence with none of these, and none of the record's own
+# names, is free-floating: it cannot be read back from anything stored, so it is not shown.
+GENERIC_TERMS = ("doctor", "pharmacist", "document", "reference list", "records", "prescription", "earlier list", "new document", "allergy",
+                 "डॉक्टर", "फार्मासिस्ट", "दस्तावेज़", "कागदपत्र", "एलर्जी", "ऍलर्जी")
+_SENTENCES = re.compile(r"[^.!?।\n]+[.!?।]?")
+
+
+def ungrounded_sentences(text: str, terms: set[str]) -> list[str]:
+    pool = [normalize_text(t) for t in (*GENERIC_TERMS, *terms) if t and t.strip()]
+    out = []
+    for m in _SENTENCES.finditer(text):
+        sent = m.group(0).strip()
+        n = normalize_text(sent)
+        if len(re.sub(r"[\W\d_]+", "", n)) < 3:
+            continue                                   # punctuation, bullets, bare numbers
+        if not any(t in n for t in pool):
+            out.append(sent)
+    return out
 
 
 def detect_language(text: str) -> str:
@@ -97,7 +147,9 @@ def _find_forbidden(text: str, use_extra: bool) -> list[str]:
     pool: list[str] = [p for lst in FORBIDDEN.values() for p in lst]
     if use_extra:
         pool += list(_EXTRA_ALL)
-    return sorted({p for p in pool if normalize_text(p) in n})
+    hits = {p for p in pool if normalize_text(p) in n}
+    hits |= {m.group(0) for pat in _PATTERNS if (m := pat.search(n))}
+    return sorted(hits)
 
 
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
@@ -113,6 +165,11 @@ def guard_output(text: str, ctx: GuardContext) -> GuardResult:
 
     if not ctx.source_ids and not ctx.source_exempt:
         reasons.append("source_missing")
+
+    if ctx.require_grounding:
+        loose = ungrounded_sentences(text, ctx.grounding_terms)
+        if loose:
+            reasons.append("ungrounded_sentence:" + loose[0][:60])
 
     hits = _find_forbidden(text, ctx.check_extra_wording)
     if hits:
