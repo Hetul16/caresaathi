@@ -14,6 +14,8 @@ from ..clients.storage import get_storage, new_key, sha256, sniff_mime
 from ..config import get_settings
 from ..db import run_after_commit
 from ..pipelines.documents import process_document
+from ..services.documents import ingest_document
+from ..services.patients import create_patient as new_patient
 from ..services.audit import timeline, write_audit
 from ..services.readmodel import age_of, item_detail, source_of
 from .deps import db, problem, require_member
@@ -35,19 +37,9 @@ class PatientIn(BaseModel):
 def create_patient(body: PatientIn, request: Request, s: Session = Depends(db)):
     if body.preferred_language not in ("en", "hi", "mr"):
         raise problem(422, "validation-failed", "Language must be en, hi or mr")
-    pid, uid = uuid4(), request.state.user_id
-    # Insert without RETURNING: the SELECT policy only passes once the member row exists.
-    s.execute(text("""INSERT INTO patients (id, full_name, date_of_birth, sex, preferred_language, created_by)
-                      VALUES (:i, :n, :d, :s, CAST(:l AS pref_lang), :u)"""),
-              {"i": pid, "n": body.full_name.strip(), "d": body.date_of_birth, "s": body.sex,
-               "l": body.preferred_language, "u": uid})
-    s.execute(text("""INSERT INTO family_members (patient_id, user_id, member_role, relationship_label, status,
-                                                  can_approve, can_manage_members, can_view_recordings, notify_urgent)
-                      VALUES (:p, :u, 'child', :r, 'active', true, true, true, true)"""),
-              {"p": pid, "u": uid, "r": body.relationship_label})
-    s.execute(text("INSERT INTO allergy_status (patient_id) VALUES (:p)"), {"p": pid})
-    write_audit(s, actor_type="user", actor_id=uid, patient_id=pid, action="patient.created", entity_type="patient",
-                entity_id=pid, request_id=request.headers.get("x-request-id"))
+    uid = request.state.user_id
+    pid = new_patient(s, user_id=uid, full_name=body.full_name, date_of_birth=body.date_of_birth, sex=body.sex, language=body.preferred_language,
+                         relationship_label=body.relationship_label, request_id=request.headers.get("x-request-id"))
     return {"id": str(pid), "full_name": body.full_name.strip()}
 
 
@@ -65,39 +57,12 @@ def list_patients(s: Session = Depends(db)):
 async def upload_document(patient_id: UUID, request: Request, file: UploadFile = File(...),
                           doc_type: str = Form("other"), s: Session = Depends(db)):
     require_member(s, patient_id)
-    cfg = get_settings()
-    data = await file.read(cfg.max_upload_bytes + 1)
-    if not data:
-        raise problem(422, "validation-failed", "The file is empty")
-    if len(data) > cfg.max_upload_bytes:
-        raise problem(413, "validation-failed", "The file is too large")
-    mime = sniff_mime(data)
-    if mime is None and cfg.model_mode == "fake" and file.filename and file.filename.lower().endswith(".txt"):
-        mime = "text/plain"          # development only: the offline reader takes plain text
-    if mime is None:
-        raise problem(415, "validation-failed", "Please upload a photo (JPEG or PNG) or a PDF")
-    if doc_type not in ("prescription", "lab_report", "discharge_summary", "specialist_letter", "imaging_report", "other"):
-        doc_type = "other"
-
-    digest = sha256(data)
-    dup = s.execute(text("SELECT id FROM documents WHERE patient_id=:p AND sha256=:h"), {"p": patient_id, "h": digest}).first()
-    if dup:
-        return {"id": str(dup[0]), "status": "duplicate", "poll": f"/api/v1/documents/{dup[0]}"}
-
-    doc_id = uuid4()
-    key = new_key(str(patient_id), "documents", mime.split("/")[-1].replace("jpeg", "jpg"))
-    get_storage().put(key, data, mime)
-    s.execute(text("""INSERT INTO documents (id, patient_id, doc_type, original_filename, mime_type, byte_size, sha256, storage_key, uploaded_by)
-                      VALUES (:i, :p, CAST(:t AS doc_type), :f, :m, :b, :h, :k, :u)"""),
-              {"i": doc_id, "p": patient_id, "t": doc_type, "f": (file.filename or "")[:200], "m": mime, "b": len(data),
-               "h": digest, "k": key, "u": request.state.user_id})
-    write_audit(s, actor_type="user", actor_id=request.state.user_id, patient_id=patient_id, action="document.uploaded",
-                entity_type="document", entity_id=doc_id, after={"mime": mime, "bytes": len(data)})
-    timeline(s, patient_id=patient_id, event_type="document_uploaded", actor_type="user", actor_id=request.state.user_id,
-             summary=f"Uploaded {file.filename or 'a document'}", entity_type="document", entity_id=doc_id)
-    # Start the pipeline only after this request's transaction commits.
-    run_after_commit(s, lambda: process_document(doc_id))
-    return {"id": str(doc_id), "status": "uploaded", "doc_type": doc_type, "poll": f"/api/v1/documents/{doc_id}"}
+    data = await file.read(get_settings().max_upload_bytes + 1)
+    r = ingest_document(s, patient_id=patient_id, user_id=request.state.user_id, data=data, filename=file.filename or "", doc_type=doc_type)
+    if r["new"]:
+        doc_id = UUID(r["id"])
+        run_after_commit(s, lambda: process_document(doc_id))      # only after this request's transaction commits
+    return {"id": r["id"], "status": r["status"], "doc_type": r["doc_type"], "poll": f"/api/v1/documents/{r['id']}"}
 
 
 @router.get("/patients/{patient_id}/documents")
@@ -165,7 +130,7 @@ def care_plan(patient_id: UUID, s: Session = Depends(db)):
 
     tl = s.execute(text("""SELECT id, occurred_at, summary, event_type, actor_type FROM timeline_events
                            WHERE patient_id=:p ORDER BY occurred_at DESC LIMIT 40"""), {"p": patient_id}).mappings().all()
-    kind_map = {"document_uploaded": "document", "document_processed": "plan", "document_failed": "alert", "document_empty": "alert", "document_injection": "alert", "omission_check": "plan",
+    kind_map = {"document_uploaded": "document", "document_processed": "plan", "document_failed": "alert", "document_empty": "alert", "visit_started": "visit", "visit_processed": "visit", "visit_failed": "alert", "visit_consent_revoked": "alert", "follow_up_confirmed": "plan", "follow_up_done": "plan", "follow_up_dismissed": "plan", "document_injection": "alert", "omission_check": "plan",
                 "item_confirmed": "approval", "change_confirmed": "approval", "change_rejected": "approval", "approval": "approval",
                 "card_created": "card", "card_revoked": "card", "conflict_acknowledged": "alert", "omission_check": "plan",
                 "omission_asked": "plan", "omission_resolved": "plan"}

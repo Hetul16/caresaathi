@@ -120,7 +120,7 @@ def _item_key_match(s: Session, patient_id: UUID, kind: str, title: str, ing_nor
                    array_agg(mi.ingredient_normalized ORDER BY mi.ingredient_normalized) AS ings
             FROM care_plan_items c JOIN medicine_ingredients mi ON mi.item_id = c.id
             JOIN source_refs sr ON sr.id = c.source_ref_id
-            WHERE c.patient_id = :p AND c.is_current AND c.kind = 'medicine' AND sr.document_id IS DISTINCT FROM :d
+            WHERE c.patient_id = :p AND c.is_current AND c.kind = 'medicine' AND sr.document_id IS DISTINCT FROM CAST(:d AS uuid)
             GROUP BY c.id"""), {"p": patient_id, "d": document_id}).mappings().all()
         for r in rows:
             if same_medicine(title, ing_norm, r["title"], frozenset(r["ings"])):
@@ -128,7 +128,7 @@ def _item_key_match(s: Session, patient_id: UUID, kind: str, title: str, ing_nor
         return None
     rows = s.execute(text("""
         SELECT c.id, c.item_key, c.version, c.title, c.details FROM care_plan_items c JOIN source_refs sr ON sr.id = c.source_ref_id
-        WHERE c.patient_id = :p AND c.is_current AND c.kind = CAST(:k AS plan_item_kind) AND sr.document_id IS DISTINCT FROM :d"""),
+        WHERE c.patient_id = :p AND c.is_current AND c.kind = CAST(:k AS plan_item_kind) AND sr.document_id IS DISTINCT FROM CAST(:d AS uuid)"""),
         {"p": patient_id, "k": kind, "d": document_id}).mappings().all()
     for r in rows:
         if normalize_text(r["title"]) == normalize_text(title):
