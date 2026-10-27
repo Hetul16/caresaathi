@@ -5,13 +5,14 @@ import json
 from datetime import date
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..clients.storage import get_storage, new_key, sha256, sniff_mime
 from ..config import get_settings
+from ..db import run_after_commit
 from ..pipelines.documents import process_document
 from ..services.audit import timeline, write_audit
 from .deps import db, problem, require_member
@@ -58,7 +59,7 @@ def list_patients(s: Session = Depends(db)):
 
 
 @router.post("/patients/{patient_id}/documents", status_code=202)
-async def upload_document(patient_id: UUID, request: Request, bg: BackgroundTasks, file: UploadFile = File(...),
+async def upload_document(patient_id: UUID, request: Request, file: UploadFile = File(...),
                           doc_type: str = Form("other"), s: Session = Depends(db)):
     require_member(s, patient_id)
     cfg = get_settings()
@@ -92,7 +93,7 @@ async def upload_document(patient_id: UUID, request: Request, bg: BackgroundTask
     timeline(s, patient_id=patient_id, event_type="document_uploaded", actor_type="user", actor_id=request.state.user_id,
              summary=f"Uploaded {file.filename or 'a document'}", entity_type="document", entity_id=doc_id)
     # Start the pipeline only after this request's transaction commits.
-    bg.add_task(process_document, doc_id)
+    run_after_commit(s, lambda: process_document(doc_id))
     return {"id": str(doc_id), "status": "uploaded", "doc_type": doc_type, "poll": f"/api/v1/documents/{doc_id}"}
 
 

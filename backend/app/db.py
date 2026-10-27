@@ -5,12 +5,13 @@ transaction, so it can never leak between requests on a pooled connection. Keep 
 """
 from __future__ import annotations
 
+import threading
 from contextlib import contextmanager
 from functools import lru_cache
-from typing import Iterator
+from typing import Callable, Iterator
 from uuid import UUID
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -30,6 +31,23 @@ def engine_auth() -> Engine:
 @lru_cache
 def engine_worker() -> Engine:
     return create_engine(get_settings().database_url_worker, pool_pre_ping=True, pool_size=5)
+
+
+def run_after_commit(session: Session, fn: Callable[[], None]) -> None:
+    """Run fn on a background thread once this session's transaction has committed.
+    A job that reads rows written in the same request must start here, never before the commit."""
+    session.info.setdefault("after_commit", []).append(fn)
+
+
+@event.listens_for(Session, "after_commit")
+def _fire_after_commit(session: Session) -> None:
+    for fn in session.info.pop("after_commit", []):
+        threading.Thread(target=fn, daemon=True).start()
+
+
+@event.listens_for(Session, "after_rollback")
+def _drop_after_commit(session: Session) -> None:
+    session.info.pop("after_commit", None)
 
 
 def _set(session: Session, key: str, value: UUID | None) -> None:
