@@ -1,0 +1,9 @@
+SYNTHETIC DOCUMENT - FICTIONAL PATIENT
+SAMPLE LABORATORY - REPORT
+Page 1 of 1
+Date: 18/10/2026
+Patient: Ramesh Kulkarni, 72 y
+HbA1c 8.2 %
+Total cholesterol 214 mg/dL
+Reference ranges are printed by the laboratory
+Repeat HbA1c after 3 months

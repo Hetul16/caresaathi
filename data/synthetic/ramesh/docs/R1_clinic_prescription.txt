@@ -1,0 +1,11 @@
+SYNTHETIC DOCUMENT - FICTIONAL PATIENT
+SAMPLE CLINIC, PUNE - PRESCRIPTION
+Page 1 of 1
+Date: 14/09/2026
+Patient: Ramesh Kulkarni, 72 y
+Dr. Joshi
+Tab Amlodipine 10 mg 1-0-0 x 30 days qty 30
+Tab Metformin 500 mg 1-0-1 after food x 30 days qty 60
+Tab Atorvastatin 20 mg 0-0-1 x 30 days qty 30
+Tab Paraclear 500 (Paracetamol 500 mg) 1-1-1 if fever
+Review in 2 weeks

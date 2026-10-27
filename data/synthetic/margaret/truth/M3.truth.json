@@ -1,0 +1,18 @@
+{
+  "document_id": "M3",
+  "synthetic": true,
+  "items": [
+    {
+      "kind": "medicine",
+      "name": "Sulfamethoxazole",
+      "strength": "800 mg",
+      "frequency": "1-0-1"
+    }
+  ],
+  "planted": [
+    {
+      "case": "conflict_family",
+      "expect": "sulfonamide family flag after M2"
+    }
+  ]
+}

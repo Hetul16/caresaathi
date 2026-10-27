@@ -1,0 +1,19 @@
+{
+  "document_id": "R10",
+  "synthetic": true,
+  "items": [
+    {
+      "kind": "medicine",
+      "name": "Metformin",
+      "strength": "500 mg",
+      "frequency": "1-0-1"
+    }
+  ],
+  "planted": [
+    {
+      "case": "allergy_not_recorded",
+      "expect": "not recorded, never none"
+    }
+  ],
+  "allergy_state": "not_recorded"
+}

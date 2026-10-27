@@ -1,0 +1,141 @@
+{
+  "id": "V1",
+  "title": "Follow-up visit, Hinglish",
+  "language": "hi",
+  "synthetic": true,
+  "note": "Fictional script. Replayed answers are the recorded expected extraction, not a model.",
+  "speakers": {
+    "A": "doctor",
+    "B": "patient",
+    "C": "family"
+  },
+  "segments": [
+    {
+      "idx": 0,
+      "speaker": "A",
+      "start_ms": 0,
+      "end_ms": 5200,
+      "text": "Namaste Ramesh ji, kaise hain aap? Blood pressure ab thoda control mein hai."
+    },
+    {
+      "idx": 1,
+      "speaker": "B",
+      "start_ms": 5400,
+      "end_ms": 8200,
+      "text": "Haan doctor sahab, chakkar nahi aa raha ab."
+    },
+    {
+      "idx": 2,
+      "speaker": "A",
+      "start_ms": 8600,
+      "end_ms": 17800,
+      "text": "Achha hai. Ab main amlodipine ka dose kam kar raha hoon. Pehle 10 mg thi, ab aadhi, matlab 5 mg subah ek baar."
+    },
+    {
+      "idx": 3,
+      "speaker": "C",
+      "start_ms": 18200,
+      "end_ms": 21000,
+      "text": "Doctor, kya subah khaane ke baad leni hai?"
+    },
+    {
+      "idx": 4,
+      "speaker": "A",
+      "start_ms": 21400,
+      "end_ms": 26500,
+      "text": "Haan, subah naashte ke baad. Metformin 500 mg pehle jaisi, subah shaam khaane ke baad."
+    },
+    {
+      "idx": 5,
+      "speaker": "A",
+      "start_ms": 27000,
+      "end_ms": 30500,
+      "text": "Do hafte baad review ke liye aaiye."
+    },
+    {
+      "idx": 6,
+      "speaker": "A",
+      "start_ms": 31000,
+      "end_ms": 36500,
+      "text": "Agar chest pain ho to immediately emergency mein aana."
+    }
+  ],
+  "recorded_extraction": {
+    "schema_version": "visit.v1",
+    "speaker_roles": [
+      {
+        "label": "A",
+        "role": "doctor",
+        "name": "Dr. Joshi"
+      },
+      {
+        "label": "B",
+        "role": "patient"
+      },
+      {
+        "label": "C",
+        "role": "family"
+      }
+    ],
+    "items": [
+      {
+        "kind": "medicine",
+        "change": "changed",
+        "title": "Amlodipine 5 mg",
+        "confidence": 0.93,
+        "details": {
+          "ingredients": [
+            {
+              "name": "Amlodipine",
+              "strength": "5 mg"
+            }
+          ],
+          "dose_text": "5 mg",
+          "frequency_text": "1-0-0",
+          "instructions_text": "after breakfast"
+        },
+        "source": {
+          "segments": [
+            2,
+            4
+          ],
+          "quote": "ab main amlodipine ka dose kam kar raha hoon. Pehle 10 mg thi, ab aadhi, matlab 5 mg subah ek baar"
+        }
+      },
+      {
+        "kind": "warning_sign",
+        "change": "new",
+        "title": "Chest pain: come to the emergency",
+        "confidence": 0.9,
+        "details": {
+          "level_basis_quote": "Agar chest pain ho to immediately emergency mein aana."
+        },
+        "source": {
+          "segments": [
+            6
+          ],
+          "quote": "Agar chest pain ho to immediately emergency mein aana."
+        }
+      }
+    ],
+    "follow_ups": [
+      {
+        "what": "Review with the doctor",
+        "due_text": "Do hafte baad",
+        "segments": [
+          5
+        ],
+        "quote": "Do hafte baad review ke liye aaiye."
+      }
+    ],
+    "allergies_mentioned": [],
+    "unclear": []
+  },
+  "truth": {
+    "expect": [
+      "pending change: Amlodipine 10 mg -> 5 mg, source is the doctor's words, stays pending until a member confirms",
+      "warning sign level emergency from the doctor's wording",
+      "follow-up in 14 days computed by code, pending until confirmed"
+    ]
+  }
+}

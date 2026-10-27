@@ -15,6 +15,7 @@ Patient: Ramesh Kulkarni, 74 y
 Allergic to penicillin (rash)
 Tab Amoxicillin 500 mg 1-0-1 x 5 days
 Tab Metformin 500 mg 1-0-1 after food
+Tab Zolvanex 20 mg 1-0-0
 Go to the emergency immediately if chest pain
 """
 
@@ -49,8 +50,9 @@ def test_document_becomes_a_sourced_plan_with_an_allergy_flag(family):
     assert amox["match"] == "drug_family"
     assert amox["doctor_question"].rstrip().endswith("?")
     # Unknown is not safe: an ingredient the reference list cannot resolve is shown as such, never as clear.
-    metformin = next(c for c in plan["open_conflicts"] if c["medicine"].startswith("Metformin"))
-    assert metformin["match"] == "unresolved" and "could not check" in metformin["flag"].lower()
+    unknown = next(c for c in plan["open_conflicts"] if c["medicine"].startswith("Zolvanex"))
+    assert unknown["match"] == "unresolved" and "could not check" in unknown["flag"].lower()
+    assert not any(c["medicine"].startswith("Metformin") for c in plan["open_conflicts"])      # a known ingredient with no match is not flagged
     # Nothing a document says is confirmed until a named person does so.
     assert not any(i["confirmed"] for i in plan["items"])
 

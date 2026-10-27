@@ -17,6 +17,7 @@ from ..pipelines.documents import process_document
 from ..services.audit import timeline, write_audit
 from ..services.readmodel import age_of, item_detail, source_of
 from .deps import db, problem, require_member
+from ..services.tracking import duplicates as dup_groups
 from .plan import awaiting_actions, omission_list, pending_changes
 
 router = APIRouter(tags=["patients"])
@@ -164,7 +165,7 @@ def care_plan(patient_id: UUID, s: Session = Depends(db)):
 
     tl = s.execute(text("""SELECT id, occurred_at, summary, event_type, actor_type FROM timeline_events
                            WHERE patient_id=:p ORDER BY occurred_at DESC LIMIT 40"""), {"p": patient_id}).mappings().all()
-    kind_map = {"document_uploaded": "document", "document_processed": "plan", "document_failed": "alert",
+    kind_map = {"document_uploaded": "document", "document_processed": "plan", "document_failed": "alert", "document_empty": "alert", "document_injection": "alert", "omission_check": "plan",
                 "item_confirmed": "approval", "change_confirmed": "approval", "change_rejected": "approval", "approval": "approval",
                 "card_created": "card", "card_revoked": "card", "conflict_acknowledged": "alert", "omission_check": "plan",
                 "omission_asked": "plan", "omission_resolved": "plan"}
@@ -178,6 +179,7 @@ def care_plan(patient_id: UUID, s: Session = Depends(db)):
         "omissions": omission_list(s, patient_id),
         "approvals": awaiting_actions(s, patient_id) if member["can_approve"] else [],
         "can_approve": bool(member["can_approve"]),
+        "duplicates": dup_groups(s, patient_id),
         "timeline": [{"id": str(t["id"]), "at": t["occurred_at"].isoformat(), "actor": t["actor_type"].title(),
                       "text": t["summary"], "kind": kind_map.get(t["event_type"], "plan")} for t in tl],
         "last_updated_at": (last or pat["date_of_birth"] or date.today()).isoformat() if last else None,

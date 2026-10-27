@@ -1,0 +1,18 @@
+{
+  "document_id": "R7",
+  "synthetic": true,
+  "items": [
+    {
+      "kind": "medicine",
+      "name": "Amlodipine",
+      "strength": "5 mg",
+      "frequency": "1-0-0"
+    }
+  ],
+  "planted": [
+    {
+      "case": "two_reader",
+      "expect": "0.5 mg versus 5 mg: both readings shown"
+    }
+  ]
+}

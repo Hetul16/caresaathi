@@ -1,0 +1,12 @@
+{
+  "document_id": "R4",
+  "synthetic": true,
+  "items": [],
+  "planted": [
+    {
+      "case": "allergy_listed",
+      "expect": "penicillin, rash, source line 5"
+    }
+  ],
+  "allergy_state": "listed"
+}

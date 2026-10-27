@@ -49,6 +49,13 @@ class ExtractAllergy(Strict):
     source: DocSource
 
 
+class ExtractFollowUp(Strict):
+    """The words only ("in two weeks"). Code computes the date (D-31)."""
+    what: str = Field(min_length=1)
+    due_text: str = Field(min_length=1)
+    source: DocSource
+
+
 class Provider(Strict):
     name: str = ""
     specialty: str = ""
@@ -69,6 +76,7 @@ class ExtractV1(Strict):
     allergies: list[ExtractAllergy] = Field(default_factory=list)
     providers: list[Provider] = Field(default_factory=list)
     unreadable: list[Unreadable] = Field(default_factory=list)
+    follow_ups: list[ExtractFollowUp] = Field(default_factory=list)
 
 
 class SpeakerRole(Strict):
@@ -100,6 +108,12 @@ class VisitAllergy(Strict):
     source: VisitSource
 
 
+class VisitFollowUp(Strict):
+    what: str = Field(min_length=1)
+    due_text: str = Field(min_length=1)
+    source: VisitSource
+
+
 class VisitUnclear(Strict):
     segment_ids: list[str]
     note: str
@@ -111,3 +125,4 @@ class VisitV1(Strict):
     items: list[VisitItem] = Field(default_factory=list)
     allergies_mentioned: list[VisitAllergy] = Field(default_factory=list)
     unclear: list[VisitUnclear] = Field(default_factory=list)
+    follow_ups: list[VisitFollowUp] = Field(default_factory=list)

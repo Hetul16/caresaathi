@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     database_url_worker: str = "postgresql+psycopg://caresaathi_worker:change-me-worker@127.0.0.1:5432/caresaathi"
     database_url_admin: str = "postgresql+psycopg://postgres:postgres@127.0.0.1:5432/caresaathi"
 
+    synthetic_dir: str = str(ROOT / "data" / "synthetic")
     storage_backend: str = "local"            # local | s3
     local_storage_dir: str = str(ROOT / ".storage")
     s3_endpoint: str = "http://localhost:9000"

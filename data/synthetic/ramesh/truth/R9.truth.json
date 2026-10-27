@@ -1,0 +1,25 @@
+{
+  "document_id": "R9",
+  "synthetic": true,
+  "items": [
+    {
+      "kind": "medicine",
+      "name": "Amlodipine",
+      "strength": "10 mg",
+      "frequency": "1-0-0"
+    },
+    {
+      "kind": "medicine",
+      "name": "Metformin",
+      "strength": "500 mg",
+      "frequency": "1-0-1"
+    }
+  ],
+  "planted": [
+    {
+      "case": "incomplete_document",
+      "expect": "after R1, no omission flags: page 2 of 2 is missing"
+    }
+  ],
+  "completeness": "incomplete"
+}

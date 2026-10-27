@@ -1,0 +1,12 @@
+{
+  "document_id": "R3",
+  "synthetic": true,
+  "items": [],
+  "planted": [
+    {
+      "case": "follow_up",
+      "expect": "repeat HbA1c after 3 months; values are not interpreted"
+    }
+  ],
+  "completeness": "complete"
+}

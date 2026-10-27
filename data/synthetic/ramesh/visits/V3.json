@@ -1,0 +1,65 @@
+{
+  "id": "V3",
+  "title": "Self-correction and an unclear medicine, Hindi",
+  "language": "hi",
+  "synthetic": true,
+  "note": "The doctor corrects himself and says 'that white one'. Unclear speech must go to the family, not be guessed.",
+  "speakers": {
+    "A": "doctor",
+    "B": "patient"
+  },
+  "segments": [
+    {
+      "idx": 0,
+      "speaker": "A",
+      "start_ms": 0,
+      "end_ms": 6500,
+      "text": "Ab woh safed wali goli, nahi nahi, woh jo pehle di thi, usse badal dete hain."
+    },
+    {
+      "idx": 1,
+      "speaker": "B",
+      "start_ms": 6900,
+      "end_ms": 9000,
+      "text": "Kaun si goli doctor sahab?"
+    },
+    {
+      "idx": 2,
+      "speaker": "A",
+      "start_ms": 9400,
+      "end_ms": 13000,
+      "text": "Main nurse se naam likhwa deta hoon, abhi pakka nahi bol sakta."
+    }
+  ],
+  "recorded_extraction": {
+    "schema_version": "visit.v1",
+    "speaker_roles": [
+      {
+        "label": "A",
+        "role": "doctor"
+      },
+      {
+        "label": "B",
+        "role": "patient"
+      }
+    ],
+    "items": [],
+    "follow_ups": [],
+    "allergies_mentioned": [],
+    "unclear": [
+      {
+        "segments": [
+          0,
+          2
+        ],
+        "note": "The medicine is not named. 'That white one' cannot be mapped to a medicine."
+      }
+    ]
+  },
+  "truth": {
+    "expect": [
+      "no pending change is created",
+      "the unclear note is shown to the family"
+    ]
+  }
+}

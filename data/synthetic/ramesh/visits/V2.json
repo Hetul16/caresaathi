@@ -1,0 +1,91 @@
+{
+  "id": "V2",
+  "title": "HbA1c recheck and a new medicine, Marathi with English",
+  "language": "mr",
+  "synthetic": true,
+  "experimental": true,
+  "note": "Marathi accuracy is unverified. Do not show this in the demo until measured. Replayed answers are recorded, not a model.",
+  "speakers": {
+    "A": "doctor",
+    "B": "patient"
+  },
+  "segments": [
+    {
+      "idx": 0,
+      "speaker": "A",
+      "start_ms": 0,
+      "end_ms": 6000,
+      "text": "Ramesh kaka, sugar ajun thodi vadhlelich aahe. Tin mahinyani HbA1c punha karuya."
+    },
+    {
+      "idx": 1,
+      "speaker": "A",
+      "start_ms": 6400,
+      "end_ms": 13000,
+      "text": "Ani aapan Glimepiride 1 mg suru karuya, sakali jevanachya adhi ek vela."
+    },
+    {
+      "idx": 2,
+      "speaker": "B",
+      "start_ms": 13400,
+      "end_ms": 16000,
+      "text": "Thik aahe doctor."
+    }
+  ],
+  "recorded_extraction": {
+    "schema_version": "visit.v1",
+    "speaker_roles": [
+      {
+        "label": "A",
+        "role": "doctor"
+      },
+      {
+        "label": "B",
+        "role": "patient"
+      }
+    ],
+    "items": [
+      {
+        "kind": "medicine",
+        "change": "new",
+        "title": "Glimepiride 1 mg",
+        "confidence": 0.85,
+        "details": {
+          "ingredients": [
+            {
+              "name": "Glimepiride",
+              "strength": "1 mg"
+            }
+          ],
+          "dose_text": "1 mg",
+          "frequency_text": "1-0-0",
+          "instructions_text": "before breakfast"
+        },
+        "source": {
+          "segments": [
+            1
+          ],
+          "quote": "aapan Glimepiride 1 mg suru karuya, sakali jevanachya adhi ek vela"
+        }
+      }
+    ],
+    "follow_ups": [
+      {
+        "what": "Repeat HbA1c",
+        "due_text": "Tin mahinyani",
+        "segments": [
+          0
+        ],
+        "quote": "Tin mahinyani HbA1c punha karuya"
+      }
+    ],
+    "allergies_mentioned": [],
+    "unclear": []
+  },
+  "truth": {
+    "expect": [
+      "new medicine pending",
+      "follow-up in 3 months computed by code"
+    ]
+  }
+}

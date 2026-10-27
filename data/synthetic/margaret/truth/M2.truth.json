@@ -1,0 +1,18 @@
+{
+  "document_id": "M2",
+  "synthetic": true,
+  "items": [
+    {
+      "kind": "medicine",
+      "name": "Lisinopril",
+      "strength": "10 mg",
+      "frequency": "1-0-0"
+    }
+  ],
+  "planted": [
+    {
+      "case": "allergy_listed",
+      "expect": "sulfa listed"
+    }
+  ]
+}

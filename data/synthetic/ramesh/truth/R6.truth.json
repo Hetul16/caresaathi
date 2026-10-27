@@ -1,0 +1,11 @@
+{
+  "document_id": "R6",
+  "synthetic": true,
+  "items": [],
+  "planted": [
+    {
+      "case": "needs_review",
+      "expect": "nothing is added to the plan; the document is shown as needing a person"
+    }
+  ]
+}

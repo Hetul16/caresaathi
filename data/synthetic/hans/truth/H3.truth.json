@@ -1,0 +1,18 @@
+{
+  "document_id": "H3",
+  "synthetic": true,
+  "items": [
+    {
+      "kind": "medicine",
+      "name": "Zolvanex",
+      "strength": "20 mg",
+      "frequency": "1-0-0"
+    }
+  ],
+  "planted": [
+    {
+      "case": "unresolved",
+      "expect": "could not check, ask the pharmacist"
+    }
+  ]
+}

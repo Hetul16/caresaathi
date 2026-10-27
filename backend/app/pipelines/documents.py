@@ -73,11 +73,24 @@ def process_document(document_id: UUID) -> None:
         res = apply_document_extraction(
             s, patient_id=patient_id, document_id=document_id, validated=validated, raw_output=raw, page_lines=page_lines,
             user_id=doc["uploaded_by"], client=client, model_call_id=mc2)
+        if validated.injection_lines:
+            n = validated.injection_lines
+            timeline(s, patient_id=patient_id, event_type="document_injection", actor_type="system", actor_id=None,
+                     summary=f"{n} line{'s' if n != 1 else ''} in this document read like instructions to CareSaathi, so {'they were' if n != 1 else 'it was'} ignored. "
+                             "Please look at the document.", entity_type="document", entity_id=document_id)
+            write_audit(s, actor_type="system", actor_id=None, patient_id=patient_id, action="document.injection_ignored",
+                        entity_type="document", entity_id=document_id, after={"lines": n})
         final_type = meta.doc_type if doc["doc_type"] == "other" else doc["doc_type"]
         flags = raise_omission_flags(s, patient_id=patient_id, document_id=document_id, doc_type=final_type,
                                      items=validated.data.items, client=client)
+        d = validated.data
+        found_nothing = not (d.items or d.allergies or d.follow_ups or d.allergy_statement == "none_stated")
+        if found_nothing:
+            timeline(s, patient_id=patient_id, event_type="document_empty", actor_type="system", actor_id=None,
+                     summary="We could not read anything we could use from this document. Please look at it, or upload a clearer copy.",
+                     entity_type="document", entity_id=document_id)
         s.execute(text("UPDATE documents SET status = CAST(:st AS doc_status) WHERE id=:i"),
-                  {"st": "needs_review" if validated.needs_review else "extracted", "i": document_id})
+                  {"st": "needs_review" if (validated.needs_review or found_nothing) else "extracted", "i": document_id})
         write_audit(s, actor_type="system", actor_id=None, patient_id=patient_id, action="document.processed",
                     entity_type="document", entity_id=document_id,
                     after={"new": res.new_items, "changed": res.changed_items, "review": res.skipped_for_review,

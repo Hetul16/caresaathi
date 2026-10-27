@@ -53,3 +53,26 @@ def parse_document_date(text: str, *, other_cue: str | None = None) -> date:
     if other_cue == "mdy":
         return date(y, a, b)
     raise AmbiguousDate(text)
+
+
+_LEADING_FORM = re.compile(r"^(?:tab|tablet|cap|capsule|syp|syrup|inj)\b\.?\s*", re.IGNORECASE)
+
+
+def brand_key(title: str) -> str:
+    """The name part of a medicine title: everything before the first digit, lowercased. "Amlodipine 10 mg" -> "amlodipine"."""
+    t = _LEADING_FORM.sub("", title.strip())
+    m = re.search(r"\d", t)
+    return re.sub(r"\s+", " ", (t[:m.start()] if m else t)).strip().lower()
+
+
+def same_medicine(title_a: str, ings_a: frozenset[str], title_b: str, ings_b: frozenset[str]) -> bool:
+    """True when a line is a new VERSION of an existing item (a dose or schedule change), false when it is a different item.
+
+    Same full ingredient set is required. A different brand of the same ingredient is a different item, so a possible
+    duplicate stays visible instead of being merged away. A generic name matches a brand of that ingredient."""
+    if not ings_a or ings_a != ings_b:
+        return False
+    a, b = brand_key(title_a), brand_key(title_b)
+    if not a or not b:
+        return False
+    return a == b or a in ings_a or b in ings_a or a.startswith(b) or b.startswith(a)
