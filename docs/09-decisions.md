@@ -206,6 +206,10 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Status:** Accepted (Oct 27, 2026)
 - **Decision:** API tests run against a scratch database (`caresaathi_test`) cloned from the dev schema, grants, policies and drug list inside the same Postgres container, and are skipped when Docker is not available. The baseline `db/tests/run_tests.sh` drops cluster-wide roles, so it runs only in a throwaway container. The `minio/minio` image could not be pulled on the dev machine, so uploads use the local storage adapter behind the same interface until an S3-compatible service is chosen.
 
+### D-39 Visual identity: "evidence after dark"
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** The interface is dark, with signal lime for verified and primary, coral for danger, amber for voice and ice for sources. Evidence (source sheets, the Emergency Card) stays white paper. Display type is Bricolage Grotesque, body is Atkinson Hyperlegible, labels are JetBrains Mono. Motion is a separate layer (`motion.css`, `components/fx`), transform and opacity only, disabled for reduced motion and for touch pointers. Replaces the cream and teal "paper and ink" look. Details in `design-system/caresaathi/MASTER.md`.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

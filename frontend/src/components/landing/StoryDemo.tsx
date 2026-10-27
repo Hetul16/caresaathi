@@ -66,6 +66,7 @@ export function StoryDemo() {
     <div
       ref={root}
       className="story"
+      data-tilt=""
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}

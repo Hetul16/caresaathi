@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/Icon";
+import { CountUp, Marquee, SplitText } from "@/components/fx/Bits";
 import { Reveal } from "@/components/landing/Reveal";
 import { StoryDemo } from "@/components/landing/StoryDemo";
 import { useAuth } from "@/lib/auth";
@@ -26,6 +27,15 @@ const STEPS: { icon: IconName; title: string; body: string }[] = [
   { icon: "shield", title: "Check", body: "Code compares ingredients with the family’s allergies and earlier lists." },
   { icon: "users", title: "Confirm", body: "A named person confirms. Every action lands in the audit log." },
 ];
+// Sample evidence lines, all from the synthetic demo patient.
+const EVIDENCE: { text: string; src: string; warn?: boolean }[] = [
+  { text: "Allergic to penicillin (rash)", src: "discharge.pdf · p.1 line 3", warn: true },
+  { text: "Metformin 500 mg, after food", src: "discharge.pdf · p.1 line 4" },
+  { text: "“Take it after breakfast, not before”", src: "Dr. Joshi · 00:41" },
+  { text: "Go to the emergency if chest pain", src: "discharge.pdf · p.1 line 7", warn: true },
+  { text: "Amlodipine 5 mg, morning", src: "prescription.jpg · line 2" },
+  { text: "Review in two weeks", src: "discharge.pdf · p.2 line 1" },
+];
 
 export default function Home() {
   const { status } = useAuth();
@@ -33,9 +43,10 @@ export default function Home() {
     <div className="landing">
       <section className="wrap hero2">
         <div className="hero2-copy">
-          <p className="pill pill-marigold" style={{ width: "fit-content" }}><Icon name="sparkle" className="icon" /> Built for the Meta Global AI Developer Hackathon</p>
+          <p className="kicker"><b>Hackathon build</b> <span className="hide-sm">Meta Global AI Developer Hackathon</span></p>
           <h1>
-            Every instruction,<br /><em>with its source.</em>
+            <SplitText text="Every instruction," start={120} />
+            <em><SplitText text="with its source." className="gradient" start={420} /></em>
           </h1>
           <p className="lead">
             CareSaathi listens to the doctor visit, reads the prescriptions and turns them into one living care plan for your family.
@@ -43,9 +54,9 @@ export default function Home() {
           </p>
           <div className="hero-actions">
             {status === "authed"
-              ? <Link className="btn btn-primary btn-lg" href="/app">Open your care plan</Link>
-              : <Link className="btn btn-primary btn-lg" href="/signup">Create a free account</Link>}
-            <Link className="btn btn-quiet btn-lg" href="/demo"><Icon name="sparkle" /> Try the live demo</Link>
+              ? <Link className="btn btn-primary btn-lg" data-magnetic="" href="/app">Open your care plan</Link>
+              : <Link className="btn btn-primary btn-lg" data-magnetic="" href="/signup">Create a free account <Icon name="check" /></Link>}
+            <Link className="btn btn-quiet btn-lg" data-magnetic="" href="/demo"><Icon name="sparkle" /> Try the live demo</Link>
           </div>
           <ul className="trust-row" aria-label="Principles">
             <li><Icon name="quote" /> Sourced</li>
@@ -54,6 +65,29 @@ export default function Home() {
           </ul>
         </div>
         <StoryDemo />
+      </section>
+
+      <Marquee>
+        {EVIDENCE.map((e) => (
+          <span key={e.src} className={`mq ${e.warn ? "warn" : ""}`}><i />{e.text}<b>{e.src}</b></span>
+        ))}
+      </Marquee>
+
+      <section className="wrap band">
+        <Reveal className="stats">
+          <div className="stat">
+            <p className="stat-n grad"><CountUp to={3} /></p>
+            <p>languages spoken to the patient: English, Hindi and Marathi.</p>
+          </div>
+          <div className="stat">
+            <p className="stat-n grad"><CountUp to={5} /></p>
+            <p>checks before a line from a document enters the plan.</p>
+          </div>
+          <div className="stat">
+            <p className="stat-n grad"><CountUp to={0} /></p>
+            <p>medicines ever called safe. It points to the source and asks the doctor.</p>
+          </div>
+        </Reveal>
       </section>
 
       <section className="wrap band">
@@ -78,11 +112,11 @@ export default function Home() {
       <section className="wrap band">
         <Reveal as="header" className="band-head">
           <p className="eyebrow">How a line earns its place</p>
-          <h2>From a blurry photo to a plan you can trust.</h2>
+          <h2>From a blurry photo to a plan you can <span className="grad">trust.</span></h2>
         </Reveal>
         <ol className="pipeline">
           {STEPS.map((s, i) => (
-            <Reveal as="li" key={s.title} delay={i * 90} className="pipe-step">
+            <Reveal as="li" key={s.title} delay={i * 110} className="pipe-step card">
               <span className="pipe-n">{i + 1}</span>
               <span className="pipe-ic"><Icon name={s.icon} /></span>
               <h3>{s.title}</h3>
@@ -98,13 +132,13 @@ export default function Home() {
           <h2>For the person, the family and the stranger in an emergency.</h2>
         </Reveal>
         <div className="trio">
-          <Reveal className="trio-card trio-elder">
+          <Reveal className="trio-card trio-elder card">
             <div className="trio-art"><div className="mini-orb big"><span /><span /><span /><i><Icon name="mic" /></i></div></div>
             <h3>Elder mode</h3>
             <p>One big button. Large type. Everything is spoken, slowly, with “repeat that”. Only confirmed medicines are read out.</p>
             <Link href="/demo/elder" className="trio-link">See Elder mode →</Link>
           </Reveal>
-          <Reveal className="trio-card" delay={100}>
+          <Reveal className="trio-card card" delay={100}>
             <div className="trio-art trio-art-fam">
               <div className="fam-chip rose"><Icon name="alert" className="icon" /> Penicillin</div>
               <div className="fam-chip"><Icon name="quote" className="icon" /> p.1 line 4</div>
@@ -114,7 +148,7 @@ export default function Home() {
             <p>Plan, sources, approvals and history. Confirm what was heard in the clinic, and see exactly who changed what.</p>
             <Link href="/demo" className="trio-link">See Family mode →</Link>
           </Reveal>
-          <Reveal className="trio-card" delay={200}>
+          <Reveal className="trio-card card" delay={200}>
             <div className="trio-art trio-art-card">
               <div className="ec"><b>EMERGENCY CARD</b><span>Allergies first</span><span>Updated 28 Oct, 9:12</span><i /></div>
             </div>
@@ -130,8 +164,8 @@ export default function Home() {
           <h2>Bring every instruction home.</h2>
           <p>Free to try. Synthetic data only in this build.</p>
           <div className="hero-actions" style={{ justifyContent: "center" }}>
-            <Link className="btn btn-lg cta-primary" href={status === "authed" ? "/app" : "/signup"}>{status === "authed" ? "Open your care plan" : "Create an account"}</Link>
-            <Link className="btn btn-lg cta-ghost" href="/demo">Explore the demo</Link>
+            <Link className="btn btn-lg cta-primary" data-magnetic="" href={status === "authed" ? "/app" : "/signup"}>{status === "authed" ? "Open your care plan" : "Create an account"}</Link>
+            <Link className="btn btn-lg cta-ghost" data-magnetic="" href="/demo">Explore the demo</Link>
           </div>
         </Reveal>
         <footer className="foot">

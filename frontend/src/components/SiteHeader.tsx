@@ -9,11 +9,11 @@ export function Logo() {
   // Two figures under one roof line: a companion walking beside you.
   return (
     <svg viewBox="0 0 40 40" aria-hidden="true">
-      <rect x="1" y="1" width="38" height="38" rx="11" fill="var(--ink)" />
-      <path d="M8 22 20 11l12 11" fill="none" stroke="var(--marigold)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="15" cy="25" r="3" fill="var(--paper)" />
-      <circle cx="25" cy="25" r="3" fill="var(--paper)" />
-      <path d="M11 33c0-3 2-5 4-5s4 2 4 5M21 33c0-3 2-5 4-5s4 2 4 5" fill="none" stroke="var(--paper)" strokeWidth="2.2" strokeLinecap="round" />
+      <rect x="1" y="1" width="38" height="38" rx="12" fill="var(--signal)" />
+      <path d="M8 22 20 11l12 11" fill="none" stroke="var(--on-signal)" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="15" cy="25" r="3" fill="var(--on-signal)" />
+      <circle cx="25" cy="25" r="3" fill="var(--on-signal)" />
+      <path d="M11 33c0-3 2-5 4-5s4 2 4 5M21 33c0-3 2-5 4-5s4 2 4 5" fill="none" stroke="var(--on-signal)" strokeWidth="2.2" strokeLinecap="round" />
     </svg>
   );
 }

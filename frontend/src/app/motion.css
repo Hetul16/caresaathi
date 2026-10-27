@@ -1,0 +1,86 @@
+/* The motion layer. Everything here is transform or opacity so it stays on the GPU, and all of it is switched
+   off for people who ask for reduced motion (bottom of the file). Pointer effects are driven by FxProvider. */
+
+/* ---------- living backdrop ---------- */
+.backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: var(--paper); }
+.backdrop i { position: absolute; display: block; }
+.blob { border-radius: 50%; filter: blur(70px); will-change: transform; }
+.b1 { width: 62vmax; height: 62vmax; left: -18vmax; top: -26vmax; background: radial-gradient(closest-side, rgba(200, 241, 53, 0.3), transparent); animation: drift 24s ease-in-out infinite alternate; }
+.b2 { width: 54vmax; height: 54vmax; right: -20vmax; top: -12vmax; background: radial-gradient(closest-side, rgba(111, 211, 255, 0.26), transparent); animation: drift 30s ease-in-out infinite alternate-reverse; }
+.b3 { width: 48vmax; height: 48vmax; left: 28vw; bottom: -30vmax; background: radial-gradient(closest-side, rgba(255, 107, 87, 0.16), transparent); animation: drift 34s ease-in-out infinite alternate; }
+@keyframes drift { to { transform: translate(-60px, 40px) scale(1.1); } }
+.grid {
+  inset: 0; background-image: linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 72px 72px; -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000, transparent 78%); mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000, transparent 78%);
+}
+.grain {
+  inset: 0; opacity: 0.12; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.cursor-glow {
+  left: 0; top: 0; width: 540px; height: 540px; border-radius: 50%; opacity: 0; transition: opacity 600ms;
+  background: radial-gradient(closest-side, rgba(200, 241, 53, 0.15), transparent);
+  transform: translate(calc(var(--cx, 50vw) - 270px), calc(var(--cy, 30vh) - 270px)); will-change: transform;
+}
+.fx-on .cursor-glow { opacity: 1; }
+
+/* ---------- scroll progress hairline ---------- */
+.scroll-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 80; transform-origin: 0 50%; transform: scaleX(0); background: linear-gradient(90deg, var(--signal), var(--ice)); box-shadow: 0 0 12px var(--signal); pointer-events: none; }
+@supports (animation-timeline: scroll()) {
+  .scroll-progress { animation: progress linear both; animation-timeline: scroll(root block); }
+  @keyframes progress { to { transform: scaleX(1); } }
+}
+@supports not (animation-timeline: scroll()) { .scroll-progress { display: none; } }
+
+/* ---------- page and list entrances ---------- */
+/* Opacity only on the page wrapper: a transform or filter here would turn it into the containing block for
+   fixed children (the SOS bar, the source drawer) and make them jump when the animation ends. */
+.page-in { animation: pageIn 600ms var(--ease) both; }
+@keyframes pageIn { from { opacity: 0; } }
+
+.stack > :not(.banner-listed), .grid-2 > *, .dose-grid > * { animation: listRise 600ms var(--ease) both; }
+.stack > :nth-child(2), .grid-2 > :nth-child(2), .dose-grid > :nth-child(2) { animation-delay: 70ms; }
+.stack > :nth-child(3), .grid-2 > :nth-child(3), .dose-grid > :nth-child(3) { animation-delay: 140ms; }
+.stack > :nth-child(4), .grid-2 > :nth-child(4), .dose-grid > :nth-child(4) { animation-delay: 210ms; }
+.stack > :nth-child(5), .grid-2 > :nth-child(5) { animation-delay: 280ms; }
+.stack > :nth-child(n + 6), .grid-2 > :nth-child(n + 6) { animation-delay: 340ms; }
+@keyframes listRise { from { opacity: 0; transform: translateY(18px) scale(0.985); } }
+
+/* ---------- headline: words rise out of a mask ---------- */
+.split { display: inline; }
+.split-w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+.split-w > span { display: inline-block; opacity: 0; transform: translateY(105%) rotate(5deg); filter: blur(8px); animation: wordUp 900ms var(--ease) forwards; }
+@keyframes wordUp { to { opacity: 1; transform: none; filter: none; } }
+.split.gradient .split-w > span {
+  background: linear-gradient(100deg, var(--signal) 0%, var(--ice) 50%, var(--signal) 100%); background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  animation: wordUp 900ms var(--ease) forwards, sheen 6s linear infinite;
+}
+
+/* ---------- evidence ticker ---------- */
+.marquee { overflow: hidden; border-block: 1px solid var(--line-soft); padding: 14px 0; background: rgba(255, 255, 255, 0.02);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.marquee-track { display: flex; width: max-content; animation: marquee var(--speed, 38s) linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+.marquee-set { display: flex; gap: 14px; padding-right: 14px; }
+.mq { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); }
+.mq b { color: var(--ice); font-weight: 600; }
+.mq i { width: 7px; height: 7px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 10px var(--signal); }
+.mq.warn i { background: var(--coral); box-shadow: 0 0 10px var(--coral); }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+/* ---------- 3D tilt (pointer driven) ---------- */
+[data-tilt] { transform: perspective(1100px) rotateX(calc(var(--ty, 0) * -5deg)) rotateY(calc(var(--tx, 0) * 7deg)); transition: transform 350ms var(--ease); will-change: transform; }
+
+/* ---------- toast ---------- */
+[role="status"][style*="position: fixed"] { animation: toastIn 450ms var(--spring) both; }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 24px) scale(0.9); } }
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  .reveal { opacity: 1; transform: none; filter: none; }
+  .marquee-track { animation: none; }
+  .scroll-progress, .cursor-glow { display: none; }
+  [data-tilt], .trio-card { transform: none; }
+}
