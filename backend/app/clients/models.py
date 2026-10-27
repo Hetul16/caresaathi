@@ -349,8 +349,16 @@ class FakeModelClient:
             text = (f"{facts.get('a')} and {facts.get('b')} both list {facts.get('ingredient')}. "
                     "Could you or the pharmacist confirm whether both are meant to be taken?")
         elif kind == "explanation":
-            text = (f"{facts.get('title')}: {facts.get('detail') or 'as written in the document'}. "
-                    "This is what the document says. If anything is unclear, please ask the doctor or pharmacist.")
+            title, detail = facts.get("title"), facts.get("detail")
+            if language == "hi":
+                text = (f"{title}: {detail or 'दस्तावेज़ में जैसा लिखा है'}। यह वही है जो आपके दस्तावेज़ में लिखा है। "
+                        "कुछ भी साफ़ न हो तो डॉक्टर या फार्मासिस्ट से पूछें।")
+            elif language == "mr":
+                text = (f"{title}: {detail or 'कागदपत्रात लिहिल्याप्रमाणे'}. हेच तुमच्या कागदपत्रात लिहिले आहे. "
+                        "काही स्पष्ट नसल्यास डॉक्टर किंवा फार्मासिस्टला विचारा.")
+            else:
+                text = (f"{title}: {detail or 'as written in the document'}. "
+                        "This is what the document says. If anything is unclear, please ask the doctor or pharmacist.")
         else:
             text = "Please ask the doctor or pharmacist about this."
         return text, self._usage("word_" + kind)

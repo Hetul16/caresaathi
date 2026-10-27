@@ -342,3 +342,15 @@ def test_visit_quote_must_be_in_cited_segments():
 
 def test_normalize_text_nfkc():
     assert normalize_text("ＡＢＣ  d") == "abc d"
+
+
+@pytest.mark.parametrize("text,lang", [
+    ("तुमच्या कागदपत्रांत लिहिलेली ऍलर्जी:\n• Penicillin (rash)", "mr"),
+    ("तुमच्या कुटुंबाने ही औषधे पक्की केली आहेत.", "mr"),
+    ("अजून काहीही बदलले नाही.", "mr"),
+    ("आपके दस्तावेज़ों में लिखी एलर्जी:\n• Penicillin (rash)", "hi"),
+    ("आपके परिवार ने ये दवाइयाँ पक्की की हैं।", "hi"),
+    ("Your documents say there are no known allergies.", "en"),
+])
+def test_detect_language_on_short_replies(text, lang):
+    assert detect_language(text) == lang
