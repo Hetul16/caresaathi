@@ -6,8 +6,8 @@ export type AllergyState = "listed" | "no_known_allergies" | "not_recorded";
 
 export type SourceRef =
   | { kind: "document"; document_id: string; document_title: string; page: number; line_start?: number; quote: string }
-  | { kind: "visit_segment"; visit_id: string; speaker: string; at_ms: number; quote: string }
-  | { kind: "family_input"; stated_by: string; quote: string };
+  | { kind: "visit_segment"; visit_id?: string; speaker?: string; at_ms?: number; quote: string }
+  | { kind: "family_input"; stated_by?: string; quote: string };
 
 export interface Allergy {
   allergy_key: string;
@@ -88,7 +88,10 @@ export interface CarePlan {
   last_updated_at: string | null;
   reference_list_reviewed: boolean;
   can_approve?: boolean;           // live plans only: whether this member may confirm and approve
+  duplicates?: DuplicateGroup[];
 }
+
+export interface DuplicateGroup { ingredient: string; medicines: string[]; sources: SourceRef[]; question: string }
 
 export interface EmergencyCardData {
   patient: { name: string; age: number | null; blood_group?: string | null; language: Lang };
@@ -102,3 +105,32 @@ export interface EmergencyCardData {
 }
 
 export interface CardLink { id: string; hint: string; status: "active" | "revoked" | "expired"; created_at: string; expires_at: string | null }
+
+// ---- live-only shapes (backend read models) ----
+export interface FollowUp { id: string; what: string; due_text: string; anchor_date: string | null; anchor_kind: "document" | "visit" | null; due_date: string | null;
+  status: "pending" | "confirmed" | "done" | "dismissed"; acted_by: string | null; source: SourceRef; how: string }
+export interface SupplyRow { id: string; medicine: string; quantity: number; unit: string; daily_units: number | null; start_date: string; estimated_run_out: string | null;
+  confirmed_by: string | null; source: SourceRef | null; how: string }
+export interface HistoryVersion { version: number; title: string; detail: string | null; status: string; current: boolean; at: string; confirmed_by: string | null; source: SourceRef }
+export interface MedicineHistory { item_key: string; title: string; versions: HistoryVersion[] }
+
+export interface VisitRow { id: string; status: "recording" | "processing" | "needs_review" | "completed" | "failed" | "cancelled"; origin: "recording" | "mock"; doctor_name: string | null; started_at: string; duration_ms: number | null }
+export interface VisitDetail extends VisitRow {
+  hospital: string | null; language_hint: string; audio_deleted: boolean; failure_note: string | null; transcript_hidden: boolean;
+  speakers: { label: string; role: string; name: string | null; mapped_by: string; confirmed: boolean }[];
+  segments: { id: string; seq: number; speaker: string; role: string; start_ms: number; end_ms: number; text: string }[];
+  unclear: { note: string; segment_ids: string[] }[];
+  changes: { id: string; change_type: string; status: string; title: string | null; quote: string }[];
+  follow_ups: { what: string; due_text: string; due_date: string | null; status: string }[];
+  consents: { id: string; role: string; given_by: string; granted_at: string; revoked_at: string | null }[];
+}
+export interface Member { id: string; user_id: string; name: string; role: string; relationship: string | null; status: string; can_approve: boolean; can_manage_members: boolean; can_view_recordings: boolean }
+export interface Invite { id: string; hint: string; role: string; relationship: string | null; status: "open" | "accepted" | "revoked" | "expired"; can_approve: boolean; can_view_recordings: boolean; can_manage_members: boolean; expires_at: string }
+export interface ChatReply { id: string; text: string; language: Lang; intent: string; kind: "answer" | "refusal" | "plain"; sources: SourceRef[]; passed: boolean; heard?: string }
+export interface ChatLine { direction: "inbound" | "outbound"; text: string; language: string; at: string }
+export interface Explanation { id: string; text: string; passed: boolean; confirmed: boolean; source: SourceRef }
+export interface FridgeSheet { patient: string; language: Lang; allergy_state: AllergyState; allergies: { substance: string; reaction: string | null }[];
+  medicines: { title: string; detail: string | null; when: Record<"morning" | "noon" | "evening" | "night", number>; source: string }[];
+  warning_signs: { title: string; level: string }[]; doctors: { name: string; hospital: string; phone: string }[]; generated_at: string; note: string }
+export interface TrustCategory { name: string; description: string; total: number; passed: number; failures: { id: string; input: string; expected: string; actual: string }[] }
+export interface TrustRun { run_id: string | null; ran_at: string; git_sha: string | null; model: string; stored: boolean; total: number; passed: number; categories: TrustCategory[]; disclaimer: string }

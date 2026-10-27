@@ -14,8 +14,8 @@ function mmss(ms: number) {
 
 export function describe(src: SourceRef): string {
   if (src.kind === "document") return `${src.document_title}, p.${src.page}${src.line_start ? ` line ${src.line_start}` : ""}`;
-  if (src.kind === "visit_segment") return `${src.speaker}, visit at ${mmss(src.at_ms)}`;
-  return `Said by ${src.stated_by}`;
+  if (src.kind === "visit_segment") return src.speaker ? `${src.speaker}, visit${src.at_ms != null ? ` at ${mmss(src.at_ms)}` : ""}` : "The doctor's words, from the visit";
+  return src.stated_by ? `Said by ${src.stated_by}` : "Said by a family member";
 }
 
 export function SourceProvider({ children }: { children: ReactNode }) {
@@ -74,13 +74,13 @@ export function SourceProvider({ children }: { children: ReactNode }) {
             )}
             {src.kind === "visit_segment" && (
               <div className="sheet">
-                <p className="dim" style={{ marginBottom: 8 }}>{src.speaker} · {mmss(src.at_ms)}</p>
+                <p className="dim" style={{ marginBottom: 8 }}>{src.speaker ?? "Doctor"}{src.at_ms != null ? ` · ${mmss(src.at_ms)}` : ""}</p>
                 <blockquote><mark>{src.quote}</mark></blockquote>
               </div>
             )}
             {src.kind === "family_input" && (
               <div className="sheet">
-                <p className="dim" style={{ marginBottom: 8 }}>{src.stated_by}</p>
+                <p className="dim" style={{ marginBottom: 8 }}>{src.stated_by ?? "Family member"}</p>
                 <blockquote><mark>{src.quote}</mark></blockquote>
               </div>
             )}

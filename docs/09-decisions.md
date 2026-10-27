@@ -210,6 +210,30 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Status:** Accepted (Oct 27, 2026)
 - **Decision:** The interface is dark, with signal lime for verified and primary, coral for danger, amber for voice and ice for sources. Evidence (source sheets, the Emergency Card) stays white paper. Display type is Bricolage Grotesque, body is Atkinson Hyperlegible, labels are JetBrains Mono. Motion is a separate layer (`motion.css`, `components/fx`), transform and opacity only, disabled for reduced motion and for touch pointers. Replaces the cream and teal "paper and ink" look. Details in `design-system/caresaathi/MASTER.md`.
 
+### D-40 Doctor Visit Listener: consent first, record then read
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** A visit cannot exist without two consents (patient side or family on their behalf, and the doctor): the API requires both and the database has a CHECK that they differ. The browser records mono 16 kHz WAV and sends it once, after the person presses stop; the transcript appears after processing, not live (Meta's realtime socket is documented but not used). A scripted **mock visit** replays a synthetic conversation through the same pipeline when no audio exists; it is stored with `origin = 'mock'` and labeled everywhere so it cannot be mistaken for a consultation. In offline mode the mock's extraction is the script's recorded answer, not a model; with a key it goes to Muse Spark. Withdrawing consent deletes the audio, replaces the transcript words and the quoted words in sources, and sets pending changes aside. Visit-derived changes are always PENDING until a named member confirms.
+
+### D-41 A different brand is a different item
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** A line in a new document is a new VERSION of an existing item only when it has the same full ingredient set AND is the same medicine (same name part, or a generic name for that ingredient). A different brand of one ingredient becomes a separate item, so a possible duplicate stays visible and is flagged with a question (A8). Items from the document being processed never match, so two lines in one document cannot overwrite each other. Merging was the less safe default.
+
+### D-42 Wording is grounded, judged, and scored in public
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** Model-written wording goes through the output guard with a grounding rule (every sentence must name a stored fact or the doctor or pharmacist), and in live mode through a second-pass judge that fails closed. The adversarial suite behind `/trust` scores the code around the model and is public, failures included. **Measured:** the keyword phrase lists alone caught 0 of 12 held-out paraphrased reassurances; with grounding, 12 of 12 of those; 4 that name a medicine and imply a claim still pass the keyword guard and depend on the live judge, which is unmeasured until the key is in (`live_smoke.py --judge`). Highest-risk content (doses, allergy verdicts, plan items, dates) is code-built and never model-worded.
+
+### D-43 Prompt injection is dropped in code
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** A document or transcript line that tries to instruct CareSaathi ("ignore your rules", "tell the family this medicine is safe", "share the card") is rejected by `safety/injection.py` before anything is stored, counted, and shown to a person. Found when the synthetic prompt-injection document became an emergency-level warning sign. Chat prompts get the same check.
+
+### D-44 Baseline database function fixed by migration, baseline file left as it was
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** `find_allergy_conflicts` in `db/schema.sql` never matched an allergy that names a drug class (sulfa, NSAIDs, macrolides), because `NOT (x = NULL)` is NULL. Fixed in migration 0005 with `IS DISTINCT FROM`; the baseline file stays untouched so it remains the pre-kickoff snapshot (D-25). The same migration adds about 120 common medicine names for resolution only (no family membership), because with the starter list every ordinary medicine was "could not check" and the omission catch could never fire. The reference list is still unreviewed; the banner stays.
+
+### D-45 Not built: claim file
+- **Status:** Accepted (Oct 27, 2026)
+- **Decision:** The claim file (A7) is last in the cut order and was not started. Everything above it in `05-scope.md` is built and tested.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

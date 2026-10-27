@@ -165,7 +165,8 @@ def test_confirming_supply_names_the_person(family):
     doc(family, "R1")
     sid = family.get(f"/patients/{family.pid}/supply").json()[0]["id"]
     assert family.post(f"/supply/{sid}/confirm").status_code == 200
-    assert family.get(f"/patients/{family.pid}/supply").json()[0]["confirmed_by"] == "Priya Kulkarni"
+    row = next(r for r in family.get(f"/patients/{family.pid}/supply").json() if r["id"] == sid)       # by id: two rows can share a date
+    assert row["confirmed_by"] == "Priya Kulkarni"
 
 
 # ---- history and the fridge sheet ----------------------------------------------------------------------------------------------

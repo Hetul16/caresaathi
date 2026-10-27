@@ -69,7 +69,7 @@ def list_supply(s: Session, patient_id: UUID) -> list[dict[str, Any]]:
         FROM supply_records sp JOIN care_plan_items c ON c.id = sp.care_plan_item_id
         LEFT JOIN source_refs sr ON sr.id = sp.source_ref_id LEFT JOIN documents d ON d.id = sr.document_id
         LEFT JOIN users u ON u.id = sp.confirmed_by
-        WHERE sp.patient_id = :p AND c.is_current AND c.status = 'active' ORDER BY sp.estimated_run_out NULLS LAST"""), {"p": patient_id}).mappings().all()
+        WHERE sp.patient_id = :p AND c.is_current AND c.status = 'active' ORDER BY sp.estimated_run_out NULLS LAST, c.title"""), {"p": patient_id}).mappings().all()
     out = []
     for r in rows:
         q = float(r["quantity"])

@@ -55,6 +55,17 @@ Base URL: `https://api.meta.ai/v1`. Docs: https://dev.meta.ai/docs
 - `keywords` and `languageBias` hints do not guarantee spelling.
 - Published results: streaming WER 3.1% and average diarization error rate 17.5%, without named languages for the WER and without Indian-language benchmarks. Meta recommends testing with your own audio and accents.
 
+### Muse Voice Transcribe file endpoint: request and response (read from dev.meta.ai on Oct 27, 2026; NOT yet called)
+
+Sources: `dev.meta.ai/docs/speech-to-text` and `/docs/api-reference/voice/transcribe`.
+
+- `POST https://api.meta.ai/v1/asr/transcribe?sessionId=<optional>`, header `Authorization: Bearer <key>`, `Accept: application/json` for one buffered reply.
+- Body is `multipart/form-data` with two parts: `request`, JSON with `{"mode":"DIARIZATION","model":"muse-voice-transcribe-1.0","audioEncoding":"WAV"}`, and `audio`, the clip.
+- Audio must be a RIFF/WAVE container, mono, 16-bit integer PCM at 16 or 24 kHz. Limits: 32 MB (413 above) and 10 minutes (400 above). Convert anything else first.
+- The reply carries `sessionId`, `transcript`, `audioDurationMs` and `turns[]` of `{turnId, startMs, endMs, transcript, speaker}`. `speaker` is a bare letter and appears only in `DIARIZATION`; `turns` is empty in `PUSH_TO_TALK`; there are no word-level timestamps.
+- Not stated in what was read: the request field names for a language hint and keywords. The client sends neither. Check the Voice schemas page (`/docs/api-reference/voice/schemas`) before relying on them.
+- Implemented in `backend/app/clients/models.py` (`LiveModelClient.transcribe_audio`) and `backend/app/safety/audio.py` (the browser records exactly this WAV). Run `backend/scripts/live_smoke.py --audio V1 <file.wav>` for real numbers.
+
 ## Verified, unverified and open
 
 | Item | Status | Next step |

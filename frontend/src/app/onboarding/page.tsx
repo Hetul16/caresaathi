@@ -1,9 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { AppGate } from "@/components/AppGate";
 import { Field } from "@/components/auth/Field";
+import { DemoLoader } from "@/components/DemoLoader";
 import { Icon } from "@/components/Icon";
+import { pendingJoin } from "@/lib/join";
 import { api, ApiError } from "@/lib/api";
 import { writeSelected } from "@/lib/live";
 import type { Lang } from "@/lib/types";
@@ -19,6 +21,7 @@ function Form() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [busy, setBusy] = useState(false);
+  useEffect(() => { if (pendingJoin()) router.replace("/app"); }, [router]);        // joining a family by invitation: nothing to create
 
   async function submit(ev: FormEvent) {
     ev.preventDefault();
@@ -65,6 +68,11 @@ function Form() {
         {formError && <div className="form-error" role="alert"><Icon name="alert" /> {formError}</div>}
         <button className="btn btn-primary btn-block" disabled={busy}>{busy ? "Creating…" : "Continue to the care plan"}</button>
       </form>
+      <div className="card card-pad" style={{ marginTop: 18, display: "grid", gap: 10 }}>
+        <h2 style={{ fontSize: 22 }}>Just want to look around?</h2>
+        <p style={{ color: "var(--ink-2)" }}>Load a fictional family. CareSaathi reads synthetic documents and a mock doctor visit with the same steps a real upload uses, so you can see every feature working.</p>
+        <DemoLoader onReady={(id) => { writeSelected(id); router.replace("/app"); }} />
+      </div>
     </div>
   );
 }

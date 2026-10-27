@@ -1,21 +1,27 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import type { CarePlan, PendingChange } from "@/lib/types";
+import type { CarePlan, Explanation, PendingChange } from "@/lib/types";
 import { api, ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { Icon, type IconName } from "../Icon";
 import { SourceProvider } from "../Source";
-import { AllergyBanner, ApprovalCard, ChangeCard, ConflictCard, OmissionCard, PlanItemCard, Timeline, useToast } from "./parts";
+import { AllergyBanner, ApprovalCard, ChangeCard, ConflictCard, DuplicateCard, OmissionCard, PlanItemCard, Timeline, useToast } from "./parts";
 import { CardPanel } from "./CardPanel";
+import { ChatPanel } from "./ChatPanel";
+import { FamilyPanel } from "./FamilyPanel";
+import { TrackerPanel } from "./TrackerPanel";
 import { UploadPanel } from "./UploadPanel";
+import { VisitPanel } from "./VisitPanel";
+import { DemoLoader } from "../DemoLoader";
+import { writeSelected } from "@/lib/live";
 
-type Tab = "overview" | "plan" | "documents" | "card" | "approvals" | "history";
+type Tab = "overview" | "plan" | "documents" | "visits" | "tracker" | "ask" | "card" | "family" | "approvals" | "history";
 
 export interface LiveCtx { patientId: string; reload: () => void }
 
 export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePath: "/demo" | "/app"; live?: LiveCtx }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [tab, setTab] = useState<Tab>("overview");
   // The demo keeps its choices in memory; a live plan is always re-read from the server after a decision.
   const [demoChanges, setDemoChanges] = useState<PendingChange[]>(p.pending_changes);
@@ -40,10 +46,19 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
     ? (key: string) => run(() => post(`/patients/${live.patientId}/plan-items/${key}/confirm`), "Confirmed by you. Recorded in the history.")
     : undefined;
 
+  const explain = live ? async (key: string): Promise<Explanation> => api<Explanation>(`/patients/${live.patientId}/explain`, { method: "POST", json: { item_key: key, language: lang } }) : undefined;
+  async function confirmAll() {
+    const todo = p.items.filter((i) => !i.confirmed && !i.alert_level);
+    if (!live || todo.length === 0) return;
+    await run(async () => { for (const i of todo) await post(`/patients/${live.patientId}/plan-items/${i.item_key}/confirm`); }, `Confirmed ${todo.length} item${todo.length === 1 ? "" : "s"} by you. Each is recorded in the history.`);
+  }
+
   const tabs: { id: Tab; label: string; icon: IconName; count?: number }[] = [
     { id: "overview", label: "Overview", icon: "heart" },
     { id: "plan", label: "Care plan", icon: "list", count: p.items.filter((i) => !i.confirmed && !i.alert_level).length || undefined },
-    ...(live ? [{ id: "documents" as Tab, label: "Documents", icon: "file" as IconName }, { id: "card" as Tab, label: "Emergency Card", icon: "card" as IconName }] : []),
+    ...(live ? [{ id: "documents" as Tab, label: "Documents", icon: "file" as IconName }, { id: "visits" as Tab, label: "Visits", icon: "mic" as IconName },
+                { id: "tracker" as Tab, label: "Tracker", icon: "calendar" as IconName }, { id: "ask" as Tab, label: "Ask", icon: "quote" as IconName },
+                { id: "card" as Tab, label: "Emergency Card", icon: "card" as IconName }, { id: "family" as Tab, label: "Family", icon: "users" as IconName }] : []),
     { id: "approvals", label: "Approvals", icon: "shield", count: waiting || undefined },
     { id: "history", label: "History", icon: "history" },
   ];
@@ -98,7 +113,10 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
                     <span className="empty-ic"><Icon name="file" /></span>
                     <h2>Start with one document</h2>
                     <p>Upload a prescription or discharge summary. CareSaathi reads it, and every line it adds will point back to the exact text it came from.</p>
-                    <button className="btn btn-primary" onClick={() => setTab("documents")}><Icon name="file" /> Add a document</button>
+                    <div className="item-foot" style={{ justifyContent: "center" }}>
+                      <button className="btn btn-primary" onClick={() => setTab(live ? "documents" : "overview")}><Icon name="file" /> Add a document</button>
+                      {live && <DemoLoader onReady={(id) => { writeSelected(id); window.location.assign("/app"); }} label="Or load the demo family" />}
+                    </div>
                   </div>
                 )}
                 {p.open_conflicts.map((c) => live
@@ -106,6 +124,7 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
                       onAsk={() => copyQuestion(c.doctor_question)}
                       onAck={() => run(() => post(`/allergy-conflicts/${c.id}/acknowledge`), "Marked as seen. It is still a question for the doctor.")} />
                   : <ConflictCard key={c.id} c={c} onAsk={ask} />)}
+                {(p.duplicates ?? []).map((d) => <DuplicateCard key={d.ingredient} d={d} onCopy={() => copyQuestion(d.question)} />)}
                 {p.omissions.map((o) => live
                   ? <OmissionCard key={o.id} o={o} onAsk={() => copyQuestion(o.question)}
                       onState={(state) => run(() => post(`/reconciliation-flags/${o.id}/state`, { state }), state === "asked" ? "Noted that you asked." : "Marked as settled with the doctor.")} />
@@ -140,9 +159,13 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
 
             {tab === "plan" && (
               <>
-                <div className="section-title"><h2>Medicines</h2><span className="pill">{medicines.length}</span></div>
+                <div className="section-title"><h2>Medicines</h2>
+                  <span className="item-foot">
+                    {live && canApprove && p.items.some((i) => !i.confirmed && !i.alert_level) && <button className="btn btn-quiet btn-sm" onClick={confirmAll}><Icon name="check" /> Confirm all</button>}
+                    {live && <Link href="/app/fridge" className="btn btn-quiet btn-sm"><Icon name="list" /> Fridge sheet</Link>}
+                    <span className="pill">{medicines.length}</span></span></div>
                 {medicines.length === 0 && <p className="card card-pad">No medicines yet.</p>}
-                <div className="grid-2">{medicines.map((i) => <PlanItemCard key={i.item_key} i={i} onConfirm={confirmItem} />)}</div>
+                <div className="grid-2">{medicines.map((i) => <PlanItemCard key={i.item_key} i={i} onConfirm={confirmItem} explain={explain} />)}</div>
                 {others.length > 0 && <div className="section-title"><h2>Tests, visits and diet</h2></div>}
                 <div className="grid-2">{others.map((i) => <PlanItemCard key={i.item_key} i={i} onConfirm={confirmItem} />)}</div>
                 {warnings.length > 0 && <div className="section-title"><h2>Warning signs</h2></div>}
@@ -151,6 +174,14 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
             )}
 
             {tab === "documents" && live && <UploadPanel patientId={live.patientId} onProcessed={live.reload} />}
+
+            {tab === "visits" && live && <VisitPanel patientId={live.patientId} canManage={p.can_approve !== false} onChange={live.reload} toast={toast.show} />}
+
+            {tab === "tracker" && live && <TrackerPanel patientId={live.patientId} canApprove={canApprove} toast={toast.show} onChange={live.reload} />}
+
+            {tab === "ask" && live && <ChatPanel patientId={live.patientId} />}
+
+            {tab === "family" && live && <FamilyPanel patientId={live.patientId} canManage={p.can_approve !== false} toast={toast.show} />}
 
             {tab === "card" && live && <CardPanel patientId={live.patientId} onChange={live.reload} toast={toast.show} />}
 

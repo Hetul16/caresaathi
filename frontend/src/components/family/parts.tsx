@@ -1,9 +1,11 @@
 "use client";
 import { useCallback, useState } from "react";
-import type { Allergy, AllergyState, ApprovalAction, OmissionFlag, OpenConflict, PendingChange, PlanItem, TimelineEvent } from "@/lib/types";
+import type { Allergy, AllergyState, ApprovalAction, DuplicateGroup, Explanation, OmissionFlag, OpenConflict, PendingChange, PlanItem, TimelineEvent } from "@/lib/types";
 import { useI18n } from "@/lib/i18n";
 import { Icon, type IconName } from "../Icon";
 import { SourceChip } from "../Source";
+import { useSpeech } from "../VoiceOrb";
+import { speechLocale } from "@/lib/i18n";
 
 export function AllergyBanner({ state, items, reviewed }: { state: AllergyState; items: Allergy[]; reviewed: boolean }) {
   const { t } = useI18n();
@@ -134,7 +136,50 @@ const levelPill: Record<NonNullable<PlanItem["alert_level"]>, [string, string]> 
   watch: ["pill pill-blue", "Keep watching"],
 };
 
-export function PlanItemCard({ i, onConfirm }: { i: PlanItem; onConfirm?: (key: string) => void }) {
+export function DuplicateCard({ d, onCopy }: { d: DuplicateGroup; onCopy: () => void }) {
+  return (
+    <article className="card conflict" style={{ boxShadow: "inset 5px 0 0 var(--gold), var(--shadow-1)" }}>
+      <div className="item-top">
+        <div>
+          <p className="eyebrow" style={{ color: "var(--gold)" }}>Two medicines list the same ingredient</p>
+          <h3 style={{ fontSize: 24, marginTop: 4 }}>{d.medicines.join(" and ")}</h3>
+        </div>
+        <span className="pill pill-amber">{d.ingredient}</span>
+      </div>
+      <div className="item-foot">{d.sources.map((s, k) => <SourceChip key={k} source={s} />)}</div>
+      <div className="question-box">{d.question}</div>
+      <div className="item-foot">
+        <button className="btn btn-primary btn-sm" onClick={onCopy}><Icon name="copy" /> Copy the question</button>
+        <span style={{ color: "var(--ink-3)", fontSize: 14.5 }}>It may be the same medicine under two brand names. Only the doctor or pharmacist can say.</span>
+      </div>
+    </article>
+  );
+}
+
+function ExplainBox({ itemKey, explain }: { itemKey: string; explain: (key: string) => Promise<Explanation> }) {
+  const { lang } = useI18n();
+  const { speak, speaking, stop } = useSpeech(speechLocale[lang]);
+  const [e, setE] = useState<Explanation | null>(null);
+  const [busy, setBusy] = useState(false);
+  async function go() {
+    setBusy(true);
+    try { setE(await explain(itemKey)); } finally { setBusy(false); }
+  }
+  if (!e) return <button className="btn btn-quiet btn-sm" disabled={busy} onClick={go}><Icon name="volume" /> {busy ? "Writing…" : "Explain this"}</button>;
+  return (
+    <div className="question-box" style={{ flexBasis: "100%" }}>
+      <p>{e.text}</p>
+      <div className="item-foot" style={{ marginTop: 8 }}>
+        <button className="btn btn-quiet btn-sm" onClick={() => (speaking ? stop() : speak(e.text))}><Icon name="volume" /> {speaking ? "Stop" : "Listen"}</button>
+        <SourceChip source={e.source} />
+        {!e.confirmed && <span className="pill pill-marigold">Not confirmed yet</span>}
+        {!e.passed && <span className="pill pill-amber">A safe default text is shown</span>}
+      </div>
+    </div>
+  );
+}
+
+export function PlanItemCard({ i, onConfirm, explain }: { i: PlanItem; onConfirm?: (key: string) => void; explain?: (key: string) => Promise<Explanation> }) {
   const slots: ["morning" | "noon" | "evening" | "night", string][] = [["morning", "M"], ["noon", "N"], ["evening", "E"], ["night", "Ni"]];
   return (
     <article className={`card item ${i.confirmed ? "" : "unconfirmed"}`}>
@@ -162,6 +207,7 @@ export function PlanItemCard({ i, onConfirm }: { i: PlanItem; onConfirm?: (key: 
         {onConfirm && !i.confirmed && !i.alert_level && (
           <button className="btn btn-leaf btn-sm" onClick={() => onConfirm(i.item_key)}><Icon name="check" /> Confirm this is right</button>
         )}
+        {explain && i.kind === "medicine" && <ExplainBox itemKey={i.item_key} explain={explain} />}
       </div>
     </article>
   );

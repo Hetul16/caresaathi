@@ -24,3 +24,7 @@ dist/
 
 # local dev object storage
 .storage/
+
+# live-model runs and rendered documents (regenerate with data/synthetic/render.py)
+data/live_runs/
+data/synthetic/rendered/

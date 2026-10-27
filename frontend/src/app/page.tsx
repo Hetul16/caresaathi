@@ -170,7 +170,7 @@ export default function Home() {
         </Reveal>
         <footer className="foot">
           <p>CareSaathi is a care-coordination and document-organization tool. It does not give medical advice, diagnose, or decide on treatment. Always ask the doctor or pharmacist.</p>
-          <p>Hackathon build · synthetic data only · Hindi, Marathi and English</p>
+          <p>Hackathon build · synthetic data only · Hindi, Marathi and English · <Link href="/trust" style={{ color: "var(--signal)", fontWeight: 700 }}>See what was tested, and what was not caught →</Link></p>
         </footer>
       </section>
     </div>
