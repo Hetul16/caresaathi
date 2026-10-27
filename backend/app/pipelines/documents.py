@@ -12,8 +12,10 @@ from sqlalchemy import text
 from ..clients.models import DocFile, ModelError, get_model_client
 from ..clients.storage import get_storage
 from ..db import worker_session
+from ..safety.reconcile import document_completeness
 from ..safety.validate import validate_extraction
 from ..services.audit import timeline, write_audit
+from ..services.omissions import raise_omission_flags
 from ..services.plan import apply_document_extraction, record_model_call
 
 log = logging.getLogger("caresaathi.pipeline")
@@ -50,8 +52,9 @@ def process_document(document_id: UUID) -> None:
     with worker_session() as s:
         mc1 = record_model_call(s, patient_id, u1)
         mc2 = record_model_call(s, patient_id, u2)
-        s.execute(text("UPDATE documents SET extracted_text=:t, page_count=:n WHERE id=:i"),
-                  {"t": "\f".join(page_texts[k] for k in sorted(page_texts)), "n": len(pages), "i": document_id})
+        ordered = [page_texts[k] for k in sorted(page_texts)]
+        s.execute(text("UPDATE documents SET extracted_text=:t, page_count=:n, completeness=:c WHERE id=:i"),
+                  {"t": "\f".join(ordered), "n": len(pages), "c": document_completeness(ordered), "i": document_id})
         if not validated.ok:
             s.execute(text("""INSERT INTO extractions (patient_id, origin, document_id, model_call_id, schema_version, raw_output,
                                                       validated, validation_errors, status)
@@ -70,9 +73,12 @@ def process_document(document_id: UUID) -> None:
         res = apply_document_extraction(
             s, patient_id=patient_id, document_id=document_id, validated=validated, raw_output=raw, page_lines=page_lines,
             user_id=doc["uploaded_by"], client=client, model_call_id=mc2)
+        final_type = meta.doc_type if doc["doc_type"] == "other" else doc["doc_type"]
+        flags = raise_omission_flags(s, patient_id=patient_id, document_id=document_id, doc_type=final_type,
+                                     items=validated.data.items, client=client)
         s.execute(text("UPDATE documents SET status = CAST(:st AS doc_status) WHERE id=:i"),
                   {"st": "needs_review" if validated.needs_review else "extracted", "i": document_id})
         write_audit(s, actor_type="system", actor_id=None, patient_id=patient_id, action="document.processed",
                     entity_type="document", entity_id=document_id,
                     after={"new": res.new_items, "changed": res.changed_items, "review": res.skipped_for_review,
-                           "conflicts": len(res.conflicts)})
+                           "conflicts": len(res.conflicts), "omission_flags": len(flags)})

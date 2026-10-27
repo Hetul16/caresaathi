@@ -15,7 +15,9 @@ from ..config import get_settings
 from ..db import run_after_commit
 from ..pipelines.documents import process_document
 from ..services.audit import timeline, write_audit
+from ..services.readmodel import age_of, item_detail, source_of
 from .deps import db, problem, require_member
+from .plan import awaiting_actions, omission_list, pending_changes
 
 router = APIRouter(tags=["patients"])
 
@@ -116,19 +118,17 @@ def get_document(doc_id: UUID, s: Session = Depends(db)):
             "pages": [t.split("\n") for t in (r["extracted_text"] or "").split("\f")] if r["extracted_text"] else []}
 
 
-def _source(r) -> dict:
-    return {"kind": "document", "document_id": str(r["document_id"]), "document_title": r["doc_title"] or "Document",
-            "page": r["page"], "line_start": r["line_start"], "quote": r["quote"]}
+_source = source_of
 
 
 @router.get("/patients/{patient_id}/care-plan")
 def care_plan(patient_id: UUID, s: Session = Depends(db)):
-    require_member(s, patient_id)
+    member = require_member(s, patient_id)
     pat = s.execute(text("SELECT id, full_name, date_of_birth, preferred_language FROM patients WHERE id=:p"), {"p": patient_id}).mappings().one()
 
     state = s.execute(text("SELECT state FROM v_allergy_effective WHERE patient_id=:p"), {"p": patient_id}).scalar_one()
     al_rows = s.execute(text("""
-        SELECT a.allergy_key, a.substance, a.reaction, a.severity, sr.document_id, sr.page, sr.line_start, sr.quote,
+        SELECT a.allergy_key, a.substance, a.reaction, a.severity, sr.kind AS source_kind, sr.document_id, sr.page, sr.line_start, sr.quote,
                coalesce(d.original_filename, d.doc_type::text) AS doc_title
         FROM allergies a JOIN source_refs sr ON sr.id = a.source_ref_id LEFT JOIN documents d ON d.id = sr.document_id
         WHERE a.patient_id=:p AND a.is_current AND a.active"""), {"p": patient_id}).mappings().all()
@@ -137,7 +137,7 @@ def care_plan(patient_id: UUID, s: Session = Depends(db)):
 
     item_rows = s.execute(text("""
         SELECT c.item_key, c.version, c.kind, c.title, c.details, c.alert_level, c.date_missing, c.confirmed_by, c.confirmed_at,
-               u.display_name AS confirmer, sr.document_id, sr.page, sr.line_start, sr.quote,
+               u.display_name AS confirmer, sr.kind AS source_kind, sr.document_id, sr.page, sr.line_start, sr.quote,
                coalesce(d.original_filename, d.doc_type::text) AS doc_title
         FROM care_plan_items c JOIN source_refs sr ON sr.id = c.source_ref_id
         LEFT JOIN documents d ON d.id = sr.document_id LEFT JOIN users u ON u.id = c.confirmed_by
@@ -145,8 +145,7 @@ def care_plan(patient_id: UUID, s: Session = Depends(db)):
     items = []
     for r in item_rows:
         det = r["details"] or {}
-        detail = ", ".join(x for x in (det.get("frequency_text"), f"{det['duration_days']} days" if det.get("duration_days") else None,
-                                       det.get("instructions_text")) if x) or None
+        detail = item_detail(det)
         items.append({"item_key": str(r["item_key"]), "version": r["version"], "kind": r["kind"], "title": r["title"],
                       "detail": detail, "schedule": det.get("schedule"), "alert_level": r["alert_level"],
                       "confirmed": r["confirmed_by"] is not None, "confirmed_by": r["confirmer"],
@@ -165,14 +164,20 @@ def care_plan(patient_id: UUID, s: Session = Depends(db)):
 
     tl = s.execute(text("""SELECT id, occurred_at, summary, event_type, actor_type FROM timeline_events
                            WHERE patient_id=:p ORDER BY occurred_at DESC LIMIT 40"""), {"p": patient_id}).mappings().all()
-    kind_map = {"document_uploaded": "document", "document_processed": "plan", "document_failed": "alert"}
+    kind_map = {"document_uploaded": "document", "document_processed": "plan", "document_failed": "alert",
+                "item_confirmed": "approval", "change_confirmed": "approval", "change_rejected": "approval", "approval": "approval",
+                "card_created": "card", "card_revoked": "card", "conflict_acknowledged": "alert", "omission_check": "plan",
+                "omission_asked": "plan", "omission_resolved": "plan"}
     last = s.execute(text("SELECT max(created_at) FROM care_plan_items WHERE patient_id=:p"), {"p": patient_id}).scalar()
     return {
         "patient": {"id": str(pat["id"]), "name": pat["full_name"], "preferred_language": pat["preferred_language"],
-                    "age": (date.today().year - pat["date_of_birth"].year) if pat["date_of_birth"] else None},
+                    "age": age_of(pat["date_of_birth"])},
         "reference_list_reviewed": False,
         "allergies": {"state": state, "items": allergies},
-        "open_conflicts": open_conflicts, "items": items, "pending_changes": [], "omissions": [], "approvals": [],
+        "open_conflicts": open_conflicts, "items": items, "pending_changes": pending_changes(s, patient_id),
+        "omissions": omission_list(s, patient_id),
+        "approvals": awaiting_actions(s, patient_id) if member["can_approve"] else [],
+        "can_approve": bool(member["can_approve"]),
         "timeline": [{"id": str(t["id"]), "at": t["occurred_at"].isoformat(), "actor": t["actor_type"].title(),
                       "text": t["summary"], "kind": kind_map.get(t["event_type"], "plan")} for t in tl],
         "last_updated_at": (last or pat["date_of_birth"] or date.today()).isoformat() if last else None,

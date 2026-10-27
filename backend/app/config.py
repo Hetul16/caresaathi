@@ -10,10 +10,10 @@ ROOT = Path(__file__).resolve().parents[2]
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ROOT / ".env", extra="ignore")
 
-    database_url_app: str = "postgresql+psycopg://caresaathi_app:change-me-app@localhost:5432/caresaathi"
-    database_url_auth: str = "postgresql+psycopg://caresaathi_auth:change-me-auth@localhost:5432/caresaathi"
-    database_url_worker: str = "postgresql+psycopg://caresaathi_worker:change-me-worker@localhost:5432/caresaathi"
-    database_url_admin: str = "postgresql+psycopg://postgres:postgres@localhost:5432/caresaathi"
+    database_url_app: str = "postgresql+psycopg://caresaathi_app:change-me-app@127.0.0.1:5432/caresaathi"
+    database_url_auth: str = "postgresql+psycopg://caresaathi_auth:change-me-auth@127.0.0.1:5432/caresaathi"
+    database_url_worker: str = "postgresql+psycopg://caresaathi_worker:change-me-worker@127.0.0.1:5432/caresaathi"
+    database_url_admin: str = "postgresql+psycopg://postgres:postgres@127.0.0.1:5432/caresaathi"
 
     storage_backend: str = "local"            # local | s3
     local_storage_dir: str = str(ROOT / ".storage")

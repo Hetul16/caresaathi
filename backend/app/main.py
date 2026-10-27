@@ -9,7 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from .api import auth, patients
+from .api import auth, cards, patients, plan
+from .services.errors import ServiceError
 from .config import get_settings
 from .db import engine_app
 
@@ -46,6 +47,11 @@ async def http_exc(request: Request, exc: HTTPException):
     return _problem(request, exc.status_code, d.get("type", "error"), d.get("title", ""), d.get("detail", ""))
 
 
+@app.exception_handler(ServiceError)
+async def service_exc(request: Request, exc: ServiceError):
+    return _problem(request, exc.status, exc.code, exc.message)
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exc(request: Request, exc: RequestValidationError):
     errs = [{"field": ".".join(str(x) for x in e["loc"][1:]), "message": e["msg"].removeprefix("Value error, ")} for e in exc.errors()]
@@ -54,6 +60,8 @@ async def validation_exc(request: Request, exc: RequestValidationError):
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(patients.router, prefix="/api/v1")
+app.include_router(plan.router, prefix="/api/v1")
+app.include_router(cards.router, prefix="/api/v1")
 
 
 @app.get("/healthz")

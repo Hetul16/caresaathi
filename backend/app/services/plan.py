@@ -63,7 +63,36 @@ def make_source_ref(s: Session, *, patient_id: UUID, document_id: UUID, page: in
         {"p": patient_id, "d": document_id, "pg": page, "ls": line_start, "le": line_end, "q": quote}).scalar_one()
 
 
-def _ingredients_of(kind: str, title: str, details: dict) -> list[tuple[str, str | None]]:
+def insert_item_version(s: Session, *, patient_id: UUID, item_key: UUID, version: int, supersedes_id: UUID | None,
+                        kind: str, title: str, details: dict, alert_level: str | None, due_at: Any, date_missing: bool,
+                        source_ref_id: UUID, created_by_type: str, created_by: UUID | None, status: str = "active") -> UUID:
+    """Write one immutable version of a plan item and retire the one it replaces. The only writer of care_plan_items."""
+    new_id = uuid4()
+    if supersedes_id:        # retire the old version first: only one version of an item may be current
+        s.execute(text("UPDATE care_plan_items SET is_current = false WHERE id = :id"), {"id": supersedes_id})
+    s.execute(text("""
+        INSERT INTO care_plan_items (id, patient_id, item_key, version, supersedes_id, kind, status, title, details, alert_level,
+                                     due_at, date_missing, source_ref_id, created_by_type, created_by)
+        VALUES (:id, :p, :k, :v, :sup, CAST(:kind AS plan_item_kind), CAST(:st AS plan_item_status), :t, CAST(:d AS jsonb),
+                CAST(:al AS alert_level), :due, :dm, :src, CAST(:cbt AS actor_type), :cb)"""),
+        {"id": new_id, "p": patient_id, "k": item_key, "v": version, "sup": supersedes_id, "kind": kind, "st": status,
+         "t": title.strip(), "d": _j(details), "al": alert_level, "due": due_at, "dm": date_missing, "src": source_ref_id,
+         "cbt": created_by_type, "cb": created_by})
+    return new_id
+
+
+def insert_ingredients(s: Session, patient_id: UUID, item_id: UUID, ings: list[tuple[str, str | None]]) -> None:
+    for raw_name, strength in ings:
+        norm = normalize_medicine_name(raw_name)
+        if not norm:
+            continue
+        s.execute(text("""
+            INSERT INTO medicine_ingredients (patient_id, item_id, ingredient_raw, ingredient_normalized, substance_id, strength_text)
+            VALUES (:p, :i, :raw, :n, :sid, :st)"""),
+            {"p": patient_id, "i": item_id, "raw": raw_name, "n": norm, "sid": resolve_substance(s, norm), "st": strength})
+
+
+def ingredients_of(kind: str, title: str, details: dict) -> list[tuple[str, str | None]]:
     """(raw name, strength) pairs for a medicine item."""
     out: list[tuple[str, str | None]] = []
     for ing in details.get("ingredients") or []:
@@ -173,7 +202,7 @@ def apply_document_extraction(s: Session, *, patient_id: UUID, document_id: UUID
             sched = parse_schedule(details.get("frequency_text"))
             if sched:
                 details["schedule"] = sched
-        ings = _ingredients_of(item.kind, item.title, details) if item.kind == "medicine" else []
+        ings = ingredients_of(item.kind, item.title, details) if item.kind == "medicine" else []
         ing_norm = frozenset(normalize_medicine_name(n) for n, _ in ings if normalize_medicine_name(n))
         match = _item_key_match(s, patient_id, item.kind, item.title, ing_norm)
 
@@ -189,26 +218,11 @@ def apply_document_extraction(s: Session, *, patient_id: UUID, document_id: UUID
 
         item_key = match["item_key"] if match else uuid4()
         version = (match["version"] + 1) if match else 1
-        new_id = uuid4()
-        s.execute(text("""
-            INSERT INTO care_plan_items (id, patient_id, item_key, version, supersedes_id, kind, title, details, alert_level,
-                                         due_at, date_missing, source_ref_id, created_by_type, created_by)
-            VALUES (:id, :p, :k, :v, :sup, CAST(:kind AS plan_item_kind), :t, CAST(:d AS jsonb),
-                    CAST(:al AS alert_level), :due, :dm, :src, 'agent', NULL)"""),
-            {"id": new_id, "p": patient_id, "k": item_key, "v": version, "sup": match["id"] if match else None,
-             "kind": item.kind, "t": item.title.strip(), "d": _j(details), "al": alert, "due": due_at,
-             "dm": date_missing, "src": src})
-        if match:
-            s.execute(text("UPDATE care_plan_items SET is_current = false WHERE id = :id"), {"id": match["id"]})
-
-        for raw_name, strength in ings:
-            norm = normalize_medicine_name(raw_name)
-            if not norm:
-                continue
-            s.execute(text("""
-                INSERT INTO medicine_ingredients (patient_id, item_id, ingredient_raw, ingredient_normalized, substance_id, strength_text)
-                VALUES (:p, :i, :raw, :n, :sid, :st)"""),
-                {"p": patient_id, "i": new_id, "raw": raw_name, "n": norm, "sid": resolve_substance(s, norm), "st": strength})
+        new_id = insert_item_version(s, patient_id=patient_id, item_key=item_key, version=version,
+                                     supersedes_id=match["id"] if match else None, kind=item.kind, title=item.title,
+                                     details=details, alert_level=alert, due_at=due_at, date_missing=date_missing,
+                                     source_ref_id=src, created_by_type="agent", created_by=None)
+        insert_ingredients(s, patient_id, new_id, ings)
         if item.kind == "medicine":
             res.medicine_item_ids.append(new_id)
 

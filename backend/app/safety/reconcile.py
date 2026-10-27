@@ -89,3 +89,16 @@ def doc_looks_incomplete(page_texts: list[str], expected_pages: int | None = Non
             total = max(total, int(m.group(2)))
     n = len(page_texts)
     return n < total or bool(expected_pages and n < expected_pages)
+
+
+def document_completeness(page_texts: list[str]) -> str:
+    """'complete', 'incomplete' or 'unknown'. Only an explicit "page N of M" marker with every page present
+    counts as complete: without one we cannot know that nothing is missing, so the omission catch stays quiet."""
+    if not page_texts or doc_looks_incomplete(page_texts):
+        return "incomplete"
+    total = 0
+    for t in page_texts:
+        m = _PAGE_MARK.search(t)
+        if m:
+            total = max(total, int(m.group(2)))
+    return "complete" if total and len(page_texts) >= total else "unknown"
