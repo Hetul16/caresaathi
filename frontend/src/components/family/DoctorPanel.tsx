@@ -37,6 +37,13 @@ export function DoctorPanel({ patientId, canApprove, toast, onChange }: { patien
     try { await api(`/doctor-links/${asking.id}/questions`, { method: "POST", json: { body: asking.text.trim() } }); setAsking(null); toast("Added to Approvals. The doctor sees it only after someone approves."); onChange(); }
     catch (e) { fail(e, "Could not queue the question"); }
   }
+  async function readReply(id: string) {
+    try {
+      const r = await api<{ changes: number; follow_ups: number }>(`/doctor-messages/${id}/read-changes`, { method: "POST" });
+      toast(r.changes + r.follow_ups === 0 ? "Nothing in this reply could be turned into a plan change." : `${r.changes} change${r.changes === 1 ? "" : "s"} and ${r.follow_ups} follow-up${r.follow_ups === 1 ? "" : "s"} are waiting for you on the Overview.`);
+      await load(); onChange();
+    } catch (e) { fail(e, "Could not read the reply"); }
+  }
   async function copy(t: string) { try { await navigator.clipboard.writeText(t); toast("Copied."); } catch { toast("Could not copy. Select the link and copy it by hand."); } }
 
   return (
@@ -81,6 +88,9 @@ export function DoctorPanel({ patientId, canApprove, toast, onChange }: { patien
               {l.messages.map((m) => (
                 <div key={m.id} className={`msg ${m.direction}`}>
                   <small>{m.direction === "to_doctor" ? "Sent to the doctor" : `${l.doctor_name}'s exact words`} · {when(m.at)}</small>{m.body}
+                  {m.direction === "from_doctor" && (m.read
+                    ? <small style={{ marginTop: 8 }}>Read into the plan. Confirm any change on the Overview.</small>
+                    : canApprove && <div className="item-foot" style={{ marginTop: 8 }}><button className="btn btn-quiet btn-sm" onClick={() => readReply(m.id)}><Icon name="list" /> Read changes from this reply</button></div>)}
                 </div>
               ))}
             </div>

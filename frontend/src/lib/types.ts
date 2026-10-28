@@ -7,7 +7,8 @@ export type AllergyState = "listed" | "no_known_allergies" | "not_recorded";
 export type SourceRef =
   | { kind: "document"; document_id: string; document_title: string; page: number; line_start?: number; quote: string }
   | { kind: "visit_segment"; visit_id?: string; speaker?: string; at_ms?: number; quote: string }
-  | { kind: "family_input"; stated_by?: string; quote: string };
+  | { kind: "family_input"; stated_by?: string; quote: string }
+  | { kind: "doctor_message"; quote: string };
 
 export interface Allergy {
   allergy_key: string;
@@ -142,7 +143,7 @@ export interface CrewStep { seq: number; tool: string; permission: "automatic" |
   why: string | null; summary: string | null; reason: string | null; action_id: string | null; action_status: string | null; approved_by: string | null; approved_at: string | null }
 export interface CrewRun { id: string; goal: string; status: "running" | "done" | "failed"; error: string | null; requested_by: string | null; started_at: string;
   finished_at: string | null; brief: Brief | null; steps: CrewStep[] }
-export interface DoctorMessage { id: string; direction: "to_doctor" | "from_doctor"; body: string; at: string }
+export interface DoctorMessage { id: string; direction: "to_doctor" | "from_doctor"; body: string; at: string; read?: boolean }
 export interface DoctorLink { id: string; hint: string; doctor_name: string; status: "active" | "revoked" | "expired"; expires_at: string; created_at: string; opened: number; messages: DoctorMessage[] }
 export interface DoctorPage { available: true; doctor_name: string; expires_at: string; card: EmergencyCardData; thread: DoctorMessage[]; can_reply: boolean; note: string }
 

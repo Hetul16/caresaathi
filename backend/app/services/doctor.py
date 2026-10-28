@@ -51,12 +51,12 @@ def list_links(s: Session, patient_id: UUID) -> list[dict[str, Any]]:
         FROM doctor_links WHERE patient_id = :p ORDER BY created_at DESC"""), {"p": patient_id}).mappings().all()
     out = []
     for l in links:
-        msgs = s.execute(text("""SELECT id, direction, body, created_at FROM doctor_messages WHERE link_id = :l ORDER BY created_at"""),
+        msgs = s.execute(text("""SELECT id, direction, body, created_at, read_at FROM doctor_messages WHERE link_id = :l ORDER BY created_at"""),
                          {"l": l["id"]}).mappings().all()
         out.append({"id": str(l["id"]), "hint": l["token_hint"], "doctor_name": l["doctor_name"], "status": _status(l, now),
                     "expires_at": l["expires_at"].isoformat(), "created_at": l["created_at"].isoformat(), "opened": l["opened"],
                     "messages": [{"id": str(m["id"]), "direction": m["direction"], "body": m["body"],
-                                  "at": m["created_at"].isoformat()} for m in msgs]})
+                                  "at": m["created_at"].isoformat(), "read": m["read_at"] is not None} for m in msgs]})
     return out
 
 
@@ -132,3 +132,76 @@ def doctor_thread(s: Session, token_hash: bytes) -> list[dict[str, Any]]:
 def doctor_reply(s: Session, *, token: str, body: str, ip_hash: bytes, ua: str) -> str:
     return s.execute(text("SELECT app_doctor_reply(:h, :b, :ip, :ua)"),
                      {"h": hash_token(token[:200]), "b": body, "ip": ip_hash, "ua": ua}).scalar_one()
+
+
+def read_reply_changes(s: Session, *, message_id: UUID, user_id: UUID) -> dict[str, Any]:
+    """Read a doctor's reply once, with the same reader and checks as a visit, and file what it says as PENDING plan changes.
+
+    The doctor's exact words are the source of every change (kind 'doctor_message'). Nothing is applied: a named member confirms each
+    change on the Overview screen, as for a visit. Follow-ups are filed without a computed date, because the reply has no visit or
+    document date to count from; the family is asked to confirm the timing."""
+    from ..clients.models import ModelError, get_model_client
+    from ..safety.normalize import normalize_medicine_name
+    from ..safety.validate import validate_visit
+    from .plan import _item_key_match, _j, ingredients_of, record_model_call
+
+    m = s.execute(text("SELECT id, patient_id, link_id, direction, body, read_at FROM doctor_messages WHERE id = :i FOR UPDATE"), {"i": message_id}).mappings().first()
+    if m is None or m["direction"] != "from_doctor":
+        raise ServiceError(404, "not-found", "Not found")
+    if m["read_at"] is not None:
+        raise ServiceError(409, "already-read", "This reply has already been read into the plan")
+    pid, seg_id = m["patient_id"], f"dm-{m['id']}"
+    try:
+        raw, usage = get_model_client().extract_visit([(seg_id, "doctor", m["body"])])
+    except ModelError as e:
+        raise ServiceError(502, "reader-unavailable", f"The reply could not be read right now ({e}). Please try again.") from e
+    record_model_call(s, pid, usage)
+    validated = validate_visit(raw, {seg_id: m["body"]})
+    if not validated.ok or validated.data is None:
+        raise ServiceError(422, "unreadable-reply", "This reply could not be turned into plan changes. A person should read it.")
+
+    def source(quote: str) -> UUID:
+        return s.execute(text("INSERT INTO source_refs (patient_id, kind, doctor_message_id, quote) VALUES (:p, 'doctor_message', :m, :q) RETURNING id"),
+                         {"p": pid, "m": message_id, "q": quote.strip()}).scalar_one()
+
+    data, created, follow = validated.data, 0, 0
+    for i, item in enumerate(data.items):
+        if i in validated.rejected_items or i in validated.review_items or item.change == "unchanged_mention":
+            continue
+        details = dict(item.details or {})
+        ings = ingredients_of(item.kind, item.title, details) if item.kind == "medicine" else []
+        ing_norm = frozenset(normalize_medicine_name(n) for n, _ in ings if normalize_medicine_name(n))
+        match = _item_key_match(s, pid, item.kind, item.title, ing_norm, None)  # type: ignore[arg-type]
+        ctype = item.change
+        if ctype in ("changed", "stopped") and match is None:
+            ctype = "new" if ctype == "changed" else "other"
+        if ctype == "other":
+            continue
+        after = {"kind": item.kind, "title": item.title.strip(), "details": details}
+        if item.kind == "warning_sign":
+            after["alert_level"] = validated.alert_levels.get(i)
+        s.execute(text("""INSERT INTO plan_changes (patient_id, change_type, item_key, before_state, after_state, source_ref_id, requires_confirmation, status)
+                          VALUES (:p, CAST(:ct AS change_type), :k, CAST(:b AS jsonb), CAST(:a AS jsonb), :src, true, 'pending')"""),
+                  {"p": pid, "ct": ctype, "k": match["item_key"] if match else None,
+                   "b": _j({"title": match["title"], "details": match["details"]}) if match else None, "a": _j(after), "src": source(item.source.quote)})
+        created += 1
+    for i, al in enumerate(data.allergies_mentioned):
+        if i in validated.rejected_allergies:
+            continue
+        s.execute(text("""INSERT INTO plan_changes (patient_id, change_type, after_state, source_ref_id, requires_confirmation, status)
+                          VALUES (:p, 'allergy_added', CAST(:a AS jsonb), :src, true, 'pending')"""),
+                  {"p": pid, "a": _j({"substance": al.substance, "reaction": al.reaction, "stated_by": "doctor"}), "src": source(al.source.quote)})
+        created += 1
+    for i, fu in enumerate(data.follow_ups):
+        if i in validated.rejected_follow_ups:
+            continue
+        s.execute(text("""INSERT INTO follow_ups (patient_id, source_ref_id, what, due_text) VALUES (:p, :src, :w, :t) ON CONFLICT DO NOTHING"""),
+                  {"p": pid, "src": source(fu.source.quote), "w": fu.what.strip(), "t": fu.due_text.strip()})
+        follow += 1
+    s.execute(text("UPDATE doctor_messages SET read_at = now(), read_by = :u WHERE id = :i"), {"u": user_id, "i": message_id})
+    write_audit(s, actor_type="user", actor_id=user_id, patient_id=pid, action="doctor_reply.read", entity_type="doctor_message", entity_id=message_id,
+                after={"changes": created, "follow_ups": follow})
+    timeline(s, patient_id=pid, event_type="doctor_reply_read", actor_type="user", actor_id=user_id,
+             summary=f"The doctor's reply was read: {created} change{'s' if created != 1 else ''} waiting for you" + (f", {follow} follow-up{'s' if follow != 1 else ''}" if follow else ""),
+             entity_type="doctor_message", entity_id=message_id)
+    return {"changes": created, "follow_ups": follow, "ignored": len(validated.rejected_items) + len(validated.rejected_follow_ups)}

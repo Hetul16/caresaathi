@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     meta_spark_dev_model: str = "muse-spark-1.3-contributor"
     meta_asr_model: str = "muse-voice-transcribe-1.0"
     allow_contributor_models: bool = False
+    # Spend guard (D-50). Prices: USD per million tokens, from dev.meta.ai/docs/pricing-rate-limits.
+    spend_limit_usd: float = 3.50          # hard stop for live calls; the hackathon credit is $150, the owner set a $4 working budget
+    spend_baseline_usd: float = 0.30       # spent before the ledger existed (owner-reported estimate, rounded up)
+    price_contrib_in: float = 0.10
+    price_contrib_out: float = 0.20
+    price_std_in: float = 1.25
+    price_std_out: float = 4.25
+    price_voice_per_hour: float = 0.18
     model_mode: str = "fake"                  # fake | live. Fake runs offline with canned output.
 
     tts_provider: str = ""

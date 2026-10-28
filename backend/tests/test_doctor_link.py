@@ -101,3 +101,41 @@ def test_doctor_cannot_flood_the_thread(family, client):
     family.post(f"/actions/{q['id']}/approve", {})
     codes = [client.post(f"/api/v1/d/{token}/reply", json={"body": f"r{i}"}).status_code for i in range(22)]
     assert codes.count(200) == 20 and codes[-1] == 409
+
+
+def _reply(family, client, words):
+    link, token = _make(family)
+    q = family.post(f"/doctor-links/{link['id']}/questions", {"body": "Anything to change?"}).json()
+    family.post(f"/actions/{q['id']}/approve", {})
+    assert client.post(f"/api/v1/d/{token}/reply", json={"body": words}).status_code == 200
+    msgs = family.get(f"/patients/{family.pid}/doctor-links").json()["links"][0]["messages"]
+    return next(m for m in msgs if m["direction"] == "from_doctor")
+
+
+def test_a_reply_becomes_pending_changes_sourced_to_the_doctors_words(family, client, admin):
+    family.upload(DISCHARGE)
+    before = len(family.plan()["items"])
+    msg = _reply(family, client, "Please start Atorvastatin 40 mg at night.")
+    r = family.post(f"/doctor-messages/{msg['id']}/read-changes", {})
+    assert r.status_code == 200 and r.json()["changes"] == 1
+    plan = family.plan()
+    assert len(plan["items"]) == before                              # nothing applied yet
+    change = next(c for c in plan["pending_changes"] if "Atorvastatin" in c["title"])
+    assert change["source"]["kind"] == "doctor_message" and "Atorvastatin 40 mg" in change["source"]["quote"]
+    assert family.post(f"/doctor-messages/{msg['id']}/read-changes", {}).status_code == 409      # only once
+    assert admin.execute("SELECT read_by::text FROM doctor_messages WHERE id = %s", (msg["id"],)).fetchone()[0] == family.user_id
+    assert family.post(f"/plan-changes/{change['id']}/decision", {"decision": "confirm"}).status_code == 200
+    assert any("Atorvastatin" in i["title"] for i in family.plan()["items"])
+
+
+def test_a_member_without_approval_rights_cannot_read_a_reply_into_the_plan(family, client):
+    msg = _reply(family, client, "Please start Atorvastatin 40 mg at night.")
+    viewer = family.second_member(can_approve=False)
+    r = client.post(f"/api/v1/doctor-messages/{msg['id']}/read-changes", headers=viewer)
+    assert r.status_code == 403
+    assert family.plan()["pending_changes"] == []
+
+
+def test_the_database_requires_a_stored_reply_for_a_doctor_source(family, admin):
+    with pytest.raises(psycopg.errors.CheckViolation):
+        admin.execute("INSERT INTO source_refs (patient_id, kind, quote) VALUES (%s, 'doctor_message', 'words')", (family.pid,))

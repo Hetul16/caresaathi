@@ -26,6 +26,7 @@ from typing import Protocol
 import httpx
 
 from ..config import get_settings
+from . import spend
 from ..models.contracts import ExtractV1, VisitV1
 from ..safety.followups import parse_interval
 from ..safety.normalize import AmbiguousDate, parse_document_date
@@ -225,6 +226,10 @@ class LiveModelClient:
             body["reasoning_effort"] = effort
         if schema is not None:
             body["response_format"] = {"type": "json_schema", "json_schema": {"name": schema_name, "schema": schema}}
+        try:
+            spend.check()
+        except spend.SpendLimitReached as e:
+            raise ModelError(str(e)) from e
         t0 = time.monotonic()
         try:
             r = self.http.post("/chat/completions", json=body)
@@ -234,6 +239,7 @@ class LiveModelClient:
         except (httpx.HTTPError, KeyError, ValueError) as e:
             raise ModelError(f"{purpose} failed: {type(e).__name__}") from e
         u = j.get("usage") or {}
+        spend.add(spend.price(model, contrib, u.get("prompt_tokens"), u.get("completion_tokens")), model=model, purpose=purpose)
         return text, Usage(model, purpose, u.get("prompt_tokens"), u.get("completion_tokens"),
                            int((time.monotonic() - t0) * 1000), contrib)
 
@@ -284,11 +290,17 @@ class LiveModelClient:
 
     def transcribe_audio(self, wav: bytes) -> tuple[list[AudioTurn], Usage]:
         req = {"mode": "DIARIZATION", "model": self.s.meta_asr_model, "audioEncoding": "WAV"}
+        try:
+            spend.check()
+        except spend.SpendLimitReached as e:
+            raise ModelError(str(e)) from e
         t0 = time.monotonic()
         try:
             r = self.http.post("/asr/transcribe", headers={"Accept": "application/json"},
                                files={"request": (None, json.dumps(req), "application/json"), "audio": ("visit.wav", wav, "audio/wav")})
             r.raise_for_status()
+            # 16 kHz mono 16-bit WAV: 32,000 bytes a second. Billed in whole seconds, so round up to stay on the safe side.
+            spend.add(spend.price(self.s.meta_asr_model, False, None, None, audio_seconds=max(1, len(wav) // 32000 + 1)), model=self.s.meta_asr_model, purpose="transcribe_audio")
             turns = [AudioTurn(int(t["turnId"]), str(t.get("speaker") or "A"), int(t["startMs"]), int(t["endMs"]), str(t["transcript"]))
                      for t in r.json().get("turns", []) if str(t.get("transcript", "")).strip()]
         except (httpx.HTTPError, KeyError, ValueError, TypeError) as e:

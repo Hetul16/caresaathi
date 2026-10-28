@@ -11,7 +11,7 @@ def source_of(r: Any) -> dict:
     if kind == "document":
         return {"kind": "document", "document_id": str(r["document_id"]), "document_title": r["doc_title"] or "Document",
                 "page": r["page"], "line_start": r["line_start"], "quote": r["quote"]}
-    return {"kind": kind, "quote": r["quote"]}
+    return {"kind": kind, "quote": r["quote"]}  # visit_segment, family_input, doctor_message: the exact words
 
 
 def item_detail(det: dict) -> str | None:

@@ -15,6 +15,7 @@ function mmss(ms: number) {
 export function describe(src: SourceRef): string {
   if (src.kind === "document") return `${src.document_title}, p.${src.page}${src.line_start ? ` line ${src.line_start}` : ""}`;
   if (src.kind === "visit_segment") return src.speaker ? `${src.speaker}, visit${src.at_ms != null ? ` at ${mmss(src.at_ms)}` : ""}` : "The doctor's words, from the visit";
+  if (src.kind === "doctor_message") return "The doctor's reply, in the doctor link";
   return src.stated_by ? `Said by ${src.stated_by}` : "Said by a family member";
 }
 
@@ -55,7 +56,7 @@ export function SourceProvider({ children }: { children: ReactNode }) {
             <div className="drawer-head">
               <div>
                 <p className="eyebrow">{t("showSource")}</p>
-                <h2 id="src-title">{src.kind === "document" ? src.document_title : src.kind === "visit_segment" ? "Doctor visit recording" : "Family input"}</h2>
+                <h2 id="src-title">{src.kind === "document" ? src.document_title : src.kind === "visit_segment" ? "Doctor visit recording" : src.kind === "doctor_message" ? "The doctor's reply" : "Family input"}</h2>
               </div>
               <button ref={closeBtn} className="btn btn-quiet btn-sm" onClick={close} aria-label="Close">
                 <Icon name="x" />
@@ -75,6 +76,12 @@ export function SourceProvider({ children }: { children: ReactNode }) {
             {src.kind === "visit_segment" && (
               <div className="sheet">
                 <p className="dim" style={{ marginBottom: 8 }}>{src.speaker ?? "Doctor"}{src.at_ms != null ? ` · ${mmss(src.at_ms)}` : ""}</p>
+                <blockquote><mark>{src.quote}</mark></blockquote>
+              </div>
+            )}
+            {src.kind === "doctor_message" && (
+              <div className="sheet">
+                <p className="dim" style={{ marginBottom: 8 }}>The doctor&apos;s exact words, written in the doctor link</p>
                 <blockquote><mark>{src.quote}</mark></blockquote>
               </div>
             )}

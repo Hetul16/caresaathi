@@ -58,6 +58,18 @@ def ask(link_id: UUID, body: QuestionIn, request: Request, s: Session = Depends(
     return svc.propose_question(s, link_id=link_id, user_id=request.state.user_id, body=body.body)
 
 
+@router.post("/doctor-messages/{message_id}/read-changes")
+def read_changes(message_id: UUID, request: Request, s: Session = Depends(db)):
+    """Read the doctor's reply into PENDING plan changes. Needs approval rights, because the changes then wait for a person to confirm."""
+    from sqlalchemy import text
+    from .deps import problem
+    pid = s.execute(text("SELECT patient_id FROM doctor_messages WHERE id = :i"), {"i": message_id}).scalar()
+    if pid is None:
+        raise problem(404, "not-found", "Not found")
+    require_member(s, pid, can_approve=True)
+    return svc.read_reply_changes(s, message_id=message_id, user_id=request.state.user_id)
+
+
 # ---- public ----------------------------------------------------------------------------------------------------
 def _ip(request: Request) -> bytes:
     ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "")

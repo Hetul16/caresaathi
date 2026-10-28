@@ -250,6 +250,14 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Status:** Accepted (Oct 28, 2026)
 - **Decision:** The elder-friendly daily card uses fixed sun and moon icons and the schedule text parsed by code from the plan (for example 1-0-1). Generated images of medicines could mislead, so Muse Image is not used. Unconfirmed items are marked, and the card shows its source and last-updated date.
 
+### D-50 Spend guard on live model calls
+- **Status:** Accepted (Oct 28, 2026)
+- **Decision:** Every live Meta call is priced from its token counts (prices from dev.meta.ai, kept in config) and appended to a local ledger (`.storage/spend.jsonl`). Before each call the total, plus a baseline for spend before the ledger existed, is compared with `SPEND_LIMIT_USD` (default 3.50, inside the owner's $4 working budget). At the limit the call is refused before it reaches the network and the caller sees a model error; the judge then fails closed. The ledger is shared by the web app and the scripts. `backend/scripts/spend.py` prints it. Limitation: it is a local file, so a second server instance would keep its own count.
+
+### D-51 A doctor's reply can become pending changes, never applied ones
+- **Status:** Accepted (Oct 28, 2026)
+- **Decision:** A member with approval rights can read a stored reply once with the visit reader. The result is PENDING plan changes (and undated follow-ups) whose source is a new kind, `doctor_message`, holding the doctor's exact words; the words are never filed as a family member's. Quotes must appear in the reply, as for visits. A named member confirms each change on the Overview, as for a visit (D-18). Migration 0010 adds the enum value, the link from a source to the stored reply, and read-once columns, each with a CHECK.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |
