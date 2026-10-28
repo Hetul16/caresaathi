@@ -81,7 +81,7 @@ def link_patient(s: Session, link_id: UUID) -> tuple[UUID, str, str]:
     return row[0], row[1], row[2]
 
 
-def propose_question(s: Session, *, link_id: UUID, user_id: UUID, body: str, requested_by: str = "user") -> dict[str, Any]:
+def propose_question(s: Session, *, link_id: UUID, user_id: UUID | None, body: str, requested_by: str = "user") -> dict[str, Any]:
     """Queue a question for the doctor. Nothing is visible to the doctor until a member with approval rights approves it."""
     from . import actions as action_svc
     body = body.strip()

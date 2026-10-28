@@ -20,6 +20,7 @@ TOOL_REGISTRY: dict[str, Permission] = {
     "set_reminder": A, "schedule_checkin": A, "prepare_visit_summary": A, "weekly_briefing": A,
     "lookup_generic_prices": A, "check_allergy_conflicts": A, "generate_emergency_card": A,
     "add_recovery_entry": A, "compare_recovery_photos": A, "describe_recovery_change": A,
+    "read_care_plan": A, "list_open_flags": A, "list_pending": A, "check_supply": A,
     "alert_family_urgent": AA,
     "record_allergy": AF, "send_recovery_bundle_to_doctor": AF, "share_emergency_card": AF,
     "revoke_emergency_link": AF, "send_family_message": AF, "message_doctor_draft": AF,
