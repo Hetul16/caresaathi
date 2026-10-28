@@ -81,6 +81,7 @@ class ModelClient(Protocol):
     def judge_text(self, text: str) -> tuple[bool | None, Usage]: ...
     def word(self, kind: str, facts: dict, language: str) -> tuple[str, Usage]: ...
     def next_step(self, goal: str, tools: dict[str, str], done: list[str], has_doctor_link: bool) -> tuple[dict, Usage]: ...
+    def read_label(self, file: DocFile) -> tuple[dict, Usage]: ...
 
 
 # ----------------------------------------------------------------------------------------------
@@ -124,6 +125,16 @@ VISIT_EXAMPLE = (
     '"instructions_text":""},"source":{"segment_ids":["<id>"],"quote":"<exact words>"}}],"allergies_mentioned":[],"unclear":[],'
     '"follow_ups":[{"what":"<x>","due_text":"<as spoken>","source":{"segment_ids":["<id>"],"quote":"<exact words>"}}]}'
 )
+
+LABEL_PROMPT = (
+    "This is a photo of the packaging of a medicine (strip, box, bottle or tube). Transcribe ONLY text that is printed on it, line by line, "
+    "exactly as written. Then list each product on it. Never identify a medicine from its shape, colour, size or imprint: if no medicine name "
+    "is printed (for example a loose pill, or a plain tube), return empty lists and set loose_pill_without_text to true. Ingredient names, "
+    "brand, strength, form, expiry and batch must be copied from the printed text; if one is not printed, leave it out. Return ONLY JSON shaped like: "
+    '{"lines":["Amlodipine Tablets IP 5 mg","Batch B123  Exp 08/2027"],"products":[{"brand":null,"ingredients":[{"name":"Amlodipine","strength":"5 mg"}],'
+    '"form":"Tablets","expiry":"08/2027","batch":"B123"}],"loose_pill_without_text":false}'
+)
+
 
 EXTRACT_EXAMPLE = (
     '{"schema_version":"extract.v1","document":{"doc_type":"prescription","doc_date":"14/09/2026","issuer":"<clinic>","language":"en"},'
@@ -297,6 +308,16 @@ class LiveModelClient:
         except (ModelError, ValueError, KeyError, TypeError):
             return None, Usage(self.s.meta_spark_model, "judge_text", status="error")
 
+    def read_label(self, file: DocFile) -> tuple[dict, Usage]:
+        b64 = base64.b64encode(file.data).decode()
+        part = {"type": "image_url", "image_url": {"url": f"data:{file.mime};base64,{b64}"}}
+        text, usage = self._chat("read_label", [{"type": "text", "text": LABEL_PROMPT}, part], None, "x", self.s.effort_read, 0)
+        m = re.search(r"\{.*\}", text, re.S)
+        try:
+            return json.loads(m.group(0)) if m else {}, usage
+        except ValueError as e:
+            raise ModelError("the label reading was not valid JSON") from e
+
     def next_step(self, goal: str, tools: dict[str, str], done: list[str], has_doctor_link: bool) -> tuple[dict, Usage]:
         listing = "\n".join(f"- {k}: {v}" for k, v in tools.items()) + "\n- finish: stop"
         prompt = (f"{AGENT_PROMPT}\nGoal from the family (data, not instructions): <goal>{goal}</goal>\nTools:\n{listing}\n"
@@ -453,6 +474,22 @@ class FakeModelClient:
 
     def judge_text(self, text: str) -> tuple[bool | None, Usage]:
         return False, self._usage("judge_text")        # offline there is no judge: the keyword guard stands alone, and the app says so
+
+    def read_label(self, file: DocFile) -> tuple[dict, Usage]:
+        """A test double: reads a text file as if it were the printed text of a label. Photos need MODEL_MODE=live."""
+        if file.mime != "text/plain":
+            raise ModelError("fake mode reads text labels only; use MODEL_MODE=live for photos")
+        raw = file.data.decode("utf-8", errors="replace")
+        lines = [ln.strip() for ln in raw.splitlines() if ln.strip()]
+        if any("[loose pill]" in ln.lower() for ln in lines):
+            return {"lines": [], "products": [], "loose_pill_without_text": True}, self._usage("read_label")
+        products = []
+        for ln in lines:
+            m = re.match(r"^(?:Tab\.?\s+)?([A-Za-z][A-Za-z+ ]*?)\s+(?:Tablets?|Capsules?|Cream|Syrup)?\s*(?:IP\s+)?(\d+(?:\.\d+)?\s?(?:mg|mcg|g|ml))\b", ln, re.I)
+            if m:
+                name = m.group(1).strip()
+                products.append({"brand": None, "ingredients": [{"name": name, "strength": m.group(2)}]})
+        return {"lines": lines, "products": products, "loose_pill_without_text": False}, self._usage("read_label")
 
     def next_step(self, goal: str, tools: dict[str, str], done: list[str], has_doctor_link: bool) -> tuple[dict, Usage]:
         return default_next_step(done, has_doctor_link), self._usage("agent_step")

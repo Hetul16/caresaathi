@@ -87,7 +87,7 @@ def prepare_visit_summary(s: Session, pid: UUID, ctx: dict) -> dict[str, Any]:
     name = s.execute(text("SELECT full_name FROM patients WHERE id = :p"), {"p": pid}).scalar_one()
 
     allergy_line = {"listed": "Allergies on file: " + ", ".join(a["substance"] + (f" ({a['reaction']})" if a["reaction"] else "") for a in plan["allergies"]),
-                    "none_stated": "A document or the doctor states there are no known allergies.",
+                    "no_known_allergies": "A document or the doctor states there are no known allergies.",
                     "not_recorded": "Allergies are not recorded."}.get(plan["allergy_state"], "Allergies are not recorded.")
     sections: list[dict[str, Any]] = [
         {"heading": "Allergies", "lines": [{"text": allergy_line, "source": (plan["allergies"][0]["source"] if plan["allergies"] else None)}]},

@@ -8,6 +8,8 @@ import { Icon, type IconName } from "../Icon";
 import { SourceProvider } from "../Source";
 import { AllergyBanner, ApprovalCard, ChangeCard, ConflictCard, DuplicateCard, OmissionCard, PlanItemCard, Timeline, useToast } from "./parts";
 import { CardPanel } from "./CardPanel";
+import { CrewPanel } from "./CrewPanel";
+import { DoctorPanel } from "./DoctorPanel";
 import { ChatPanel } from "./ChatPanel";
 import { FamilyPanel } from "./FamilyPanel";
 import { TrackerPanel } from "./TrackerPanel";
@@ -16,7 +18,7 @@ import { VisitPanel } from "./VisitPanel";
 import { DemoLoader } from "../DemoLoader";
 import { writeSelected } from "@/lib/live";
 
-type Tab = "overview" | "plan" | "documents" | "visits" | "tracker" | "ask" | "card" | "family" | "approvals" | "history";
+type Tab = "overview" | "plan" | "documents" | "visits" | "tracker" | "ask" | "crew" | "doctor" | "card" | "family" | "approvals" | "history";
 
 export interface LiveCtx { patientId: string; reload: () => void }
 
@@ -58,6 +60,7 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
     { id: "plan", label: "Care plan", icon: "list", count: p.items.filter((i) => !i.confirmed && !i.alert_level).length || undefined },
     ...(live ? [{ id: "documents" as Tab, label: "Documents", icon: "file" as IconName }, { id: "visits" as Tab, label: "Visits", icon: "mic" as IconName },
                 { id: "tracker" as Tab, label: "Tracker", icon: "calendar" as IconName }, { id: "ask" as Tab, label: "Ask", icon: "quote" as IconName },
+                { id: "crew" as Tab, label: "Care crew", icon: "sparkle" as IconName }, { id: "doctor" as Tab, label: "Doctor link", icon: "stethoscope" as IconName },
                 { id: "card" as Tab, label: "Emergency Card", icon: "card" as IconName }, { id: "family" as Tab, label: "Family", icon: "users" as IconName }] : []),
     { id: "approvals", label: "Approvals", icon: "shield", count: waiting || undefined },
     { id: "history", label: "History", icon: "history" },
@@ -180,6 +183,10 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
             {tab === "tracker" && live && <TrackerPanel patientId={live.patientId} canApprove={canApprove} toast={toast.show} onChange={live.reload} />}
 
             {tab === "ask" && live && <ChatPanel patientId={live.patientId} />}
+
+            {tab === "crew" && live && <CrewPanel patientId={live.patientId} canApprove={canApprove} toast={toast.show} onChange={live.reload} />}
+
+            {tab === "doctor" && live && <DoctorPanel patientId={live.patientId} canApprove={canApprove} toast={toast.show} onChange={live.reload} />}
 
             {tab === "family" && live && <FamilyPanel patientId={live.patientId} canManage={p.can_approve !== false} toast={toast.show} />}
 

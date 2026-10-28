@@ -134,3 +134,14 @@ export interface FridgeSheet { patient: string; language: Lang; allergy_state: A
   warning_signs: { title: string; level: string }[]; doctors: { name: string; hospital: string; phone: string }[]; generated_at: string; note: string }
 export interface TrustCategory { name: string; description: string; total: number; passed: number; failures: { id: string; input: string; expected: string; actual: string }[] }
 export interface TrustRun { run_id: string | null; ran_at: string; git_sha: string | null; model: string; stored: boolean; total: number; passed: number; categories: TrustCategory[]; disclaimer: string }
+
+// ---- care crew and doctor link (Stretch C) ----
+export interface BriefLine { text: string; source: SourceRef | null }
+export interface Brief { title: string; sections: { heading: string; lines: BriefLine[] }[]; questions: string[]; note: string }
+export interface CrewStep { seq: number; tool: string; permission: "automatic" | "ask_first" | "automatic_alert" | null; status: "ran" | "awaiting_approval" | "refused" | "failed";
+  why: string | null; summary: string | null; reason: string | null; action_id: string | null; action_status: string | null; approved_by: string | null; approved_at: string | null }
+export interface CrewRun { id: string; goal: string; status: "running" | "done" | "failed"; error: string | null; requested_by: string | null; started_at: string;
+  finished_at: string | null; brief: Brief | null; steps: CrewStep[] }
+export interface DoctorMessage { id: string; direction: "to_doctor" | "from_doctor"; body: string; at: string }
+export interface DoctorLink { id: string; hint: string; doctor_name: string; status: "active" | "revoked" | "expired"; expires_at: string; created_at: string; opened: number; messages: DoctorMessage[] }
+export interface DoctorPage { available: true; doctor_name: string; expires_at: string; card: EmergencyCardData; thread: DoctorMessage[]; can_reply: boolean; note: string }

@@ -138,3 +138,12 @@ def test_open_allergy_flag_becomes_a_question_in_the_brief(family):
     assert all(q.rstrip().endswith(("?", ".", "”.")) for q in qs)
     blob = " ".join(qs).lower()
     assert "is safe" not in blob and "stop taking" not in blob
+
+
+def test_the_brief_keeps_the_three_allergy_states_apart(family):
+    run = _run(family)                                    # nothing uploaded yet
+    allergies = lambda r: next(s for s in r["brief"]["sections"] if s["heading"] == "Allergies")["lines"][0]["text"]
+    assert allergies(run) == "Allergies are not recorded."
+    assert any("allergies" in q.lower() for q in run["brief"]["questions"])
+    family.upload("CITY HOSPITAL - DISCHARGE SUMMARY\nPage 1 of 1\nDate: 14/09/2026\nNo known allergies.\nTab Metformin 500 mg 1-0-1 after food\n")
+    assert "no known allergies" in allergies(_run(family)).lower() and "not recorded" not in allergies(_run(family)).lower()
