@@ -98,13 +98,40 @@ TRANSCRIBE_PROMPT = (
     "If a page is unreadable, return an empty lines list for it."
 )
 
+VISIT_PROMPT = (
+    "Below is a diarized transcript of a doctor visit, one line per segment: [segment id] (speaker label) words. The words may be "
+    "English, Hindi, Marathi or a mix. Return ONLY JSON matching the visit.v1 schema. Rules: "
+    "(1) Work only from the transcript. Never add anything the speakers did not say, and never use outside medical knowledge. "
+    "(2) items: every medicine, test, appointment, warning sign, restriction or instruction the DOCTOR states. change is 'new' for a new "
+    "one, 'changed' when the doctor changes a dose or schedule (put the new dose in details), 'stopped' only if the doctor says to stop, "
+    "'unchanged_mention' when the doctor says it continues as before. A patient or family member only asking a question is not an item. "
+    "(3) Every item and follow-up needs source.segment_ids that exist in the transcript and source.quote copied EXACTLY, in the original "
+    "language and spelling, from those segments; if you cannot quote it, leave it out. "
+    "(4) Medicine details use ingredients[{name,strength}], dose_text, frequency_text, instructions_text, as the doctor said them; for "
+    "'subah ek baar' use frequency_text '1-0-0', for morning and evening '1-0-1'. "
+    "(5) warning_sign: copy the doctor's wording into details.level_basis_quote; never invent urgency. "
+    "(6) follow_ups: what and due_text exactly as spoken ('do hafte baad'); never compute a date. "
+    "(7) allergies_mentioned: only an allergy someone states aloud, with who said it. "
+    "(8) speaker_roles: one entry per speaker label, role doctor, patient, family, nurse, other or unknown, judged from what they say. "
+    "(9) unclear: only for a passage you could not follow, with its segment ids and a short note; leave empty otherwise. "
+    "(10) Do not diagnose, do not advise, do not judge whether anything is safe."
+)
+
+VISIT_EXAMPLE = (
+    '{"schema_version":"visit.v1","speaker_roles":[{"label":"A","role":"doctor"}],"items":[{"kind":"medicine","change":"changed",'
+    '"title":"<name and dose>","confidence":0.9,"details":{"ingredients":[{"name":"<x>","strength":"<y>"}],"dose_text":"","frequency_text":"",'
+    '"instructions_text":""},"source":{"segment_ids":["<id>"],"quote":"<exact words>"}}],"allergies_mentioned":[],"unclear":[],'
+    '"follow_ups":[{"what":"<x>","due_text":"<as spoken>","source":{"segment_ids":["<id>"],"quote":"<exact words>"}}]}'
+)
+
 EXTRACT_PROMPT = (
     "Read the numbered document below and return ONLY JSON matching the extract.v1 schema. "
     "Each item's source.quote must be copied exactly from the cited page, and source.line_start/line_end must "
     "be the line numbers shown. Use allergy_statement 'none_stated' only if the page literally says there are no "
     "known allergies; if allergies are not mentioned use 'not_mentioned'. For warning signs, copy the doctor's "
     "wording into details.level_basis_quote and do not invent urgency. Medicine details use the fields "
-    "ingredients[{name,strength}], form, dose_text, frequency_text, duration_days, instructions_text, copied as written; "
+    "ingredients[{name,strength}], form, dose_text, frequency_text, duration_days, instructions_text, copied as written. When a line has a schedule such as 1-0-1, "
+    "OD, BD or twice daily, put exactly that text in frequency_text (never leave it out and never put it only in dose_text); "
     "add quantity {value, unit} only if a quantity is written. Put every follow-up phrase (\"review in two weeks\") in "
     "follow_ups[{what, due_text, source}] using the words as written: never compute or guess a date. For a brand name "
     "with its ingredient printed beside it, list the printed ingredient in ingredients."
@@ -137,12 +164,16 @@ class LiveModelClient:
             return self.s.meta_spark_dev_model, True
         return self.s.meta_spark_model, False
 
-    def _chat(self, purpose: str, content: list[dict], schema: dict | None = None, schema_name: str = "out") -> tuple[str, Usage]:
+    def _chat(self, purpose: str, content: list[dict], schema: dict | None = None, schema_name: str = "out", effort: str | None = None, temperature: float | None = None) -> tuple[str, Usage]:
         model, contrib = self._model()
         body: dict = {
             "model": model,
             "messages": [{"role": "system", "content": SYSTEM_RULES}, {"role": "user", "content": content}],
         }
+        if temperature is not None:
+            body["temperature"] = temperature
+        if effort:
+            body["reasoning_effort"] = effort
         if schema is not None:
             body["response_format"] = {"type": "json_schema", "json_schema": {"name": schema_name, "schema": schema}}
         t0 = time.monotonic()
@@ -166,7 +197,7 @@ class LiveModelClient:
         schema = {"type": "object", "properties": {"pages": {"type": "array", "items": {
             "type": "object", "properties": {"page": {"type": "integer"}, "lines": {"type": "array", "items": {"type": "string"}}},
             "required": ["page", "lines"]}}}, "required": ["pages"]}
-        text, usage = self._chat("transcribe", [{"type": "text", "text": TRANSCRIBE_PROMPT}, part], schema, "transcription")
+        text, usage = self._chat("transcribe", [{"type": "text", "text": TRANSCRIBE_PROMPT}, part], schema, "transcription", self.s.effort_read)
         try:
             pages = [PageText(int(p["page"]), [str(x) for x in p["lines"]]) for p in json.loads(text)["pages"]]
         except (ValueError, KeyError, TypeError) as e:
@@ -176,14 +207,17 @@ class LiveModelClient:
     def extract_document(self, pages: list[PageText], hint_doc_type: str | None) -> tuple[str, Usage]:
         prompt = f"{EXTRACT_PROMPT}\n<document>\n{numbered(pages)}\n</document>"
         return self._chat("extract_document", [{"type": "text", "text": prompt}],
-                          ExtractV1.model_json_schema(), "extract_v1")
+                          ExtractV1.model_json_schema(), "extract_v1", self.s.effort_read)
 
     def extract_visit(self, segments: list[tuple[str, str, str]]) -> tuple[str, Usage]:
         body = "\n".join(f"[{sid}] ({label}) {text}" for sid, label, text in segments)
-        prompt = ("Read this diarized doctor-visit transcript and return ONLY JSON matching visit.v1. "
-                  "Cite segment ids in source.segment_ids and copy the doctor's exact words into source.quote. "
-                  f"<document>\n{body}\n</document>")
-        return self._chat("extract_visit", [{"type": "text", "text": prompt}], VisitV1.model_json_schema(), "visit_v1")
+        prompt = VISIT_PROMPT + " Return one JSON object shaped like this example (replace the placeholders; add or remove entries as the transcript requires): " \
+            + VISIT_EXAMPLE + f"\n<transcript>\n{body}\n</transcript>"
+        # No response_format here: with the schema forced, the live model often took the empty way out (measured 1 of 4 runs correct);
+        # with an example and temperature 0 it was 4 of 4. Code validates the result anyway (validate_visit).
+        text, usage = self._chat("extract_visit", [{"type": "text", "text": prompt}], None, "x", self.s.effort_read, 0)
+        m = re.search(r"\{.*\}", text, re.S)
+        return (m.group(0) if m else text), usage
 
     def transcribe_audio(self, wav: bytes) -> tuple[list[AudioTurn], Usage]:
         req = {"mode": "DIARIZATION", "model": self.s.meta_asr_model, "audioEncoding": "WAV"}
@@ -206,18 +240,22 @@ class LiveModelClient:
                   "tells them to take, stop, skip, change or combine a medicine, gives a dose, diagnoses, or says whether to go to hospital. "
                   "Set flag to false only if it merely reads back or asks a question. Return JSON only.\n<text>\n" + text + "\n</text>")
         try:
-            out, usage = self._chat("judge_text", [{"type": "text", "text": prompt}], schema, "judge")
+            out, usage = self._chat("judge_text", [{"type": "text", "text": prompt}], schema, "judge", self.s.effort_judge)
             return bool(json.loads(out)["flag"]), usage
         except (ModelError, ValueError, KeyError, TypeError):
             return None, Usage(self.s.meta_spark_model, "judge_text", status="error")
 
     def word(self, kind: str, facts: dict, language: str) -> tuple[str, Usage]:
         lang = {"en": "English", "hi": "Hindi", "mr": "Marathi"}.get(language, "English")
-        prompt = (f"Write a short {kind} in {lang} using ONLY these stored facts, copied exactly: "
-                  f"{json.dumps(facts, ensure_ascii=False)}. Never say a medicine is safe or unsafe. "
-                  "End any flag with a question for the doctor or pharmacist. Do not add facts. Every sentence must name the medicine, "
-                  "the allergy or the document it refers to, or the doctor or pharmacist: write nothing else.")
-        return self._chat("word_" + kind, [{"type": "text", "text": prompt}])
+        script = {"Hindi": "Devanagari script (medicine names may stay in English letters)", "Marathi": "Devanagari script (medicine names may stay in English letters)"}.get(lang, "plain English")
+        prompt = (f"You are writing for an elderly person and their family. Write a short, warm, natural {kind} in {lang}, in {script}, "
+                  "the way a kind family member would say it aloud: simple everyday words, 2 to 4 short sentences, no bullet points, no quotation marks, "
+                  "no field names. Use ONLY these stored facts and copy medicine names, strengths, numbers and dates exactly: "
+                  f"{json.dumps(facts, ensure_ascii=False)}. Say where the information comes from (the document and page, or the doctor's words). "
+                  "Never say a medicine is safe or unsafe, never tell anyone to take, stop, skip or change anything, and add no facts. "
+                  "Every sentence must name the medicine, the allergy or the document it refers to, or the doctor or pharmacist. "
+                  "If a flag is involved, end with one polite question for the doctor or pharmacist. Write only the final text.")
+        return self._chat("word_" + kind, [{"type": "text", "text": prompt}], effort=self.s.effort_word)
 
 
 # ----------------------------------------------------------------------------------------------

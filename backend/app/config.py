@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     meta_api_base: str = "https://api.meta.ai/v1"
     meta_api_key: str = ""
     meta_spark_model: str = "muse-spark-1.3"
+    # Reasoning tokens are billed as output and made one judge call take 37 s, so each job asks for the least that works.
+    effort_read: str = "low"        # document transcription and extraction
+    effort_judge: str = "minimal"   # second-pass wording judge
+    effort_word: str = "minimal"    # explanations, flags, chat
     meta_spark_dev_model: str = "muse-spark-1.3-contributor"
     meta_asr_model: str = "muse-voice-transcribe-1.0"
     allow_contributor_models: bool = False

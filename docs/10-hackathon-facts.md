@@ -66,6 +66,17 @@ Sources: `dev.meta.ai/docs/speech-to-text` and `/docs/api-reference/voice/transc
 - Not stated in what was read: the request field names for a language hint and keywords. The client sends neither. Check the Voice schemas page (`/docs/api-reference/voice/schemas`) before relying on them.
 - Implemented in `backend/app/clients/models.py` (`LiveModelClient.transcribe_audio`) and `backend/app/safety/audio.py` (the browser records exactly this WAV). Run `backend/scripts/live_smoke.py --audio V1 <file.wav>` for real numbers.
 
+### First live measurements with Muse Spark (Oct 28, 2026; contributor model, synthetic data only; total spend about $0.10)
+
+- Endpoint, key and `muse-spark-1.3-contributor` work. Images (data URL) and PDFs (inline `file` part) are accepted on Chat Completions.
+- **Reasoning is billed as output and slow by default.** One trivial judge call took 37 s and 4,367 output tokens. `reasoning_effort` (`minimal` to `max`; `none` is rejected for Spark) fixes it: judge calls now take about 3 s. `max_tokens` counts reasoning too (a limit of 5 returned empty content). Settings: `EFFORT_READ=low`, `EFFORT_JUDGE=minimal`, `EFFORT_WORD=minimal`.
+- Prices (dev.meta.ai/docs/pricing-rate-limits): contributor $0.10 in / $0.20 out per 1M tokens; standard $1.25 / $4.25; Voice Transcribe $0.18 per audio hour; rate limit for contributor 150 requests/min.
+- **Second-pass judge:** caught 40 of 40 reassuring or advising drafts (including the 4 paraphrases the keyword guard misses and Hinglish), and flagged 0 of 8 plain read-backs and questions.
+- **Document reading (7 documents, photo and PDF, 14 files):** 14 of 14 exact on medicines and schedules after one prompt fix (the first run was 8 of 14 because `frequency_text` was sometimes left out). The ambiguous-strength page (R7) is read as the clear medicine plus the smudge note in `unreadable` only some of the time; that case is the two-reader check's job.
+- **Visit extraction:** forcing the `visit.v1` JSON schema made the live model return empty results in 3 of 4 runs. A prompt with an example and temperature 0, no schema, gave the right items in 4 of 4. Code still validates. About 20 s per visit.
+- **Hindi/Marathi wording** is correct but stiff. Not yet reviewed by a native speaker.
+- **Not yet measured:** Voice Transcribe (needs a real recorded WAV), Marathi/Hindi speech accuracy, the whole flow through the website in live mode.
+
 ## Verified, unverified and open
 
 | Item | Status | Next step |

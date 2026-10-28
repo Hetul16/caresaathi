@@ -65,12 +65,31 @@ def read_docs(client, dry: bool) -> list[dict]:
     return rows
 
 
+def ping(client) -> dict:
+    """One tiny text call, 20 s limit. Prints only the status and the start of the reply body, never headers or the key."""
+    model, _ = client._model()
+    t0 = time.monotonic()
+    try:
+        r = client.http.post("/chat/completions", timeout=20,
+                             json={"model": model, "max_tokens": 5, "messages": [{"role": "user", "content": "Reply with the word ok."}]})
+        out = {"model": model, "status": r.status_code, "seconds": round(time.monotonic() - t0, 1), "body": r.text[:400]}
+    except Exception as e:  # noqa: BLE001 - diagnostic only
+        out = {"model": model, "status": None, "seconds": round(time.monotonic() - t0, 1), "body": f"{type(e).__name__}"}
+    print(f"\nPing {out['model']}: HTTP {out['status']} in {out['seconds']}s\n  {out['body']}")
+    return out
+
+
 def judge(client) -> list[dict]:
     rows = []
     bad = [("en", t) for t in UNSAFE["en"][:8]] + [("en", t) for t in PARAPHRASE + HOLDOUT]
+    misses = 0
     for lang, text in bad:
         flagged, _ = client.judge_text(text)
+        misses = misses + 1 if flagged is None else 0
         rows.append({"text": text, "flagged": flagged, "ok": flagged is True})
+        if misses >= 2:   # two errors in a row: the setup is wrong, do not spend more
+            print("Stopping: two calls in a row could not be judged. Run --ping to see the error.")
+            break
     return rows
 
 
@@ -100,10 +119,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--docs", action="store_true")
     ap.add_argument("--judge", action="store_true")
+    ap.add_argument("--ping", action="store_true", help="one tiny call to check key, model name and connection")
     ap.add_argument("--audio", nargs=2, metavar=("SCRIPT", "WAV"))
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
-    if not (a.docs or a.judge or a.audio or a.dry_run):
+    if not (a.docs or a.judge or a.audio or a.dry_run or a.ping):
         ap.print_help()
         return 2
     cfg = get_settings()
@@ -115,6 +135,8 @@ def main() -> int:
             return 2
         client = get_model_client()
     report: dict = {"at": datetime.now().isoformat(timespec="seconds"), "mode": "dry-run (offline reader)" if a.dry_run else cfg.meta_spark_dev_model if cfg.allow_contributor_models else cfg.meta_spark_model}
+    if a.ping:
+        report["ping"] = ping(client)
     if a.docs or a.dry_run:
         report["documents"] = rows = read_docs(client, a.dry_run)
         print(f"\nDocuments: {sum(r['ok'] for r in rows)}/{len(rows)} read exactly right")
