@@ -75,6 +75,7 @@ Sources: `dev.meta.ai/docs/speech-to-text` and `/docs/api-reference/voice/transc
 - **Document reading (7 documents, photo and PDF, 14 files):** 14 of 14 exact on medicines and schedules after one prompt fix (the first run was 8 of 14 because `frequency_text` was sometimes left out). The ambiguous-strength page (R7) is read as the clear medicine plus the smudge note in `unreadable` only some of the time; that case is the two-reader check's job.
 - **Visit extraction:** forcing the `visit.v1` JSON schema made the live model return empty results in 3 of 4 runs. A prompt with an example and temperature 0, no schema, gave the right items in 4 of 4. Code still validates. About 20 s per visit.
 - **Hindi/Marathi wording** is correct but stiff. Not yet reviewed by a native speaker.
+- **Found by testing in the website (Oct 28):** forcing the `extract.v1` schema also failed on a clear allergy card once: the live model returned `unreadable: "Tool call is pending"` and no allergy, so the penicillin check could not have fired. The document reader now uses an example prompt, temperature 0 and one retry, like the visit reader. Re-measured: allergy card 3 of 3; 12 of 14 files exact, the 2 misses are the smudged-strength page (R7), which the model now declines to extract and notes as unreadable (safe, but the medicine is absent from the plan).
 - **Not yet measured:** Voice Transcribe (needs a real recorded WAV), Marathi/Hindi speech accuracy, the whole flow through the website in live mode.
 
 ## Verified, unverified and open

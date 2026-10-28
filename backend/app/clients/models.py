@@ -124,6 +124,15 @@ VISIT_EXAMPLE = (
     '"follow_ups":[{"what":"<x>","due_text":"<as spoken>","source":{"segment_ids":["<id>"],"quote":"<exact words>"}}]}'
 )
 
+EXTRACT_EXAMPLE = (
+    '{"schema_version":"extract.v1","document":{"doc_type":"prescription","doc_date":"14/09/2026","issuer":"<clinic>","language":"en"},'
+    '"items":[{"kind":"medicine","title":"<name>","confidence":0.9,"details":{"ingredients":[{"name":"<x>","strength":"<y>"}],"form":"Tab",'
+    '"dose_text":"","frequency_text":"1-0-1","duration_days":30},"source":{"page":1,"line_start":7,"line_end":7,"quote":"<exact line>"}}],'
+    '"allergy_statement":"listed","allergies":[{"substance":"<x>","reaction":"<y>","severity":"unknown","source":{"page":1,"line_start":5,'
+    '"line_end":5,"quote":"<exact line>"}}],"providers":[],"unreadable":[],"follow_ups":[{"what":"<x>","due_text":"<as written>",'
+    '"source":{"page":1,"line_start":11,"line_end":11,"quote":"<exact line>"}}]}'
+)
+
 EXTRACT_PROMPT = (
     "Read the numbered document below and return ONLY JSON matching the extract.v1 schema. "
     "Each item's source.quote must be copied exactly from the cited page, and source.line_start/line_end must "
@@ -205,9 +214,23 @@ class LiveModelClient:
         return pages, usage
 
     def extract_document(self, pages: list[PageText], hint_doc_type: str | None) -> tuple[str, Usage]:
-        prompt = f"{EXTRACT_PROMPT}\n<document>\n{numbered(pages)}\n</document>"
-        return self._chat("extract_document", [{"type": "text", "text": prompt}],
-                          ExtractV1.model_json_schema(), "extract_v1", self.s.effort_read)
+        prompt = (f"{EXTRACT_PROMPT} Return one JSON object shaped like this example (replace the placeholders; add or remove entries as the "
+                  f"document requires; use [] for a list with nothing in it): {EXTRACT_EXAMPLE}\n<document>\n{numbered(pages)}\n</document>")
+        # Same finding as the visit reader: with the schema forced, a live run returned "unreadable: Tool call is pending" and no allergy
+        # for a clear allergy card. An example and temperature 0 are steadier; code validates the result either way. One retry if the
+        # answer is empty or all "unreadable" while the page has real text.
+        text, usage = "", None
+        for _ in range(2):
+            text, usage = self._chat("extract_document", [{"type": "text", "text": prompt}], None, "x", self.s.effort_read, 0)
+            m = re.search(r"\{.*\}", text, re.S)
+            text = m.group(0) if m else text
+            try:
+                j = json.loads(text)
+            except ValueError:
+                continue
+            if any(j.get(k) for k in ("items", "allergies", "follow_ups")) or not j.get("unreadable"):
+                break
+        return text, usage
 
     def extract_visit(self, segments: list[tuple[str, str, str]]) -> tuple[str, Usage]:
         body = "\n".join(f"[{sid}] ({label}) {text}" for sid, label, text in segments)
