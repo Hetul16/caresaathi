@@ -57,6 +57,23 @@ class Settings(BaseSettings):
     max_upload_bytes: int = 15 * 1024 * 1024
 
 
+def production_problems(s: Settings) -> list[str]:
+    """When the public address is https the app is treated as deployed: development defaults are not allowed. Returns what to fix."""
+    if not s.public_base_url.startswith("https"):
+        return []
+    out = []
+    for name in ("jwt_secret", "token_pepper"):
+        v = getattr(s, name)
+        if v.startswith("dev-only") or len(v) < 24:
+            out.append(f"{name.upper()} must be a random value of at least 24 characters")
+    for name in ("database_url_app", "database_url_auth", "database_url_worker"):
+        if "change-me" in getattr(s, name):
+            out.append(f"{name.upper()} still uses the default change-me password; set the role password first (docs/19-deployment.md)")
+    if s.allow_demo_seed and s.model_mode == "live" and "ALLOW_DEMO_SEED" not in __import__("os").environ:
+        out.append("set ALLOW_DEMO_SEED explicitly (true keeps the demo family button, false removes it)")
+    return out
+
+
 @lru_cache
 def get_settings() -> Settings:
     return Settings()

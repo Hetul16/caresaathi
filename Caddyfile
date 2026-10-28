@@ -1,0 +1,7 @@
+# One public address in front of the website. Caddy gets and renews the HTTPS certificate by itself (HTTPS is required for the microphone).
+# SITE_ADDRESS is your domain, for example caresaathi.example.com. For a local trial use :80.
+{$SITE_ADDRESS:localhost} {
+	encode gzip
+	# The website forwards /api/* to the API itself, so only one upstream is needed.
+	reverse_proxy web:3000
+}

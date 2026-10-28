@@ -11,12 +11,15 @@ from sqlalchemy import text
 
 from .api import agent, assist, auth, cards, demo, doctor, labels, members, patients, plan, tracking, trust, visits
 from .services.errors import ServiceError
-from .config import get_settings
+from .config import get_settings, production_problems
 from .db import engine_app
 
 app = FastAPI(title="CareSaathi API", version="0.1.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
 s = get_settings()
+_problems = production_problems(s)
+if _problems:
+    raise RuntimeError("Refusing to start with development settings on a public address:\n - " + "\n - ".join(_problems))
 app.add_middleware(
     CORSMiddleware, allow_origins=[o.strip() for o in s.cors_origins.split(",") if o.strip()],
     allow_credentials=True, allow_methods=["*"], allow_headers=["*"], expose_headers=["X-Request-Id"],

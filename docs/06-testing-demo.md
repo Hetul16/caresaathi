@@ -50,15 +50,15 @@ Show only features built after kickoff. The screens are in the design canvas "Ca
 
 | Time | Scene | What viewers see |
 | --- | --- | --- |
-| 0:00 to 0:20 | Hook | Priya, in another city, and one real fact: in one hospital study, 96% of medication discrepancies at care transitions were omissions (say "one study"). Then the title |
-| 0:20 to 0:45 | Documents to a care plan | Ramesh's discharge summary is uploaded and the care plan fills in. Tap an item to see its page and line |
-| 0:45 to 1:05 | Omission catch | "On the old list, missing from the new one": atorvastatin, both sources, the question for the doctor |
-| 1:05 to 1:40 | The visit | The mock visit in Hinglish: consent, live transcript with speakers, then the diff 10 mg to 5 mg with the doctor's words. Priya confirms |
-| 1:40 to 2:00 | Allergy catch | A new prescription with amoxicillin; the penicillin-family flag appears with a drafted question. If built, a blurry strength gets circled by the two-reader check |
-| 2:00 to 2:20 | Elder mode in Hindi | Ramesh taps one button and hears his next medicine in Hindi, with the doctor's words as the source |
-| 2:20 to 2:40 | Emergency Card | Scan the QR, see only verified facts and the last-updated time, then revoke the link and show it stop working |
-| 2:40 to 2:55 | Proof | The trust panel: a judge-style unsafe prompt refused, the scoreboard with real numbers and failures. If A2 is not built, a slide with the test results |
-| 2:55 to 3:00 | Close | The pitch line |
+| 0:00 to 0:15 | Hook | Priya, in another city, and one real fact: in one hospital study, 96% of medication discrepancies at care transitions were omissions (say "one study"). Then the title |
+| 0:15 to 0:35 | Photo to care plan | Priya photographs Ramesh's allergy card, clinic prescription and a second doctor's prescription. Muse Spark reads them and the plan fills in. Tap an item: the exact page and line |
+| 0:35 to 0:50 | Two catches, both in code | The amoxicillin line raises the penicillin-family flag with a drafted question. The omission catch shows atorvastatin missing from the new list, with both sources |
+| 0:50 to 1:15 | Label check | A phone photo of a strip: "reads Amlodipine 5 mg, your documents say 10 mg" with both numbers and a question. Then a loose pill: "I can only read printed text". Say: it knows what it cannot do |
+| 1:15 to 1:50 | Care crew | Goal: "Prepare us for Thursday's visit". Six steps appear one by one, each labelled automatic or asks first. The brief appears with a source on every line. The last step waits: Priya approves, her name appears in the trace |
+| 1:50 to 2:15 | Doctor link | A second window, no sign-in: the doctor sees the allergy first and the family's questions, and types a reply. Back on Priya's screen: "Dr. Joshi's exact words", then "Read changes from this reply", and one pending change with the doctor's quote. Priya confirms it |
+| 2:15 to 2:35 | Visit and voice | The scripted Hinglish visit (labelled as a mock) becomes a pending diff with the doctor's words. Elder mode reads the next medicine in Hindi with its source |
+| 2:35 to 2:50 | Picture schedule and card | The large-print sun-and-moon schedule in Hindi; the Emergency Card link, then revoke it and show it stop working |
+| 2:50 to 3:00 | Proof and close | The trust panel with real numbers and failures, the spend ledger line, and the pitch line |
 
 Optional: swap in at most one of the follow-up tracker, fridge sheet or claim file if it is finished and polished. Never add a scene that has not passed its tests.
 
@@ -90,6 +90,8 @@ Families leave a doctor's clinic and forget half of what they were told. Between
 
 | Question | Answer |
 | --- | --- |
+| Can it tell me what this loose pill is? | No, by design. A wrong answer could hurt someone and it would be medical advice. It reads printed text on a strip, box or tube and compares it with the family's documents. For anything else it says so and sends the question to the pharmacist |
+| Is the agent safe? | It can only call six registered tools, at most six steps per goal, and none of them changes a medicine or dose. Anything that reaches another person waits for a named family member's approval, and every step is stored and shown. The model only picks the order; code decides what runs |
 | Is this medical advice? | No. It copies what the doctor and the documents say, compares documents with each other, matches allergies in code, and sends every flag back to the doctor or pharmacist as a question. It has no tool for diagnosis, dosing or substitutes |
 | What if the model is wrong? | Every item shows its source, a second reading flags disagreements, risky actions need a named person's approval, and here are our measured error rates and failures |
 | What did you build during the event? | Everything except the files listed in the README as pre-hackathon planning: documents, diagrams, a database design and a mockup. All code, migrations, prompts and tests are from Oct 26 to Nov 4 |

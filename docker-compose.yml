@@ -1,6 +1,6 @@
 # CareSaathi local and single-host deployment.
 #   docker compose up -d db minio            -> database and object storage only (usable today)
-#   docker compose --profile app up -d       -> adds api, worker and web once backend/ and frontend/ exist
+#   docker compose --profile app up -d --build -> adds api, web and caddy (see docs/19-deployment.md)
 #
 # The database container loads db/schema.sql, the seed list and the roles on first start only.
 # Change the passwords in .env (copy .env.example). Never commit .env.
@@ -41,35 +41,34 @@ services:
       - "127.0.0.1:9000:9000"
       - "127.0.0.1:9001:9001"
 
+  # ---- the app (profile "app"): api + web + caddy, on one machine ----------------------------------------------------
+  # Uses .env.production (copy .env.production.example). Files are kept on the "storage" volume (STORAGE_BACKEND=local).
   api:
     profiles: ["app"]
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
-    env_file: .env
+    env_file: .env.production
     depends_on:
       db:
         condition: service_healthy
-      minio:
-        condition: service_started
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - storage:/srv/.storage
     expose:
       - "8000"
 
-  worker:
-    profiles: ["app"]
-    build: ./backend
-    restart: unless-stopped
-    env_file: .env
-    depends_on:
-      db:
-        condition: service_healthy
-    command: python -m app.worker.main
-
   web:
     profiles: ["app"]
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://api:8000
     restart: unless-stopped
-    env_file: .env
+    environment:
+      BACKEND_URL: http://api:8000
+    depends_on:
+      - api
     expose:
       - "3000"
 
@@ -83,11 +82,13 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddydata:/data
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
     depends_on:
-      - api
       - web
 
 volumes:
   pgdata:
   miniodata:
   caddydata:
+  storage:

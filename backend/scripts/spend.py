@@ -1,4 +1,4 @@
-"""Prints the live-model spend ledger. Run from backend/:  .venv\Scripts\python.exe scripts\spend.py"""
+"""Prints the live-model spend ledger. Run from backend/ with: python scripts/spend.py"""
 import json
 import sys
 from collections import defaultdict
