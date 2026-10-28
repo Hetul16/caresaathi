@@ -9,6 +9,7 @@ import { SourceProvider } from "../Source";
 import { AllergyBanner, ApprovalCard, ChangeCard, ConflictCard, DuplicateCard, OmissionCard, PlanItemCard, Timeline, useToast } from "./parts";
 import { CardPanel } from "./CardPanel";
 import { CrewPanel } from "./CrewPanel";
+import { LabelPanel } from "./LabelPanel";
 import { DoctorPanel } from "./DoctorPanel";
 import { ChatPanel } from "./ChatPanel";
 import { FamilyPanel } from "./FamilyPanel";
@@ -18,7 +19,7 @@ import { VisitPanel } from "./VisitPanel";
 import { DemoLoader } from "../DemoLoader";
 import { writeSelected } from "@/lib/live";
 
-type Tab = "overview" | "plan" | "documents" | "visits" | "tracker" | "ask" | "crew" | "doctor" | "card" | "family" | "approvals" | "history";
+type Tab = "overview" | "plan" | "documents" | "visits" | "tracker" | "ask" | "crew" | "doctor" | "label" | "card" | "family" | "approvals" | "history";
 
 export interface LiveCtx { patientId: string; reload: () => void }
 
@@ -61,6 +62,7 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
     ...(live ? [{ id: "documents" as Tab, label: "Documents", icon: "file" as IconName }, { id: "visits" as Tab, label: "Visits", icon: "mic" as IconName },
                 { id: "tracker" as Tab, label: "Tracker", icon: "calendar" as IconName }, { id: "ask" as Tab, label: "Ask", icon: "quote" as IconName },
                 { id: "crew" as Tab, label: "Care crew", icon: "sparkle" as IconName }, { id: "doctor" as Tab, label: "Doctor link", icon: "stethoscope" as IconName },
+                { id: "label" as Tab, label: "Label check", icon: "pill" as IconName },
                 { id: "card" as Tab, label: "Emergency Card", icon: "card" as IconName }, { id: "family" as Tab, label: "Family", icon: "users" as IconName }] : []),
     { id: "approvals", label: "Approvals", icon: "shield", count: waiting || undefined },
     { id: "history", label: "History", icon: "history" },
@@ -166,6 +168,7 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
                   <span className="item-foot">
                     {live && canApprove && p.items.some((i) => !i.confirmed && !i.alert_level) && <button className="btn btn-quiet btn-sm" onClick={confirmAll}><Icon name="check" /> Confirm all</button>}
                     {live && <Link href="/app/fridge" className="btn btn-quiet btn-sm"><Icon name="list" /> Fridge sheet</Link>}
+                    {live && <Link href="/app/schedule" className="btn btn-quiet btn-sm"><Icon name="clock" /> Picture schedule</Link>}
                     <span className="pill">{medicines.length}</span></span></div>
                 {medicines.length === 0 && <p className="card card-pad">No medicines yet.</p>}
                 <div className="grid-2">{medicines.map((i) => <PlanItemCard key={i.item_key} i={i} onConfirm={confirmItem} explain={explain} />)}</div>
@@ -185,6 +188,8 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
             {tab === "ask" && live && <ChatPanel patientId={live.patientId} />}
 
             {tab === "crew" && live && <CrewPanel patientId={live.patientId} canApprove={canApprove} toast={toast.show} onChange={live.reload} />}
+
+            {tab === "label" && live && <LabelPanel patientId={live.patientId} toast={toast.show} />}
 
             {tab === "doctor" && live && <DoctorPanel patientId={live.patientId} canApprove={canApprove} toast={toast.show} onChange={live.reload} />}
 

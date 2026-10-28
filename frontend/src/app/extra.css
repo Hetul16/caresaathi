@@ -306,3 +306,25 @@
 .input { width: 100%; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.045); color: var(--ink); font: inherit; font-size: 17px; resize: vertical; }
 .input:focus { outline: none; border-color: var(--signal); box-shadow: 0 0 0 4px rgba(200,241,53,.16); }
 .doc-page { display: grid; gap: 18px; padding: 28px 0 80px; }
+
+/* ---- picture schedule (C5) ---- */
+.psched { max-width: 980px; margin: 0 auto 60px; padding: 34px; border-radius: 18px; display: grid; gap: 22px; }
+.psched-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.pslot { border: 3px solid #1c1f26; border-radius: 20px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; background: #fff; }
+.pslot.morning { background: #fff6d6; } .pslot.noon { background: #ffe9b8; } .pslot.evening { background: #ffe0d1; } .pslot.night { background: #dfe6fb; }
+.pslot-head { display: flex; align-items: center; gap: 12px; color: #1c1f26; }
+.pslot-head h2 { margin: 0; font-size: 28px; }
+.pslot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pslot li { display: flex; gap: 12px; align-items: center; background: rgba(255,255,255,.75); border-radius: 14px; padding: 10px 12px; }
+.pcount { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font: 800 26px var(--font-mono); background: #1c1f26; color: #fff; }
+.pname { font-size: 24px; font-weight: 700; display: grid; gap: 2px; color: #1c1f26; }
+.pname small { font-size: 15px; font-weight: 500; color: #3a4150; }
+.pname .psrc { font-size: 12px; color: #667085; }
+.pslot-none { margin: 0; color: #667085; font-size: 18px; }
+.psched-empty { font-size: 22px; }
+@media print { .psched { box-shadow: none; padding: 0; max-width: none; } .pslot { break-inside: avoid; } }
+.psched { background: #fbf8ee; color: #1c1f26; box-shadow: 0 30px 80px -30px rgba(0,0,0,.6); }
+.psched .eyebrow { color: #5b6272; } .psched h1 { color: #10131a; margin: 4px 0 0; }
+.psched .fridge-bad { color: #a3261b; font-size: 22px; font-weight: 700; }
+.psched .fridge-foot { color: #5b6272; }
+.brief .btn-quiet { color: #1c1f26; border-color: #c9c3ad; background: rgba(0,0,0,.04); }

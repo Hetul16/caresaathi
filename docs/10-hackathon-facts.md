@@ -78,6 +78,11 @@ Sources: `dev.meta.ai/docs/speech-to-text` and `/docs/api-reference/voice/transc
 - **Found by testing in the website (Oct 28):** forcing the `extract.v1` schema also failed on a clear allergy card once: the live model returned `unreadable: "Tool call is pending"` and no allergy, so the penicillin check could not have fired. The document reader now uses an example prompt, temperature 0 and one retry, like the visit reader. Re-measured: allergy card 3 of 3; 12 of 14 files exact, the 2 misses are the smudged-strength page (R7), which the model now declines to extract and notes as unreadable (safe, but the medicine is absent from the plan).
 - **Not yet measured:** Voice Transcribe (needs a real recorded WAV), Marathi/Hindi speech accuracy, the whole flow through the website in live mode.
 
+### Label check and care crew, live (Oct 28, 2026)
+
+- **Label reader (Muse Spark vision, 5 synthetic pictures from `data/synthetic/render_labels.py`):** 5 of 5 read correctly: two strips (5 mg and 10 mg, batch and expiry), two boxes with a brand and an ingredient, and a loose pill with no text, which came back as `loose_pill_without_text: true` with empty lists (the refusal case). About 6 to 7 s and 400 to 800 output tokens each. Not yet tried on real, blurred or curved packaging photos.
+- **Care crew planner:** the live model picked the right tool in the right order for a visit-prep goal in 7 of 7 steps (about 2.5 s and 150 tokens a step). If its answer cannot be used, the code falls back to a fixed plan.
+
 ## Verified, unverified and open
 
 | Item | Status | Next step |

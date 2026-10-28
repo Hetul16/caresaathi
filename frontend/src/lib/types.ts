@@ -145,3 +145,9 @@ export interface CrewRun { id: string; goal: string; status: "running" | "done" 
 export interface DoctorMessage { id: string; direction: "to_doctor" | "from_doctor"; body: string; at: string }
 export interface DoctorLink { id: string; hint: string; doctor_name: string; status: "active" | "revoked" | "expired"; expires_at: string; created_at: string; opened: number; messages: DoctorMessage[] }
 export interface DoctorPage { available: true; doctor_name: string; expires_at: string; card: EmergencyCardData; thread: DoctorMessage[]; can_reply: boolean; note: string }
+
+// ---- label check (C4) ----
+export interface LabelProduct { brand: string | null; ingredients: { name: string; strength: string | null }[]; form?: string | null; expiry?: string | null; batch?: string | null;
+  verdict: "matches" | "different_strength" | "not_in_plan" | "could_not_read"; text: string; question: string | null;
+  plan_item: { title: string; detail: string; source: SourceRef } | null; allergy: { ingredient: string; match: string; text: string; allergy?: string; source?: SourceRef }[] }
+export interface LabelResult { products: LabelProduct[]; printed_lines: string[]; dropped_unprinted: number; note: string }
