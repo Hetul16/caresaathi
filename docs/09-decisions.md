@@ -234,6 +234,22 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Status:** Accepted (Oct 27, 2026)
 - **Decision:** The claim file (A7) is last in the cut order and was not started. Everything above it in `05-scope.md` is built and tested.
 
+### D-46 Doctor link: read-only, expiring, the doctor's words stay the doctor's
+- **Status:** Accepted (Oct 28, 2026)
+- **Decision:** A family member creates a link for one named doctor (random token, SHA-256 stored, expiry, revocable, every access logged, same pattern as the Emergency Card). The page shows only documented or confirmed facts and clearly marks unconfirmed items. The family's drafted question reaches the page only after a named member approves the `message_doctor_draft` action; the approved action is executed by posting to that link's thread. A doctor's reply is stored verbatim with the time and is never merged into the plan by itself: turning it into a change goes through the same pending-change approval as a visit (D-18). For the demo the doctor is a labeled fictional persona.
+
+### D-47 Care crew: the model proposes steps, the code runs only registered ones
+- **Status:** Accepted (Oct 28, 2026)
+- **Decision:** The agent loop lives in `backend/app/agent/`. The trigger is a user goal or a schedule, never text from a document. Each turn the model returns one JSON step `{tool, input}` from a short list; code validates it, passes it through `gate_tool_call`, runs automatic tools itself, queues "asks first" tools as awaiting approval, and records every step in `agent_steps` for the live trace. Hard limit of 6 steps and one model call per step. Tools are read-only or draft-only: there is no tool for doses, diagnosis, hospital decisions or sending anything without approval. Offline mode follows a fixed scripted plan so tests and demos are repeatable.
+
+### D-48 Label check reads printed text only; loose pills are refused
+- **Status:** Accepted (Oct 28, 2026)
+- **Decision:** Identifying a loose pill by shape, colour or markings is a clinical identification task with real harm if wrong, and it breaks D-24. The camera feature reads printed text from a strip, box, bottle or tube. Code compares the read ingredients and strength with the current plan and the allergy list, and the result is one of: matches (with the plan line and its source), not in the plan (with a question for the pharmacist), could not read. The model never says a medicine is correct or safe. No fine-tuned vision model exists in this project; Muse Spark vision is used for reading only.
+
+### D-49 Picture schedule is built by code, with no generated images
+- **Status:** Accepted (Oct 28, 2026)
+- **Decision:** The elder-friendly daily card uses fixed sun and moon icons and the schedule text parsed by code from the plan (for example 1-0-1). Generated images of medicines could mislead, so Muse Image is not used. Unconfirmed items are marked, and the card shows its source and last-updated date.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

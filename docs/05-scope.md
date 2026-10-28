@@ -54,7 +54,19 @@ A7 is the largest item and the one most likely to become a roadmap slide. If tim
 - One-tap family broadcast: the same plan explained in several languages side by side (Marathi stays unverified until tested).
 - Emergency voice mode: the card read aloud for a bystander, documented facts only.
 - Recovery Timeline in a single flow: staged photo plus voice update, matched to the patient's own written warning signs. No exercise video.
-- Medicine photo check with SAM 3.1.
+- Medicine photo check with SAM 3.1 (replaced by C4, label check, which reads printed text only).
+
+## Stretch C (added Oct 28, 2026 by the owner; built after the spine passes, in this order)
+
+| ID | Feature | What the user gets | Done when | Models |
+| --- | --- | --- | --- | --- |
+| C1 | Doctor link | An expiring, revocable, read-only page for one doctor: the sourced plan, allergy state, open flags and the family's drafted questions. The doctor replies in a form; the reply is stored as the doctor's exact words and shown in the family thread. Approving "message the doctor" is what puts a question on the page (D-46) | A revoked or expired link shows nothing; every access is logged; the page never shows unconfirmed items as confirmed; a reply cannot change the plan by itself | Code, Muse Spark 1.3 for wording |
+| C2 | Care crew with a visible trace | The family asks for a goal ("prepare us for Thursday's visit"). A bounded agent calls registered tools one at a time. Every step (tool, permission level, input, result, who approved) is shown live. "Asks first" steps wait for a named person (D-47) | At most 6 steps; an unknown tool or an untrusted trigger is refused and shown as refused; no step can change a medicine or dose; the trace matches the stored rows | Muse Spark 1.3 picks steps, code decides and runs them |
+| C3 | Visit prep brief and after-visit diff | Before a visit: one page with what changed since last time, what is unconfirmed, open flags, and questions for the doctor. After it: what changed, with sources | Every line carries its source or "from the doctor's words"; questions end as questions; no advice | Code, Muse Spark 1.3 for wording |
+| C4 | Label check | The caregiver photographs a strip, box, bottle or tube with PRINTED text. Muse Spark reads the text; code compares it with the plan and the allergy list and says "matches line N of document X", "not in the plan, ask the pharmacist" or "could not read". Loose pills are refused by design (D-48) | Every planted label case ends in one of those three states; an unreadable label never becomes "matches"; an ingredient that cannot be resolved shows "could not check" | Muse Spark 1.3 (reading only), code |
+| C5 | Picture schedule | A large-print daily card with sun and moon icons, the time of day, the medicine name as written in the plan, and the source, in English, Hindi or Marathi. Built by code from the confirmed plan (D-49) | Slots match the documented schedule; unconfirmed items are marked; no pictures of medicines | Code |
+
+C5 extends the fridge sheet (A4). Identification of loose, unlabelled pills by shape or colour is not built and is refused by design (D-48).
 
 ## Cut and dropped (not built)
 
