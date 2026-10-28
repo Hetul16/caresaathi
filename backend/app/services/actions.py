@@ -49,10 +49,14 @@ def decide_action(s: Session, *, action_id: UUID, approve: bool, user_id: UUID, 
     write_audit(s, actor_type="user", actor_id=user_id, patient_id=row["patient_id"],
                 action="action.approved" if approve else "action.refused", entity_type="action", entity_id=action_id,
                 after={"tool": row["tool"], "comment": comment})
+    delivered = False
+    if approve and row["tool"] == "message_doctor_draft":
+        from .doctor import deliver_approved_question
+        delivered = deliver_approved_question(s, action_id=action_id, patient_id=row["patient_id"], inp=row["input"] or {})
     timeline(s, patient_id=row["patient_id"], event_type="approval", actor_type="user", actor_id=user_id,
              summary=("Approved: " if approve else "Refused: ") + describe_action(row["tool"], row["input"] or {}),
              entity_type="action", entity_id=action_id)
-    return {"id": str(action_id), "status": "approved" if approve else "refused"}
+    return {"id": str(action_id), "status": ("done" if delivered else "approved") if approve else "refused"}
 
 
 def describe_action(tool: str, inp: dict[str, Any]) -> str:
