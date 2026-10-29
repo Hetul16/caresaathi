@@ -35,7 +35,7 @@ def _payload(run_id: str | None, ran_at: str, sha: str | None, model: str, summa
 
 
 @router.post("/trust/run")
-def run(s: Session = Depends(db)):
+def run(s: Session = Depends(db, scope="function")):
     result = run_suite()
     summary = result.summary()
     mode = "fake-reader (offline)" if get_settings().model_mode != "live" else get_settings().meta_spark_model

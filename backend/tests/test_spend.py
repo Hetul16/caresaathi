@@ -43,7 +43,7 @@ def _client(cfg, usage):
     class Http:
         def post(self, path, json=None, **kw):
             calls.append(path)
-            return SimpleNamespace(raise_for_status=lambda: None,
+            return SimpleNamespace(status_code=200, raise_for_status=lambda: None,
                                    json=lambda: {"choices": [{"message": {"content": "ok"}}], "usage": usage})
     c = models.LiveModelClient.__new__(models.LiveModelClient)
     c.s, c.http = cfg, Http()
@@ -68,3 +68,36 @@ def test_a_refused_judge_call_fails_closed(cfg, monkeypatch):
     c, calls = _client(cfg, {})
     flagged, _ = c.judge_text("anything")
     assert flagged is None and calls == []                  # None means undecided, which the guard treats as blocked
+
+
+def test_a_dropped_connection_is_retried_and_only_the_completed_call_is_priced(cfg, monkeypatch):
+    import httpx
+    monkeypatch.setattr(models, "get_settings", lambda: cfg)
+    monkeypatch.setattr(models.time, "sleep", lambda s: None)
+    c, calls = _client(cfg, {"prompt_tokens": 1_000_000, "completion_tokens": 0})
+    real_post, state = c.http.post, {"n": 0}
+
+    def flaky(path, json=None, **kw):
+        state["n"] += 1
+        if state["n"] < 3:
+            raise httpx.RemoteProtocolError("server disconnected")
+        return real_post(path, json=json, **kw)
+    c.http.post = flaky
+    text, _ = c._chat("t", [{"type": "text", "text": "hi"}])
+    assert text == "ok" and state["n"] == 3 and spend.total() == pytest.approx(0.10)
+
+
+def test_a_connection_that_never_recovers_fails_after_three_tries_without_cost(cfg, monkeypatch):
+    import httpx
+    monkeypatch.setattr(models, "get_settings", lambda: cfg)
+    monkeypatch.setattr(models.time, "sleep", lambda s: None)
+    c, _ = _client(cfg, {})
+    state = {"n": 0}
+
+    def dead(path, json=None, **kw):
+        state["n"] += 1
+        raise httpx.RemoteProtocolError("server disconnected")
+    c.http.post = dead
+    with pytest.raises(models.ModelError):
+        c._chat("t", [{"type": "text", "text": "hi"}])
+    assert state["n"] == 3 and spend.total() == 0

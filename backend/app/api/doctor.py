@@ -31,27 +31,27 @@ class ReplyIn(BaseModel):
 
 
 @router.post("/patients/{patient_id}/doctor-links", status_code=201)
-def create_link(patient_id: UUID, body: CreateIn, request: Request, s: Session = Depends(db)):
+def create_link(patient_id: UUID, body: CreateIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id, can_manage=True)
     return svc.create_link(s, patient_id=patient_id, user_id=request.state.user_id, doctor_name=body.doctor_name,
                            expires_in_days=body.expires_in_days)
 
 
 @router.get("/patients/{patient_id}/doctor-links")
-def list_links(patient_id: UUID, s: Session = Depends(db)):
+def list_links(patient_id: UUID, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     return {"links": svc.list_links(s, patient_id)}
 
 
 @router.post("/doctor-links/{link_id}/revoke")
-def revoke(link_id: UUID, request: Request, s: Session = Depends(db)):
+def revoke(link_id: UUID, request: Request, s: Session = Depends(db, scope="function")):
     pid, _, _ = svc.link_patient(s, link_id)
     require_member(s, pid, can_manage=True)
     return svc.revoke_link(s, link_id=link_id, user_id=request.state.user_id)
 
 
 @router.post("/doctor-links/{link_id}/questions", status_code=202)
-def ask(link_id: UUID, body: QuestionIn, request: Request, s: Session = Depends(db)):
+def ask(link_id: UUID, body: QuestionIn, request: Request, s: Session = Depends(db, scope="function")):
     """Asks first: this only queues the question. A member with approval rights must approve it before the doctor can see it."""
     pid, _, _ = svc.link_patient(s, link_id)
     require_member(s, pid)
@@ -59,7 +59,7 @@ def ask(link_id: UUID, body: QuestionIn, request: Request, s: Session = Depends(
 
 
 @router.post("/doctor-messages/{message_id}/read-changes")
-def read_changes(message_id: UUID, request: Request, s: Session = Depends(db)):
+def read_changes(message_id: UUID, request: Request, s: Session = Depends(db, scope="function")):
     """Read the doctor's reply into PENDING plan changes. Needs approval rights, because the changes then wait for a person to confirm."""
     from sqlalchemy import text
     from .deps import problem

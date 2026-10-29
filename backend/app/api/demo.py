@@ -18,7 +18,7 @@ class SeedIn(BaseModel):
 
 
 @router.post("/demo/seed", status_code=202)
-def seed(body: SeedIn, request: Request, s: Session = Depends(db)):
+def seed(body: SeedIn, request: Request, s: Session = Depends(db, scope="function")):
     if not get_settings().allow_demo_seed:
         raise problem(404, "not-found", "Not found")
     return start_demo(s, user_id=request.state.user_id, display_name=body.display_name.strip() or "A family member")

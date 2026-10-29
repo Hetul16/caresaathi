@@ -31,7 +31,7 @@ def _patient_of(s: Session, table: str, row_id: UUID) -> UUID:
 
 # ---- confirming plan items -------------------------------------------------------------------------------------
 @router.post("/patients/{patient_id}/plan-items/{item_key}/confirm")
-def confirm_item(patient_id: UUID, item_key: UUID, request: Request, s: Session = Depends(db)):
+def confirm_item(patient_id: UUID, item_key: UUID, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id, can_approve=True)
     return change_svc.confirm_item(s, patient_id=patient_id, item_key=item_key, user_id=request.state.user_id)
 
@@ -61,7 +61,7 @@ def _summary(state: dict) -> str | None:
 
 
 @router.get("/patients/{patient_id}/plan-changes")
-def list_plan_changes(patient_id: UUID, s: Session = Depends(db)):
+def list_plan_changes(patient_id: UUID, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     return pending_changes(s, patient_id)
 
@@ -72,7 +72,7 @@ class DecisionIn(BaseModel):
 
 
 @router.post("/plan-changes/{change_id}/decision")
-def decide_change(change_id: UUID, body: DecisionIn, request: Request, s: Session = Depends(db)):
+def decide_change(change_id: UUID, body: DecisionIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, _patient_of(s, "plan_changes", change_id), can_approve=True)
     return change_svc.decide_change(s, change_id=change_id, decision=body.decision, comment=body.comment,
                                     user_id=request.state.user_id, client=get_model_client())
@@ -84,7 +84,7 @@ class AckIn(BaseModel):
 
 
 @router.post("/allergy-conflicts/{conflict_id}/acknowledge")
-def acknowledge_conflict(conflict_id: UUID, body: AckIn, request: Request, s: Session = Depends(db)):
+def acknowledge_conflict(conflict_id: UUID, body: AckIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, _patient_of(s, "allergy_conflicts", conflict_id))
     return change_svc.acknowledge_conflict(s, conflict_id=conflict_id, user_id=request.state.user_id, note=body.note)
 
@@ -108,7 +108,7 @@ def omission_list(s: Session, patient_id: UUID) -> list[dict]:
 
 
 @router.get("/patients/{patient_id}/reconciliation")
-def reconciliation(patient_id: UUID, s: Session = Depends(db)):
+def reconciliation(patient_id: UUID, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     return omission_list(s, patient_id)
 
@@ -118,7 +118,7 @@ class FlagStateIn(BaseModel):
 
 
 @router.post("/reconciliation-flags/{flag_id}/state")
-def set_flag_state(flag_id: UUID, body: FlagStateIn, request: Request, s: Session = Depends(db)):
+def set_flag_state(flag_id: UUID, body: FlagStateIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, _patient_of(s, "reconciliation_flags", flag_id))
     return omission_svc.set_flag_state(s, flag_id=flag_id, state=body.state, user_id=request.state.user_id)
 
@@ -129,7 +129,7 @@ class CompletenessIn(BaseModel):
 
 
 @router.post("/documents/{doc_id}/completeness")
-def set_completeness(doc_id: UUID, body: CompletenessIn, request: Request, s: Session = Depends(db)):
+def set_completeness(doc_id: UUID, body: CompletenessIn, request: Request, s: Session = Depends(db, scope="function")):
     pid = _patient_of(s, "documents", doc_id)
     require_member(s, pid, can_approve=True)
     s.execute(text("UPDATE documents SET completeness = :c WHERE id = :i"), {"c": body.completeness, "i": doc_id})
@@ -147,7 +147,7 @@ def awaiting_actions(s: Session, patient_id: UUID) -> list[dict]:
 
 
 @router.get("/patients/{patient_id}/actions")
-def list_actions(patient_id: UUID, s: Session = Depends(db)):
+def list_actions(patient_id: UUID, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id, can_approve=True)
     return awaiting_actions(s, patient_id)
 
@@ -157,12 +157,12 @@ class ActionDecisionIn(BaseModel):
 
 
 @router.post("/actions/{action_id}/approve")
-def approve_action(action_id: UUID, body: ActionDecisionIn, request: Request, s: Session = Depends(db)):
+def approve_action(action_id: UUID, body: ActionDecisionIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, _patient_of(s, "actions", action_id), can_approve=True)
     return action_svc.decide_action(s, action_id=action_id, approve=True, user_id=request.state.user_id, comment=body.comment)
 
 
 @router.post("/actions/{action_id}/refuse")
-def refuse_action(action_id: UUID, body: ActionDecisionIn, request: Request, s: Session = Depends(db)):
+def refuse_action(action_id: UUID, body: ActionDecisionIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, _patient_of(s, "actions", action_id), can_approve=True)
     return action_svc.decide_action(s, action_id=action_id, approve=False, user_id=request.state.user_id, comment=body.comment)

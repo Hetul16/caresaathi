@@ -233,13 +233,27 @@ class LiveModelClient:
         except spend.SpendLimitReached as e:
             raise ModelError(str(e)) from e
         t0 = time.monotonic()
-        try:
-            r = self.http.post("/chat/completions", json=body)
-            r.raise_for_status()
-            j = r.json()
-            text = j["choices"][0]["message"]["content"]
-        except (httpx.HTTPError, KeyError, ValueError) as e:
-            raise ModelError(f"{purpose} failed: {type(e).__name__}") from e
+        # A dropped connection or a busy server (found live: "RemoteProtocolError", HTTP 429 and 5xx) is retried twice with a short wait.
+        # A refused request (4xx other than 429) is not: it would fail the same way. Only a completed call is priced.
+        last: Exception | None = None
+        for attempt in range(3):
+            try:
+                r = self.http.post("/chat/completions", json=body)
+                if r.status_code in (429, 500, 502, 503, 504) and attempt < 2:
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
+                r.raise_for_status()
+                j = r.json()
+                text = j["choices"][0]["message"]["content"]
+                break
+            except (httpx.TransportError, httpx.RemoteProtocolError) as e:
+                last = e
+                if attempt < 2:
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
+                raise ModelError(f"{purpose} failed: {type(e).__name__}") from e
+            except (httpx.HTTPError, KeyError, ValueError) as e:
+                raise ModelError(f"{purpose} failed: {type(e).__name__}") from e
         u = j.get("usage") or {}
         spend.add(spend.price(model, contrib, u.get("prompt_tokens"), u.get("completion_tokens")), model=model, purpose=purpose)
         return text, Usage(model, purpose, u.get("prompt_tokens"), u.get("completion_tokens"),

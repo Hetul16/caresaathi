@@ -14,7 +14,7 @@ router = APIRouter(tags=["label-check"])
 
 
 @router.post("/patients/{patient_id}/label-check")
-async def label_check(patient_id: UUID, request: Request, file: UploadFile = File(...), s: Session = Depends(db)):
+async def label_check(patient_id: UUID, request: Request, file: UploadFile = File(...), s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     data = await file.read(labelcheck.MAX_BYTES + 1)
     mime = (sniff_mime(data) or ("text/plain" if (file.content_type or "").startswith("text/plain") else "")) if data else ""

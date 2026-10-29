@@ -26,13 +26,13 @@ class CreateCardIn(BaseModel):
 
 
 @router.post("/patients/{patient_id}/emergency-card", status_code=201)
-def create_card(patient_id: UUID, body: CreateCardIn, request: Request, s: Session = Depends(db)):
+def create_card(patient_id: UUID, body: CreateCardIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id, can_manage=True)
     return card_svc.create_card(s, patient_id=patient_id, user_id=request.state.user_id, expires_in_days=body.expires_in_days)
 
 
 @router.get("/patients/{patient_id}/emergency-card")
-def list_cards(patient_id: UUID, s: Session = Depends(db)):
+def list_cards(patient_id: UUID, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     return {"cards": card_svc.list_cards(s, patient_id), "preview": card_svc.build_card(s, patient_id)}
 
@@ -45,7 +45,7 @@ def _card_patient(s: Session, card_id: UUID) -> UUID:
 
 
 @router.post("/emergency-cards/{card_id}/revoke")
-def revoke_card(card_id: UUID, request: Request, s: Session = Depends(db)):
+def revoke_card(card_id: UUID, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, _card_patient(s, card_id))
     return card_svc.revoke_card(s, card_id=card_id, user_id=request.state.user_id)
 
@@ -55,7 +55,7 @@ class ShareIn(BaseModel):
 
 
 @router.post("/emergency-cards/{card_id}/share", status_code=202)
-def share_card(card_id: UUID, body: ShareIn, request: Request, s: Session = Depends(db)):
+def share_card(card_id: UUID, body: ShareIn, request: Request, s: Session = Depends(db, scope="function")):
     """Asks first: this only queues the request. A member with approval rights must approve it before anything is sent."""
     pid = _card_patient(s, card_id)
     require_member(s, pid)

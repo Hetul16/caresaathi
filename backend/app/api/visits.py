@@ -48,7 +48,7 @@ def _check_version(v: str) -> None:
 
 
 @router.get("/visit-scripts")
-def visit_scripts(s: Session = Depends(db)):
+def visit_scripts(s: Session = Depends(db, scope="function")):
     """The scripted mock visits available for demos and tests. Synthetic only."""
     folder = Path(get_settings().synthetic_dir) / "ramesh" / "visits"
     out = []
@@ -59,7 +59,7 @@ def visit_scripts(s: Session = Depends(db)):
 
 
 @router.post("/patients/{patient_id}/visits", status_code=201)
-def start_visit(patient_id: UUID, body: VisitIn, request: Request, s: Session = Depends(db)):
+def start_visit(patient_id: UUID, body: VisitIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     _check_version(body.consent_text_version)
     vid = svc.create_visit(s, patient_id=patient_id, user_id=request.state.user_id, patient_consent=body.patient_consent.model_dump(),
@@ -69,7 +69,7 @@ def start_visit(patient_id: UUID, body: VisitIn, request: Request, s: Session = 
 
 
 @router.post("/patients/{patient_id}/visits/mock", status_code=202)
-def start_mock_visit(patient_id: UUID, body: MockVisitIn, request: Request, s: Session = Depends(db)):
+def start_mock_visit(patient_id: UUID, body: MockVisitIn, request: Request, s: Session = Depends(db, scope="function")):
     """Replays a scripted synthetic conversation through the same pipeline. Consent is still asked: it is the same flow."""
     require_member(s, patient_id)
     _check_version(body.consent_text_version)
@@ -83,7 +83,7 @@ def start_mock_visit(patient_id: UUID, body: MockVisitIn, request: Request, s: S
 
 
 @router.post("/visits/{visit_id}/audio", status_code=202)
-async def upload_audio(visit_id: UUID, request: Request, file: UploadFile = File(...), s: Session = Depends(db)):
+async def upload_audio(visit_id: UUID, request: Request, file: UploadFile = File(...), s: Session = Depends(db, scope="function")):
     pid = _patient_of(s, "visits", visit_id)
     require_member(s, pid)
     row = s.execute(text("SELECT status, origin, audio_storage_key FROM visits WHERE id = :v"), {"v": visit_id}).mappings().one()
@@ -105,7 +105,7 @@ async def upload_audio(visit_id: UUID, request: Request, file: UploadFile = File
 
 
 @router.post("/visits/{visit_id}/retry", status_code=202)
-def retry_visit(visit_id: UUID, s: Session = Depends(db)):
+def retry_visit(visit_id: UUID, s: Session = Depends(db, scope="function")):
     require_member(s, _patient_of(s, "visits", visit_id))
     status = s.execute(text("SELECT status FROM visits WHERE id = :v"), {"v": visit_id}).scalar_one()
     if status != "failed":
@@ -115,13 +115,13 @@ def retry_visit(visit_id: UUID, s: Session = Depends(db)):
 
 
 @router.get("/patients/{patient_id}/visits")
-def list_visits(patient_id: UUID, s: Session = Depends(db)):
+def list_visits(patient_id: UUID, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     return svc.list_visits(s, patient_id)
 
 
 @router.get("/visits/{visit_id}")
-def get_visit(visit_id: UUID, s: Session = Depends(db)):
+def get_visit(visit_id: UUID, s: Session = Depends(db, scope="function")):
     m = require_member(s, _patient_of(s, "visits", visit_id))
     return svc.visit_detail(s, visit_id, can_view_recordings=bool(m["can_view_recordings"]))
 
@@ -137,14 +137,14 @@ class SpeakersIn(BaseModel):
 
 
 @router.put("/visits/{visit_id}/speakers")
-def put_speakers(visit_id: UUID, body: SpeakersIn, request: Request, s: Session = Depends(db)):
+def put_speakers(visit_id: UUID, body: SpeakersIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, _patient_of(s, "visits", visit_id))
     svc.set_speakers(s, visit_id=visit_id, user_id=request.state.user_id, speakers=[x.model_dump() for x in body.speakers])
     return {"ok": True}
 
 
 @router.post("/visits/{visit_id}/consents/{consent_id}/revoke")
-def revoke_visit_consent(visit_id: UUID, consent_id: UUID, request: Request, s: Session = Depends(db)):
+def revoke_visit_consent(visit_id: UUID, consent_id: UUID, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, _patient_of(s, "visits", visit_id), can_manage=True)
     svc.revoke_consent(s, visit_id=visit_id, consent_id=consent_id, user_id=request.state.user_id)
     return {"ok": True}

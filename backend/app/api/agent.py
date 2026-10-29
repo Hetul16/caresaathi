@@ -18,12 +18,12 @@ class RunIn(BaseModel):
 
 
 @router.post("/patients/{patient_id}/agent/runs", status_code=202)
-def start(patient_id: UUID, body: RunIn, request: Request, s: Session = Depends(db)):
+def start(patient_id: UUID, body: RunIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     return runner.start_run(s, patient_id=patient_id, user_id=request.state.user_id, goal=body.goal)
 
 
 @router.get("/patients/{patient_id}/agent/runs")
-def runs(patient_id: UUID, s: Session = Depends(db)):
+def runs(patient_id: UUID, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     return {"runs": runner.list_runs(s, patient_id)}

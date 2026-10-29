@@ -34,7 +34,7 @@ class PatientIn(BaseModel):
 
 
 @router.post("/patients", status_code=201)
-def create_patient(body: PatientIn, request: Request, s: Session = Depends(db)):
+def create_patient(body: PatientIn, request: Request, s: Session = Depends(db, scope="function")):
     if body.preferred_language not in ("en", "hi", "mr"):
         raise problem(422, "validation-failed", "Language must be en, hi or mr")
     uid = request.state.user_id
@@ -44,7 +44,7 @@ def create_patient(body: PatientIn, request: Request, s: Session = Depends(db)):
 
 
 @router.get("/patients")
-def list_patients(s: Session = Depends(db)):
+def list_patients(s: Session = Depends(db, scope="function")):
     rows = s.execute(text("""
         SELECT p.id, p.full_name, p.date_of_birth, p.preferred_language, p.is_synthetic
         FROM patients p WHERE p.deleted_at IS NULL ORDER BY p.created_at""")).mappings().all()
@@ -55,7 +55,7 @@ def list_patients(s: Session = Depends(db)):
 
 @router.post("/patients/{patient_id}/documents", status_code=202)
 async def upload_document(patient_id: UUID, request: Request, file: UploadFile = File(...),
-                          doc_type: str = Form("other"), s: Session = Depends(db)):
+                          doc_type: str = Form("other"), s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     data = await file.read(get_settings().max_upload_bytes + 1)
     r = ingest_document(s, patient_id=patient_id, user_id=request.state.user_id, data=data, filename=file.filename or "", doc_type=doc_type)
@@ -66,7 +66,7 @@ async def upload_document(patient_id: UUID, request: Request, file: UploadFile =
 
 
 @router.get("/patients/{patient_id}/documents")
-def list_documents(patient_id: UUID, s: Session = Depends(db)):
+def list_documents(patient_id: UUID, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     rows = s.execute(text("""SELECT id, doc_type, status, original_filename, page_count, created_at FROM documents
                              WHERE patient_id=:p AND deleted_at IS NULL ORDER BY created_at DESC"""), {"p": patient_id}).mappings().all()
@@ -74,7 +74,7 @@ def list_documents(patient_id: UUID, s: Session = Depends(db)):
 
 
 @router.get("/documents/{doc_id}")
-def get_document(doc_id: UUID, s: Session = Depends(db)):
+def get_document(doc_id: UUID, s: Session = Depends(db, scope="function")):
     r = s.execute(text("""SELECT id, patient_id, doc_type, status, original_filename, page_count, extracted_text
                           FROM documents WHERE id=:i"""), {"i": doc_id}).mappings().first()
     if not r:
@@ -88,7 +88,7 @@ _source = source_of
 
 
 @router.get("/patients/{patient_id}/care-plan")
-def care_plan(patient_id: UUID, s: Session = Depends(db)):
+def care_plan(patient_id: UUID, s: Session = Depends(db, scope="function")):
     member = require_member(s, patient_id)
     pat = s.execute(text("SELECT id, full_name, date_of_birth, preferred_language FROM patients WHERE id=:p"), {"p": patient_id}).mappings().one()
 

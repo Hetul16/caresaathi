@@ -23,7 +23,7 @@ class ExplainIn(BaseModel):
 
 
 @router.post("/patients/{patient_id}/explain")
-def explain(patient_id: UUID, body: ExplainIn, request: Request, s: Session = Depends(db)):
+def explain(patient_id: UUID, body: ExplainIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     return explain_svc.explain_item(s, patient_id=patient_id, item_key=body.item_key, language=body.language,
                                     user_id=request.state.user_id, client=get_model_client())
@@ -35,19 +35,19 @@ class ChatIn(BaseModel):
 
 
 @router.post("/patients/{patient_id}/chat")
-def chat(patient_id: UUID, body: ChatIn, request: Request, s: Session = Depends(db)):
+def chat(patient_id: UUID, body: ChatIn, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     return chat_svc.answer(s, patient_id=patient_id, user_id=request.state.user_id, message=body.message.strip(), language=body.language)
 
 
 @router.get("/patients/{patient_id}/chat")
-def chat_history(patient_id: UUID, request: Request, s: Session = Depends(db)):
+def chat_history(patient_id: UUID, request: Request, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     return chat_svc.history(s, patient_id, request.state.user_id)
 
 
 @router.post("/patients/{patient_id}/chat/voice")
-async def chat_voice(patient_id: UUID, request: Request, language: Literal["en", "hi", "mr"] = "en", file: UploadFile = File(...), s: Session = Depends(db)):
+async def chat_voice(patient_id: UUID, request: Request, language: Literal["en", "hi", "mr"] = "en", file: UploadFile = File(...), s: Session = Depends(db, scope="function")):
     """One spoken question (a short WAV). It is transcribed by Muse Voice Transcribe, then answered exactly like typed text."""
     require_member(s, patient_id)
     data = await file.read(8 * 1024 * 1024)
