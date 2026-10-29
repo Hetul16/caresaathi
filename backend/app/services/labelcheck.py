@@ -80,6 +80,8 @@ def _allergy_flags(s: Session, pid: UUID, ingredients: list[dict]) -> list[dict]
 def _verdict(product: dict, plan: list[dict]) -> tuple[str, dict | None, str, str | None]:
     names = frozenset(normalize_medicine_name(i["name"]) for i in product["ingredients"] if normalize_medicine_name(i["name"]))
     label_title = product.get("brand") or " + ".join(i["name"] for i in product["ingredients"])
+    ing_text = " + ".join(i["name"] + (f" {i['strength']}" if i.get("strength") else "") for i in product["ingredients"])
+    shown = f"{product['brand']} ({ing_text})" if product.get("brand") and ing_text else label_title
     if not names and not product.get("brand"):
         return "could_not_read", None, "No medicine name could be read from this label.", "Could you tell me what this medicine is?"
     for item in plan:
@@ -97,8 +99,8 @@ def _verdict(product: dict, plan: list[dict]) -> tuple[str, dict | None, str, st
         # a brand-only label that matches a plan item by its name
         if not names and product.get("brand") and normalize_medicine_name(product["brand"]) in {normalize_medicine_name(item["title"])} | item["ings"]:
             return "matches", item, f"The label name matches {item['title']} in your documents.", None
-    return ("not_in_plan", None, f"“{label_title}” is not in the care plan.",
-            f"The label shows {label_title}. It is not in the documents I have. Could you tell me whether it is meant to be taken?")
+    return ("not_in_plan", None, f"“{shown}” is not in the care plan.",
+            f"The label shows {shown}. It is not in the documents I have. Could you tell me whether it is meant to be taken?")
 
 
 def check_label(s: Session, *, patient_id: UUID, user_id: UUID, data: bytes, mime: str, filename: str) -> dict[str, Any]:
