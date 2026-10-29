@@ -24,9 +24,11 @@ from pathlib import Path
 from typing import Protocol
 
 import httpx
+from pydantic import ValidationError
 
 from ..config import get_settings
 from . import spend
+from .repair import repair_extract, repair_visit
 from ..models.contracts import ExtractV1, VisitV1
 from ..safety.followups import parse_interval
 from ..safety.normalize import AmbiguousDate, parse_document_date
@@ -262,18 +264,25 @@ class LiveModelClient:
     def extract_document(self, pages: list[PageText], hint_doc_type: str | None) -> tuple[str, Usage]:
         prompt = (f"{EXTRACT_PROMPT} Return one JSON object shaped like this example (replace the placeholders; add or remove entries as the "
                   f"document requires; use [] for a list with nothing in it): {EXTRACT_EXAMPLE}\n<document>\n{numbered(pages)}\n</document>")
-        # Same finding as the visit reader: with the schema forced, a live run returned "unreadable: Tool call is pending" and no allergy
-        # for a clear allergy card. An example and temperature 0 are steadier; code validates the result either way. One retry if the
-        # answer is empty or all "unreadable" while the page has real text.
-        text, usage = "", None
-        for _ in range(2):
-            text, usage = self._chat("extract_document", [{"type": "text", "text": prompt}], None, "x", self.s.effort_read, 0)
+        # With the schema forced, a live run returned "unreadable: Tool call is pending" and no allergy for a clear allergy card, so the
+        # schema is not forced; an example and temperature 0 are steadier. The JSON is then repaired (labels only, never facts: see
+        # repair.py) and checked against the contract. If it still fails, ONE more try tells the model what was wrong. Another retry
+        # covers an empty or all-"unreadable" answer for a page with real text. Code validates the result again afterwards.
+        text, usage, feedback = "", None, ""
+        for attempt in range(3):
+            text, usage = self._chat("extract_document", [{"type": "text", "text": prompt + feedback}], None, "x", self.s.effort_read, 0)
             m = re.search(r"\{.*\}", text, re.S)
             text = m.group(0) if m else text
             try:
-                j = json.loads(text)
-            except ValueError:
+                j = repair_extract(json.loads(text))
+                ExtractV1.model_validate(j)
+            except ValidationError as e:
+                feedback = f"\nYour previous answer was rejected: {str(e)[:300]}. Return the corrected JSON only."
                 continue
+            except (ValueError, TypeError):
+                feedback = "\nYour previous answer was not valid JSON. Return one JSON object only."
+                continue
+            text = json.dumps(j, ensure_ascii=False)
             if any(j.get(k) for k in ("items", "allergies", "follow_ups")) or not j.get("unreadable"):
                 break
         return text, usage
@@ -286,7 +295,12 @@ class LiveModelClient:
         # with an example and temperature 0 it was 4 of 4. Code validates the result anyway (validate_visit).
         text, usage = self._chat("extract_visit", [{"type": "text", "text": prompt}], None, "x", self.s.effort_read, 0)
         m = re.search(r"\{.*\}", text, re.S)
-        return (m.group(0) if m else text), usage
+        text = m.group(0) if m else text
+        try:
+            text = json.dumps(repair_visit(json.loads(text)), ensure_ascii=False)
+        except (ValueError, TypeError):
+            pass                       # not JSON at all: validation downstream fails it and a person is asked to listen
+        return text, usage
 
     def transcribe_audio(self, wav: bytes) -> tuple[list[AudioTurn], Usage]:
         req = {"mode": "DIARIZATION", "model": self.s.meta_asr_model, "audioEncoding": "WAV"}

@@ -83,6 +83,11 @@ Sources: `dev.meta.ai/docs/speech-to-text` and `/docs/api-reference/voice/transc
 - **Label reader (Muse Spark vision, 5 synthetic pictures from `data/synthetic/render_labels.py`):** 5 of 5 read correctly: two strips (5 mg and 10 mg, batch and expiry), two boxes with a brand and an ingredient, and a loose pill with no text, which came back as `loose_pill_without_text: true` with empty lists (the refusal case). About 6 to 7 s and 400 to 800 output tokens each. Not yet tried on real, blurred or curved packaging photos.
 - **Care crew planner:** the live model picked the right tool in the right order for a visit-prep goal in 7 of 7 steps (about 2.5 s and 150 tokens a step). If its answer cannot be used, the code falls back to a fixed plan.
 
+### Whole-flow live run through the API (Oct 29, 2026)
+
+- Allergy card, clinic prescription and a second doctor's prescription uploaded as photos by a new user: all three read (17 to 49 s each). The plan listed 5 medicines with schedules, the penicillin allergy was recorded, and the Amoxicillin line raised a `drug_family` conflict found by code, with a drafted question. The care crew ran 5 steps and built the brief. About $0.002 for the three documents.
+- **A second failure the earlier smoke test missed:** the allergy card was read correctly but the reader labelled it `doc_type: "allergy_card"`, which is not an allowed value, so the whole extraction failed validation and the allergy was lost (the document showed "needs review" and allergies "not recorded"). The smoke test only compared medicines, so it passed. Fix: `app/clients/repair.py` maps unknown labels to neutral values before validation (never invents a fact), plus a retry that tells the model what was wrong; 6 tests. After the fix the same flow recorded the allergy. Lesson: measure the whole pipeline, not one field.
+
 ## Verified, unverified and open
 
 | Item | Status | Next step |
