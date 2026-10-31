@@ -98,6 +98,10 @@ Sources: `dev.meta.ai/docs/speech-to-text` and `/docs/api-reference/voice/transc
 - **Doc facts (dev.meta.ai/docs/api-reference/voice/schemas):** request fields are `model`, `audioEncoding`, `mode`, `keywords` (bias toward terms), `languageBias` (language names), `partialMode`, `emitAudioProgress`. There is no `language` or `locale` field. Accepted language names beyond "English" and "French" are not listed on that page; "Hindi" and "Marathi" worked in practice.
 - **Still not measured:** a real Hinglish doctor-visit conversation recorded by a person (needs the V1 script read aloud), and Marathi speech with medical vocabulary.
 
+### Whole-product browser run against the live model (Oct 31, 2026)
+
+- A scripted browser walked the demo video's path (26 checks: three photos, flags, label check, two-reader choice, care crew with approval, doctor window and reply, reply read into a follow-up, outcomes answer, visit, confirm, picture schedule, elder mode, Emergency Card revoke, Trust page). The first runs found two real defects, both fixed in D-57: a missed allergy conflict when the allergy card and a prescription were processed at the same time, and clumsy live wording of the allergy question that leaked an internal label. Three of the early failures were the test's own timing and letter-case checks, not product faults.
+
 ## Verified, unverified and open
 
 | Item | Status | Next step |

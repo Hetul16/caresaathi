@@ -150,6 +150,7 @@ def apply_document_extraction(s: Session, *, patient_id: UUID, document_id: UUID
                               raw_output: str, page_lines: dict[int, list[str]], user_id: UUID | None,
                               client: ModelClient, language: str = "en", model_call_id: UUID | None = None) -> ApplyResult:
     assert validated.data is not None
+    lock_patient(s, patient_id)
     data = validated.data
     res = ApplyResult()
     try:
@@ -189,6 +190,9 @@ def apply_document_extraction(s: Session, *, patient_id: UUID, document_id: UUID
         res.allergies_added += 1
         write_audit(s, actor_type="system", actor_id=None, patient_id=patient_id, action="allergy.added_from_document",
                     entity_type="allergy", entity_id=key, after={"substance": al.substance, "document_id": str(document_id)})
+
+    if res.allergies_added:
+        recheck_medicines_for_new_allergy(s, patient_id, client, language)
 
     # "No known allergies" is recorded only when the page literally says so. Code finds the line, not the model.
     if data.allergy_statement == "none_stated" and not data.allergies:
@@ -301,6 +305,22 @@ def _record_supply(s: Session, patient_id: UUID, item_key: UUID, item_id: UUID, 
         {"p": patient_id, "k": item_key, "i": item_id, "q": qty, "u": str(q.get("unit") or "tablets"), "d": daily, "sd": start,
          "eta": estimate_run_out(start, qty, daily), "src": source_ref_id})
     return 1
+
+
+def lock_patient(s: Session, patient_id: UUID) -> None:
+    """Serialize the writes that decide allergy conflicts for one patient until this transaction ends.
+
+    Found by uploading three photos at once through the live app (Oct 31): the second prescription (Amoxicillin) and the allergy card were
+    processed in parallel, each transaction could not see the other's uncommitted row, and the conflict was never raised. Model calls stay
+    parallel; only the short database write that follows waits its turn."""
+    s.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:k, 0))"), {"k": f"patient-plan:{patient_id}"})
+
+
+def recheck_medicines_for_new_allergy(s: Session, patient_id: UUID, client: ModelClient, language: str = "en") -> int:
+    """An allergy that arrives after medicines were listed: check those medicines again. Already-open conflicts are not duplicated."""
+    ids = s.execute(text("""SELECT id FROM care_plan_items WHERE patient_id = :p AND is_current AND status = 'active' AND kind = 'medicine'"""),
+                    {"p": patient_id}).scalars().all()
+    return sum(len(raise_conflicts_for_item(s, patient_id, i, client, language)) for i in ids)
 
 
 def raise_conflicts_for_item(s: Session, patient_id: UUID, item_id: UUID, client: ModelClient, language: str = "en") -> list[UUID]:

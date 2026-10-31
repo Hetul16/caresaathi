@@ -278,6 +278,10 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Status:** Accepted (Oct 31, 2026)
 - **Decision:** The visit's language, which the family chooses before recording, is sent to Muse Voice Transcribe as `languageBias`. Measured on 20 real FLEURS clips per language: Hindi about 10% word errors either way; Marathi 57% without the hint and 23% with it. Marathi speech input is described as experimental in the pitch and on the Trust page, and the Marathi voice of the app (explanations read aloud) is separate from this measurement. The result and its limits (read speech, not a consultation) are in the committed live report and `docs/10-hackathon-facts.md`.
 
+### D-57 Allergy flags and questions are templates; plan writes for one patient are serialized
+- **Status:** Accepted (Oct 31, 2026)
+- **Decision:** Two defects found by running the whole product through a browser against the live model. (1) Uploading the allergy card and an Amoxicillin prescription together raised no conflict: each was processed in its own transaction and neither saw the other's uncommitted row, and an allergy found after a medicine was not re-checked for documents (it was for visits). Fix: a per-patient advisory lock around the database write that decides conflicts (model calls stay parallel), plus a recheck of every current medicine whenever a new allergy is recorded. Three tests reproduce it and fail without the fix. (2) Live-model wording of the allergy flag and the doctor's question was chatty and leaked an internal label ("drug_family"). The allergy flag, the doctor question, the omission question and the duplicate question are now fixed templates (English, Hindi, Marathi) in live mode too, as they already were offline; the model still words explanations. The invariant that the model only words the flag is kept as an option, not a requirement; the safer choice is the default.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

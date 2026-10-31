@@ -385,7 +385,15 @@ class LiveModelClient:
         except ValueError:
             return {"tool": ""}, usage
 
+    # Safety-critical sentences are built from fixed templates in code, not worded by the model (D-42, D-57). A live run (Oct 31) produced
+    # "The document notes drug_family for Amoxicillin and penicillin" and a chatty "Hi," greeting in an allergy question: unclear, and it
+    # leaked an internal label. The templates are the same ones the offline reader uses, in English, Hindi and Marathi.
+    _TEMPLATED = ("allergy_flag", "doctor_question", "omission_question", "duplicate_question")
+
     def word(self, kind: str, facts: dict, language: str) -> tuple[str, Usage]:
+        if kind in self._TEMPLATED:
+            text, _ = FakeModelClient().word(kind, facts, language)
+            return text, Usage("template", "word_" + kind, 0, 0, 0)
         lang = {"en": "English", "hi": "Hindi", "mr": "Marathi"}.get(language, "English")
         script = {"Hindi": "Devanagari script (medicine names may stay in English letters)", "Marathi": "Devanagari script (medicine names may stay in English letters)"}.get(lang, "plain English")
         prompt = (f"You are writing for an elderly person and their family. Write a short, warm, natural {kind} in {lang}, in {script}, "

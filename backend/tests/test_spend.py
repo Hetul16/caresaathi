@@ -120,3 +120,16 @@ def test_the_language_hint_is_sent_to_the_speech_endpoint_only_when_the_family_g
     c.transcribe_audio(b"\x00" * 64, language_bias=["Marathi"])
     c.transcribe_audio(b"\x00" * 64)
     assert sent[0]["languageBias"] == ["Marathi"] and "languageBias" not in sent[1]
+
+
+def test_allergy_flags_and_questions_are_built_from_templates_even_in_live_mode(cfg, monkeypatch):
+    """No model call, no chatty greeting, no internal labels such as drug_family."""
+    monkeypatch.setattr(models, "get_settings", lambda: cfg)
+    c, calls = _client(cfg, {"prompt_tokens": 10, "completion_tokens": 10})
+    for lang in ("en", "hi", "mr"):
+        flag, u = c.word("allergy_flag", {"allergy": "Penicillin", "medicine": "Amoxicillin 500 mg", "match": "drug_family"}, lang)
+        q, _ = c.word("doctor_question", {"allergy": "Penicillin", "medicine": "Amoxicillin 500 mg", "match": "drug_family"}, lang)
+        assert "Penicillin" in flag and "Amoxicillin" in q and "drug_family" not in flag + q and not q.lower().startswith("hi")
+        assert u.model == "template"
+    assert calls == [] and spend.total() == 0                      # nothing was sent to the model and nothing was spent
+    assert "?" in c.word("omission_question", {"medicine": "Atorvastatin 20 mg"}, "en")[0]

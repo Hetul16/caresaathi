@@ -15,7 +15,7 @@ from ..safety.dosing import parse_schedule
 from ..safety.normalize import normalize_medicine_name
 from .audit import timeline, write_audit
 from .errors import ServiceError
-from .plan import ingredients_of, insert_ingredients, insert_item_version, raise_conflicts_for_item
+from .plan import ingredients_of, insert_ingredients, insert_item_version, lock_patient, raise_conflicts_for_item, recheck_medicines_for_new_allergy
 from .resolve import resolve_allergy
 
 _KINDS = {"medicine", "condition", "test", "appointment", "warning_sign", "restriction", "instruction", "result"}
@@ -47,6 +47,7 @@ def decide_change(s: Session, *, change_id: UUID, decision: str, comment: str | 
     if ch["status"] != "pending":
         raise ServiceError(409, "already-decided", "This change has already been decided")
     patient_id: UUID = ch["patient_id"]
+    lock_patient(s, patient_id)
 
     if decision == "reject":
         s.execute(text("UPDATE plan_changes SET status = 'rejected', decided_by = :u, decided_at = now() WHERE id = :i"),
@@ -131,11 +132,7 @@ def _apply_allergy_added(s: Session, ch: dict, after: dict, user_id: UUID, clien
         {"p": ch["patient_id"], "k": uuid4(), "sub": substance, "n": norm, "sid": sub_id, "fid": fam_id,
          "r": after.get("reaction"), "sev": severity, "src": ch["source_ref_id"], "u": user_id})
     # An allergy that arrives after medicines were listed: check those medicines again.
-    medicine_ids = s.execute(text("""SELECT id FROM care_plan_items
-                                     WHERE patient_id = :p AND is_current AND status = 'active' AND kind = 'medicine'"""),
-                             {"p": ch["patient_id"]}).scalars().all()
-    for item_id in medicine_ids:
-        raise_conflicts_for_item(s, ch["patient_id"], item_id, client, language)
+    recheck_medicines_for_new_allergy(s, ch["patient_id"], client, language)
 
 
 def acknowledge_conflict(s: Session, *, conflict_id: UUID, user_id: UUID, note: str | None) -> dict[str, Any]:
