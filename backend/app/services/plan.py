@@ -23,7 +23,7 @@ from ..safety.dosing import daily_units, parse_schedule
 from ..safety.followups import compute_due
 from ..safety.refill import estimate_run_out
 from ..safety.guard import GuardContext, guard_output
-from ..safety.normalize import normalize_medicine_name, same_medicine, split_combination
+from ..safety.normalize import normalize_medicine_name, printed_date, same_medicine, split_combination
 from ..safety.text import normalize_text
 from ..safety.validate import ValidatedExtraction
 from .audit import timeline, write_audit
@@ -153,10 +153,7 @@ def apply_document_extraction(s: Session, *, patient_id: UUID, document_id: UUID
     lock_patient(s, patient_id)
     data = validated.data
     res = ApplyResult()
-    try:
-        doc_date: date | None = date.fromisoformat(data.document.doc_date) if data.document.doc_date else None
-    except ValueError:
-        doc_date = None
+    doc_date: date | None = printed_date(data.document.doc_date)      # ISO or day-first; an ambiguous date stays empty
 
     ext_status = "needs_review" if validated.needs_review else "applied"
     ext_id = s.execute(text("""

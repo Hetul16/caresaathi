@@ -189,3 +189,10 @@ export interface WellbeingHistory { days: number; days_with_entry: number; entri
 
 // ---- family tasks (C8) ----
 export interface CareTask { id: string; title: string; due_date: string | null; status: "open" | "done"; assigned_to: string | null; created_by: string; done_by: string | null; overdue: boolean; done_at: string | null }
+
+// ---- medicine timeline ----
+export interface TimelineRow { item_key: string; title: string; detail: string | null; confirmed: boolean; prescriber: string; doc_date: string | null;
+  start: string | null; end: string | null; open_end: boolean; how: string; allergy: { match: string; flag: string } | null; source: SourceRef }
+export interface TimelineOverlap { ingredient: string; medicines: string[]; keys: string[]; dated: boolean; question: string;
+  spots: { a: string; b: string; start: string; end: string | null }[] }
+export interface MedicineTimeline { today: string; window: { start: string; end: string }; rows: TimelineRow[]; overlaps: TimelineOverlap[]; note: string }

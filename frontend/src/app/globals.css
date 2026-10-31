@@ -450,3 +450,33 @@ button { font: inherit; color: inherit; }
 .wa-typing i:nth-child(2) { animation-delay: .2s; } .wa-typing i:nth-child(3) { animation-delay: .4s; }
 @keyframes wa-blink { 0%, 80%, 100% { opacity: .3; } 40% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .wa-typing i { animation: none; opacity: .6; } }
+
+/* Medicine timeline (family/MedicineTimeline.tsx) */
+.tl-scroll { overflow-x: auto; }
+.tl { --tl-name: 170px; position: relative; min-width: 720px; display: grid; gap: 8px; padding: 22px 0 22px; }
+.tl-axis { position: absolute; top: 0; left: var(--tl-name); right: 0; height: 18px; font: 600 11px var(--font-mono); color: var(--ink-3); }
+.tl-axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.tl-row { display: grid; grid-template-columns: var(--tl-name) 1fr; align-items: center; gap: 0; }
+.tl-name { display: grid; padding-right: 10px; line-height: 1.25; } .tl-name small { color: var(--ink-3); font-size: 12px; }
+.tl-track { position: relative; height: 38px; border-radius: 10px; background: rgba(255,255,255,.03); overflow: hidden; }
+.tl-grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line-soft); }
+.tl-bar { position: absolute; top: 5px; height: 28px; border-radius: 8px; border: 1.5px dashed var(--ink-3); background: transparent; color: var(--ink); display: flex; align-items: center; gap: 6px; padding: 0 8px; cursor: pointer; overflow: hidden; font: inherit; }
+.tl-bar.on { border: 0; background: linear-gradient(90deg, var(--signal-deep), var(--signal)); color: var(--on-signal); }
+.tl-bar.flag { border: 1.5px solid var(--coral); background: var(--rose-tint); color: var(--ink); }
+.tl-bar.flag.on { background: linear-gradient(90deg, rgba(255,107,87,.55), rgba(255,107,87,.8)); color: var(--ink); }
+.tl-bar.open { -webkit-mask-image: linear-gradient(90deg, #000 70%, transparent); mask-image: linear-gradient(90deg, #000 70%, transparent); }
+.tl-bar.picked { outline: 2px solid var(--ice); outline-offset: 1px; }
+.tl-bar:focus-visible { box-shadow: var(--ring); }
+.tl-warn { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--coral); color: var(--on-coral); font: 700 12px/18px var(--font-body); text-align: center; }
+.tl-label { font-size: 12px; white-space: nowrap; font-weight: 600; }
+.tl-label.out { position: absolute; top: 11px; color: var(--ink-2); pointer-events: none; }
+.tl-overlap { position: absolute; top: 3px; height: 32px; border-radius: 6px; pointer-events: none; border: 1.5px solid var(--gold);
+  background: repeating-linear-gradient(135deg, rgba(255,185,56,.55) 0 5px, rgba(255,185,56,.12) 5px 10px); }
+.tl-today { position: absolute; top: 18px; bottom: 14px; width: 0; border-left: 2px solid var(--ice); pointer-events: none; }
+.tl-today span { position: absolute; bottom: -16px; left: -14px; font: 700 11px var(--font-mono); color: var(--ice); }
+.tl-key { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 14px; font-size: 13px; color: var(--ink-2); }
+.tl-key .k { display: inline-block; width: 22px; height: 10px; border-radius: 4px; margin-right: 6px; vertical-align: middle; border: 1.5px dashed var(--ink-3); }
+.tl-key .k.on { border: 0; background: var(--signal); } .tl-key .k.open { border-style: dashed; opacity: .7; }
+.tl-key .k.stripe { border: 1px solid var(--gold); background: repeating-linear-gradient(135deg, rgba(255,185,56,.7) 0 3px, rgba(255,185,56,.15) 3px 6px); }
+.tl-key .k.flag { border: 1.5px solid var(--coral); background: var(--rose-tint); }
+@media (prefers-reduced-motion: no-preference) { .tl-bar { transition: transform .15s var(--ease), box-shadow .15s; } .tl-bar:hover { transform: translateY(-1px); } }

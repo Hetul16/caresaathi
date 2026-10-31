@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..services import tracking as svc
+from ..services.medtimeline import medicine_timeline
 from .deps import db, require_member
 from .plan import _patient_of
 
@@ -48,6 +49,12 @@ def confirm_supply(supply_id: UUID, request: Request, s: Session = Depends(db, s
 def medicine_history(patient_id: UUID, s: Session = Depends(db, scope="function")):
     require_member(s, patient_id)
     return svc.medicine_history(s, patient_id)
+
+
+@router.get("/patients/{patient_id}/medicine-timeline")
+def timeline(patient_id: UUID, s: Session = Depends(db, scope="function")):
+    require_member(s, patient_id)
+    return medicine_timeline(s, patient_id)
 
 
 @router.get("/patients/{patient_id}/duplicates")

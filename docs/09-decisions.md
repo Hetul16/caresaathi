@@ -299,6 +299,11 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Decision:** The Chat tab shows the existing flows (photo of a document, photo of a medicine box, questions, "Taken" taps) in a WhatsApp-style screen on the same endpoints and checks as the website. It is labelled "not connected to WhatsApp". A real WhatsApp channel (Cloud API, test number limited to 5 verified recipients, templates outside the 24 h window, public webhook, Opus voice-note conversion, review of Meta's health-content policy) is not built and is described as the next step, not as a feature.
 - **Why:** About one day of work and no Meta approval, against 4 to 6 days plus approvals for the real channel, with the video due Nov 3.
 
+### D-62 Medicine timeline: printed dates only, overlaps and flags from code
+- **Status:** Accepted (Oct 31, 2026)
+- **Decision:** A Timeline tab draws every current medicine on one calendar. A bar starts on the date printed on its document and runs for the days printed on its line (the start day is day 1). No printed date: the medicine is listed under "not drawn", never given a guessed date. No printed duration: the bar has no end and is shown fading out, never as stopped. Same-ingredient overlaps reuse the duplicate-ingredient groups and are striped only where both bars are known to be running. An open allergy flag is marked on the bar with the existing code-worded text. Every bar opens to its sum in words and its source. No wording says a combination is fine or not fine; the question for the doctor is the existing template.
+- **Why:** It shows the two-doctor problem at a glance and it runs on dates code already holds. Found while building it: the reader returns `20/10/2026` and the plan code only accepted ISO dates, so with the live model the document date was silently dropped (follow-up due dates too). Dates are now read day-first by `printed_date`; an ambiguous one such as `05/11/2026` stays empty.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

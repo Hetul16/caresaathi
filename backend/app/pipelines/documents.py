@@ -12,6 +12,7 @@ from sqlalchemy import text
 from ..clients.models import DocFile, ModelError, get_model_client
 from ..clients.storage import get_storage
 from ..db import worker_session
+from ..safety.normalize import printed_date
 from ..safety.reconcile import document_completeness
 from ..safety.validate import validate_extraction
 from ..services.audit import timeline, write_audit
@@ -67,10 +68,11 @@ def process_document(document_id: UUID, client=None) -> None:
             return
 
         meta = validated.data.document
+        printed = printed_date(meta.doc_date)          # the date printed on the page; an ambiguous one stays empty
         s.execute(text("""UPDATE documents SET doc_type = CAST(:t AS doc_type), language = CAST(:l AS lang_code),
-                                               issuer = :iss WHERE id = :i"""),
+                                               issuer = :iss, doc_date = :dd WHERE id = :i"""),
                   {"t": meta.doc_type if doc["doc_type"] == "other" else doc["doc_type"], "l": meta.language,
-                   "iss": meta.issuer, "i": document_id})
+                   "iss": meta.issuer, "dd": printed, "i": document_id})
         # Two-reader check: only when the first reading said part of the page was unclear (D-54). Held medicines are skipped below.
         run_second_read(s, patient_id=patient_id, document_id=document_id, pages=pages, validated=validated, client=client)
         res = apply_document_extraction(

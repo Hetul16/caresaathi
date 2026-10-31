@@ -60,6 +60,16 @@ def parse_document_date(text: str, *, other_cue: str | None = None) -> date:
     raise AmbiguousDate(text)
 
 
+def printed_date(text: str | None) -> date | None:
+    """The date printed on a document as the reader returned it (ISO or day-first like 20/10/2026). An unreadable or ambiguous date is None, never guessed."""
+    if not text or not text.strip():
+        return None
+    try:
+        return parse_document_date(text.strip().replace(".", "/"))
+    except (ValueError, AmbiguousDate):
+        return None
+
+
 _LEADING_FORM = re.compile(r"^(?:tab|tablet|cap|capsule|syp|syrup|inj)\b\.?\s*", re.IGNORECASE)
 
 

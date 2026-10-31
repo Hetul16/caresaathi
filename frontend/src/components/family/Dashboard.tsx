@@ -18,6 +18,7 @@ import { ReadingChecks } from "./ReadingChecks";
 import { DoctorPanel } from "./DoctorPanel";
 import { ChatPanel } from "./ChatPanel";
 import { WhatsAppPreview } from "./WhatsAppPreview";
+import { MedicineTimeline } from "./MedicineTimeline";
 import { FamilyPanel } from "./FamilyPanel";
 import { TrackerPanel } from "./TrackerPanel";
 import { UploadPanel } from "./UploadPanel";
@@ -25,7 +26,7 @@ import { VisitPanel } from "./VisitPanel";
 import { DemoLoader } from "../DemoLoader";
 import { writeSelected } from "@/lib/live";
 
-type Tab = "overview" | "plan" | "documents" | "visits" | "tracker" | "ask" | "chat" | "today" | "tasks" | "outcomes" | "crew" | "doctor" | "label" | "card" | "family" | "approvals" | "history";
+type Tab = "overview" | "plan" | "documents" | "visits" | "tracker" | "ask" | "chat" | "timeline" | "today" | "tasks" | "outcomes" | "crew" | "doctor" | "label" | "card" | "family" | "approvals" | "history";
 
 export interface LiveCtx { patientId: string; reload: () => void }
 
@@ -66,7 +67,7 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
     { id: "overview", label: "Overview", icon: "heart" },
     { id: "plan", label: "Care plan", icon: "list", count: p.items.filter((i) => !i.confirmed && !i.alert_level).length || undefined },
     ...(live ? [{ id: "documents" as Tab, label: "Documents", icon: "file" as IconName }, { id: "visits" as Tab, label: "Visits", icon: "mic" as IconName },
-                { id: "tracker" as Tab, label: "Tracker", icon: "calendar" as IconName }, { id: "ask" as Tab, label: "Ask", icon: "quote" as IconName }, { id: "chat" as Tab, label: "Chat", icon: "quote" as IconName },
+                { id: "tracker" as Tab, label: "Tracker", icon: "calendar" as IconName }, { id: "timeline" as Tab, label: "Timeline", icon: "calendar" as IconName }, { id: "ask" as Tab, label: "Ask", icon: "quote" as IconName }, { id: "chat" as Tab, label: "Chat", icon: "quote" as IconName },
                 { id: "today" as Tab, label: "Today", icon: "clock" as IconName }, { id: "tasks" as Tab, label: "Tasks", icon: "list" as IconName }, { id: "outcomes" as Tab, label: "Outcomes", icon: "check" as IconName },
                 { id: "crew" as Tab, label: "Care crew", icon: "sparkle" as IconName }, { id: "doctor" as Tab, label: "Doctor link", icon: "stethoscope" as IconName },
                 { id: "label" as Tab, label: "Label check", icon: "pill" as IconName },
@@ -195,6 +196,7 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
             {tab === "tracker" && live && <TrackerPanel patientId={live.patientId} canApprove={canApprove} toast={toast.show} onChange={live.reload} />}
 
             {tab === "ask" && live && <ChatPanel patientId={live.patientId} />}
+            {tab === "timeline" && live && <MedicineTimeline patientId={live.patientId} toast={toast.show} />}
             {tab === "chat" && live && <WhatsAppPreview patientId={live.patientId} patientName={p.patient.name} />}
 
             {tab === "tasks" && live && <TasksPanel patientId={live.patientId} toast={toast.show} />}
