@@ -76,7 +76,7 @@ export function UploadPanel({ patientId, onProcessed }: { patientId: string; onP
             <select value={type} onChange={(e) => setType(e.target.value)}>{TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
           </label>
           <button className="btn btn-primary" onClick={() => input.current?.click()} disabled={busy}>{busy ? "Uploading…" : "Choose files"}</button>
-          <input ref={input} type="file" hidden multiple accept="image/jpeg,image/png,application/pdf,.txt" onChange={(e) => e.target.files && send(e.target.files)} />
+          <input ref={input} type="file" hidden multiple accept="image/jpeg,image/png,application/pdf" onChange={(e) => e.target.files && send(e.target.files)} />
         </div>
       </div>
       {error && <div className="form-error" role="alert"><Icon name="alert" /> {error}</div>}

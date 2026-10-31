@@ -26,7 +26,7 @@ def ingest_document(s: Session, *, patient_id: UUID, user_id: UUID, data: bytes,
     if mime is None and (cfg.model_mode == "fake" or allow_text) and filename.lower().endswith(".txt"):
         mime = "text/plain"          # offline mode, or the demo family (allow_text): the offline reader takes plain text; the live reader does not
     if mime is None:
-        raise ServiceError(415, "validation-failed", "Please upload a photo (JPEG or PNG) or a PDF")
+        raise ServiceError(415, "validation-failed", "Please upload a photo (JPEG or PNG) or a PDF. Text files cannot be read; for the test documents use the pictures in data/synthetic/rendered.")
     if doc_type not in DOC_TYPES:
         doc_type = "other"
 
