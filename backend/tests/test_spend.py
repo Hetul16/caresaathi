@@ -101,3 +101,22 @@ def test_a_connection_that_never_recovers_fails_after_three_tries_without_cost(c
     with pytest.raises(models.ModelError):
         c._chat("t", [{"type": "text", "text": "hi"}])
     assert state["n"] == 3 and spend.total() == 0
+
+
+def test_the_language_hint_is_sent_to_the_speech_endpoint_only_when_the_family_gave_one(cfg, monkeypatch):
+    from app.services.visits import language_bias
+    assert language_bias("mr") == ["Marathi"] and language_bias("hi") == ["Hindi"] and language_bias("en") == ["English"]
+    assert language_bias("unknown") is None and language_bias(None) is None
+    monkeypatch.setattr(models, "get_settings", lambda: cfg)
+    sent = []
+
+    class Http:
+        def post(self, path, headers=None, files=None, **kw):
+            sent.append(json.loads(files["request"][1]))
+            return SimpleNamespace(status_code=200, raise_for_status=lambda: None, json=lambda: {"turns": []})
+    import json
+    c = models.LiveModelClient.__new__(models.LiveModelClient)
+    c.s, c.http = cfg, Http()
+    c.transcribe_audio(b"\x00" * 64, language_bias=["Marathi"])
+    c.transcribe_audio(b"\x00" * 64)
+    assert sent[0]["languageBias"] == ["Marathi"] and "languageBias" not in sent[1]

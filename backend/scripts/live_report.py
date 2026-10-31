@@ -166,6 +166,8 @@ def main() -> int:
     if OUT.exists():
         try:
             old = json.loads(OUT.read_text(encoding="utf-8"))
+            if "speech" in old:                      # the speech result comes from speech_eval.py and must survive a rerun of this report
+                report["speech"], report["not_measured"] = old["speech"], old.get("not_measured", report["not_measured"])
             history = list(old.get("history", [])) + [{"generated_at": old["generated_at"], "cost_usd": old.get("cost_usd"),
                                                          "sections": {k: [v["passed"], v["total"]] for k, v in old["sections"].items()}}]
         except (ValueError, KeyError):

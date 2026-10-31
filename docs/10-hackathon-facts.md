@@ -88,6 +88,15 @@ Sources: `dev.meta.ai/docs/speech-to-text` and `/docs/api-reference/voice/transc
 - Allergy card, clinic prescription and a second doctor's prescription uploaded as photos by a new user: all three read (17 to 49 s each). The plan listed 5 medicines with schedules, the penicillin allergy was recorded, and the Amoxicillin line raised a `drug_family` conflict found by code, with a drafted question. The care crew ran 5 steps and built the brief. About $0.002 for the three documents.
 - **A second failure the earlier smoke test missed:** the allergy card was read correctly but the reader labelled it `doc_type: "allergy_card"`, which is not an allowed value, so the whole extraction failed validation and the allergy was lost (the document showed "needs review" and allergies "not recorded"). The smoke test only compared medicines, so it passed. Fix: `app/clients/repair.py` maps unknown labels to neutral values before validation (never invents a fact), plus a retry that tells the model what was wrong; 6 tests. After the fix the same flow recorded the allergy. Lesson: measure the whole pipeline, not one field.
 
+### Muse Voice Transcribe on real Hindi and Marathi speech (Oct 31, 2026)
+
+- **Test set:** the first 20 clips of the public Google FLEURS test split (CC BY 4.0) for each language: real human voices reading sentences, with reference text. Scripts: `backend/scripts/speech_eval.py`. This is read speech, NOT a doctor-visit conversation, so it shows how well the model hears the two languages, not how well it follows a Hinglish consultation. Cost about $0.05.
+- **Format fact:** the endpoint accepts only mono 16-bit PCM WAV at 16 or 24 kHz and says so in its error (HTTP 400). FLEURS files are 32-bit float WAV, so they are converted first. The in-app recorder already writes the accepted format.
+- **Hindi:** word error rate about 10% (character errors about 5%), with or without telling the model the language.
+- **Marathi:** about 57% word errors (40% character errors) when the language is not given. Some output came back in the wrong script (Gujarati). With the documented `languageBias: ["Marathi"]` request field it fell to about 23% word errors (8% character errors). That is usable but still about one word in four wrong, so Marathi speech input is treated as experimental. The app now sends `languageBias` from the visit's language (chosen by the family) for Hindi, Marathi and English.
+- **Doc facts (dev.meta.ai/docs/api-reference/voice/schemas):** request fields are `model`, `audioEncoding`, `mode`, `keywords` (bias toward terms), `languageBias` (language names), `partialMode`, `emitAudioProgress`. There is no `language` or `locale` field. Accepted language names beyond "English" and "French" are not listed on that page; "Hindi" and "Marathi" worked in practice.
+- **Still not measured:** a real Hinglish doctor-visit conversation recorded by a person (needs the V1 script read aloud), and Marathi speech with medical vocabulary.
+
 ## Verified, unverified and open
 
 | Item | Status | Next step |

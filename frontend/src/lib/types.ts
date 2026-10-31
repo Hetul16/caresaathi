@@ -167,7 +167,11 @@ export interface OutcomesBoard {
 export interface LiveCase { id?: string; text?: string; ok: boolean; expected?: string[]; got?: string[]; result?: string; error?: string; note?: string; seconds?: number;
   amlodipine_change?: boolean; chest_pain_warning?: boolean; follow_up?: boolean }
 export interface LiveSection { title: string; what: string; passed: number; total: number; cases: LiveCase[] }
-export interface LiveData { generated_at: string; reader_model: string; cost_usd: number; minutes: number; sections: Record<string, LiveSection>;
+export interface SpeechRate { wer: number | null; cer: number | null }
+export interface SpeechCase { id: string; ok: boolean; reference: string; plain?: { heard: string; word_errors: number; words: number }; hint?: { heard: string; word_errors: number; words: number } }
+export interface SpeechData { generated_at: string; model: string; dataset: string; what: string; cost_usd: number;
+  languages: Record<string, { language: string; clips: number; failed: number; without_language_hint: SpeechRate; with_language_hint: SpeechRate; cases: SpeechCase[] }> }
+export interface LiveData { speech?: SpeechData; generated_at: string; reader_model: string; cost_usd: number; minutes: number; sections: Record<string, LiveSection>;
   history: { generated_at: string; sections: Record<string, [number, number]> }[]; not_measured: string[] }
 export type LiveReport = ({ available: true } & LiveData) | { available: false };
 

@@ -80,7 +80,7 @@ class ModelClient(Protocol):
     def transcribe_pages(self, file: DocFile) -> tuple[list[PageText], Usage]: ...
     def extract_document(self, pages: list[PageText], hint_doc_type: str | None) -> tuple[str, Usage]: ...
     def extract_visit(self, segments: list[tuple[str, str, str]]) -> tuple[str, Usage]: ...
-    def transcribe_audio(self, wav: bytes) -> tuple[list[AudioTurn], Usage]: ...
+    def transcribe_audio(self, wav: bytes, language_bias: list[str] | None = None) -> tuple[list[AudioTurn], Usage]: ...
     def judge_text(self, text: str) -> tuple[bool | None, Usage]: ...
     def word(self, kind: str, facts: dict, language: str) -> tuple[str, Usage]: ...
     def next_step(self, goal: str, tools: dict[str, str], done: list[str], has_doctor_link: bool) -> tuple[dict, Usage]: ...
@@ -329,8 +329,10 @@ class LiveModelClient:
             pass                       # not JSON at all: validation downstream fails it and a person is asked to listen
         return text, usage
 
-    def transcribe_audio(self, wav: bytes) -> tuple[list[AudioTurn], Usage]:
-        req = {"mode": "DIARIZATION", "model": self.s.meta_asr_model, "audioEncoding": "WAV"}
+    def transcribe_audio(self, wav: bytes, language_bias: list[str] | None = None) -> tuple[list[AudioTurn], Usage]:
+        req: dict = {"mode": "DIARIZATION", "model": self.s.meta_asr_model, "audioEncoding": "WAV"}
+        if language_bias:
+            req["languageBias"] = language_bias          # documented field: a list of language names, e.g. ["Marathi"]
         try:
             spend.check()
         except spend.SpendLimitReached as e:
@@ -488,7 +490,7 @@ class FakeModelClient:
                "unreadable": [], "follow_ups": follow_ups}
         return json.dumps(out), self._usage("extract_document")
 
-    def transcribe_audio(self, wav: bytes) -> tuple[list[AudioTurn], Usage]:
+    def transcribe_audio(self, wav: bytes, language_bias: list[str] | None = None) -> tuple[list[AudioTurn], Usage]:
         raise ModelError("Offline mode cannot hear audio. Use the mock visit, or set MODEL_MODE=live.")
 
     def _replay(self, segments: list[tuple[str, str, str]]) -> dict | None:

@@ -33,3 +33,14 @@ def test_the_committed_report_is_synthetic_only_and_complete():
     assert set(d["sections"]) == {"documents", "allergy_card", "judge_catches", "judge_plain", "labels", "visits"}
     for sec in d["sections"].values():
         assert sec["total"] == len(sec["cases"]) and sec["passed"] == sum(c["ok"] for c in sec["cases"])
+
+
+def test_the_speech_result_if_present_reports_both_languages_with_and_without_the_hint():
+    from app.config import ROOT
+    d = json.loads((ROOT / "data" / "live_results" / "latest.json").read_text(encoding="utf-8"))
+    sp = d.get("speech")
+    assert sp is not None and "FLEURS" in sp["dataset"] and "not a doctor-visit" in sp["what"]
+    assert set(sp["languages"]) == {"hi_in", "mr_in"}
+    for lang in sp["languages"].values():
+        assert lang["clips"] >= 10 and lang["without_language_hint"]["wer"] is not None and lang["with_language_hint"]["wer"] is not None
+    assert any("consultation" in x for x in d["not_measured"])         # the gap is stated, not hidden

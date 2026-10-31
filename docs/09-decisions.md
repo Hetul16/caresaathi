@@ -274,6 +274,10 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Status:** Accepted (Oct 31, 2026)
 - **Decision:** `backend/scripts/live_report.py` runs the live model on the fictional test set (documents, allergy card, labels, a scripted visit, and the second-pass judge in both directions) and writes `data/live_results/latest.json`, keeping a short history of earlier runs. The Trust page shows that file, including every failing case, and lists what is not measured. Opening the page makes no model call. The report checks what reaches the care plan after the app's own repair and validation, and includes the allergy card, because an earlier version that checked medicines only passed while the allergy card was being lost.
 
+### D-56 Tell the speech model the visit's language; Marathi speech is experimental
+- **Status:** Accepted (Oct 31, 2026)
+- **Decision:** The visit's language, which the family chooses before recording, is sent to Muse Voice Transcribe as `languageBias`. Measured on 20 real FLEURS clips per language: Hindi about 10% word errors either way; Marathi 57% without the hint and 23% with it. Marathi speech input is described as experimental in the pitch and on the Trust page, and the Marathi voice of the app (explanations read aloud) is separate from this measurement. The result and its limits (read speech, not a consultation) are in the committed live report and `docs/10-hackathon-facts.md`.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

@@ -63,6 +63,37 @@ export function LiveResults() {
         </article>
       )}
 
+      {r.speech && (
+        <article className="card item" aria-labelledby="speech-h">
+          <div className="item-top"><div><h3 id="speech-h">Hearing Hindi and Marathi voices</h3>
+            <p className="detail" style={{ marginTop: 4 }}>{r.speech.what} {r.speech.dataset}. Word error rate: lower is better.</p></div>
+            <span className="pill pill-blue">{r.speech.model}</span></div>
+          <div className="stats" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
+            {Object.entries(r.speech.languages).map(([k, l]) => {
+              const a = l.without_language_hint.wer, b = l.with_language_hint.wer;
+              const pct = (x: number | null) => (x === null ? "n/a" : `${Math.round(x * 100)}%`);
+              return (
+                <div key={k} className="stat">
+                  <p className="stat-n" style={{ fontSize: "clamp(34px, 4vw, 54px)", whiteSpace: "nowrap", color: (b ?? 1) > 0.2 ? "var(--gold)" : undefined }}>{pct(b)}</p>
+                  <p>{l.language}, with the language told to the model</p>
+                  <small style={{ color: "var(--ink-3)" }}>{pct(a)} when the language is not told · {l.clips} clips, characters wrong: {pct(l.with_language_hint.cer)}</small>
+                </div>
+              );
+            })}
+          </div>
+          <p style={{ color: "var(--ink-2)" }}>The app sends the visit’s language, which the family chooses before recording. Marathi is clearly weaker than Hindi: about one word in four is still wrong, so treat Marathi speech as experimental.</p>
+          <details>
+            <summary style={{ cursor: "pointer", fontWeight: 700 }}>Show examples (Marathi)</summary>
+            <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+              {(r.speech.languages["mr_in"]?.cases ?? []).slice(0, 4).map((c) => (
+                <div key={c.id} style={{ fontSize: 14, padding: "10px 12px", borderRadius: 12, border: "1px solid var(--line-soft)", background: "rgba(255,255,255,.04)" }}>
+                  <div><b>Said</b> {c.reference}</div><div><b>Heard</b> {c.hint?.heard} <span style={{ color: "var(--ink-3)" }}>({c.hint?.word_errors} of {c.hint?.words} words wrong)</span></div>
+                </div>))}
+            </div>
+          </details>
+        </article>
+      )}
+
       {r.history.length > 0 && (
         <details className="card card-pad">
           <summary style={{ cursor: "pointer", fontWeight: 700 }}>Earlier runs ({r.history.length})</summary>
