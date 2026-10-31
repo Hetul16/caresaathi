@@ -188,7 +188,7 @@ def test_a_second_recording_cannot_be_added_to_a_visit(family):
 
 def test_scripts_are_listed_and_labeled_synthetic(family):
     scripts = family.get("/visit-scripts").json()
-    assert [s["id"] for s in scripts] == ["V1", "V2", "V3"] and next(s for s in scripts if s["id"] == "V2")["experimental"] is True
+    assert [s["id"] for s in scripts] == ["V1", "V2", "V3", "V4"] and next(s for s in scripts if s["id"] == "V2")["experimental"] is True
 
 
 def test_the_english_visit_turns_into_a_warning_sign_and_a_follow_up_but_no_medicine_change(family):
