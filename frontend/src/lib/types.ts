@@ -165,7 +165,7 @@ export interface OutcomesBoard {
 
 // ---- live model report (Trust page) ----
 export interface LiveCase { id?: string; text?: string; ok: boolean; expected?: string[]; got?: string[]; result?: string; error?: string; note?: string; seconds?: number;
-  amlodipine_change?: boolean; chest_pain_warning?: boolean; follow_up?: boolean }
+  amlodipine_change?: boolean; chest_pain_warning?: boolean; follow_up?: boolean; invented_medicine_change?: boolean }
 export interface LiveSection { title: string; what: string; passed: number; total: number; cases: LiveCase[] }
 export interface SpeechRate { wer: number | null; cer: number | null }
 export interface SpeechCase { id: string; ok: boolean; reference: string; plain?: { heard: string; word_errors: number; words: number }; hint?: { heard: string; word_errors: number; words: number } }

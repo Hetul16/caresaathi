@@ -1,0 +1,162 @@
+{
+  "id": "V4",
+  "title": "Follow-up visit, English",
+  "language": "en",
+  "synthetic": true,
+  "note": "Fictional script in plain English. Replayed answers are the recorded expected extraction, not a model. Medicines the doctor says continue are not changes, so only the warning sign and the follow-up become pending items.",
+  "speakers": {
+    "A": "doctor",
+    "B": "patient",
+    "C": "family"
+  },
+  "segments": [
+    {
+      "idx": 0,
+      "speaker": "A",
+      "start_ms": 0,
+      "end_ms": 5200,
+      "text": "Good morning, Mr. Kulkarni. How have you been feeling since you came home from the hospital?"
+    },
+    {
+      "idx": 1,
+      "speaker": "B",
+      "start_ms": 5400,
+      "end_ms": 8600,
+      "text": "Much better, doctor. The dizziness has stopped."
+    },
+    {
+      "idx": 2,
+      "speaker": "A",
+      "start_ms": 8800,
+      "end_ms": 15000,
+      "text": "Good. Please continue Metformin 500 mg, one in the morning and one at night, after food."
+    },
+    {
+      "idx": 3,
+      "speaker": "C",
+      "start_ms": 15200,
+      "end_ms": 19800,
+      "text": "Doctor, should he keep taking the cholesterol tablet from the clinic prescription?"
+    },
+    {
+      "idx": 4,
+      "speaker": "A",
+      "start_ms": 20000,
+      "end_ms": 24500,
+      "text": "Yes. Atorvastatin 20 mg at night continues."
+    },
+    {
+      "idx": 5,
+      "speaker": "A",
+      "start_ms": 24700,
+      "end_ms": 30000,
+      "text": "Please come back in two weeks and we will review the sugar report."
+    },
+    {
+      "idx": 6,
+      "speaker": "A",
+      "start_ms": 30200,
+      "end_ms": 37000,
+      "text": "If you get chest pain that lasts more than fifteen minutes, go to the emergency room immediately."
+    }
+  ],
+  "recorded_extraction": {
+    "schema_version": "visit.v1",
+    "speaker_roles": [
+      {
+        "label": "A",
+        "role": "doctor",
+        "name": "Dr. Joshi"
+      },
+      {
+        "label": "B",
+        "role": "patient"
+      },
+      {
+        "label": "C",
+        "role": "family"
+      }
+    ],
+    "items": [
+      {
+        "kind": "medicine",
+        "change": "unchanged_mention",
+        "title": "Metformin 500 mg",
+        "confidence": 0.95,
+        "details": {
+          "ingredients": [
+            {
+              "name": "Metformin",
+              "strength": "500 mg"
+            }
+          ],
+          "dose_text": "500 mg",
+          "frequency_text": "1-0-1",
+          "instructions_text": "after food"
+        },
+        "source": {
+          "segments": [
+            2
+          ],
+          "quote": "Good. Please continue Metformin 500 mg, one in the morning and one at night, after food."
+        }
+      },
+      {
+        "kind": "medicine",
+        "change": "unchanged_mention",
+        "title": "Atorvastatin 20 mg",
+        "confidence": 0.93,
+        "details": {
+          "ingredients": [
+            {
+              "name": "Atorvastatin",
+              "strength": "20 mg"
+            }
+          ],
+          "dose_text": "20 mg",
+          "frequency_text": "0-0-1"
+        },
+        "source": {
+          "segments": [
+            4
+          ],
+          "quote": "Yes. Atorvastatin 20 mg at night continues."
+        }
+      },
+      {
+        "kind": "warning_sign",
+        "change": "new",
+        "title": "Chest pain: go to the emergency room",
+        "confidence": 0.9,
+        "details": {
+          "level_basis_quote": "If you get chest pain that lasts more than fifteen minutes, go to the emergency room immediately."
+        },
+        "source": {
+          "segments": [
+            6
+          ],
+          "quote": "If you get chest pain that lasts more than fifteen minutes, go to the emergency room immediately."
+        }
+      }
+    ],
+    "follow_ups": [
+      {
+        "what": "Review the sugar report",
+        "due_text": "in two weeks",
+        "segments": [
+          5
+        ],
+        "quote": "Please come back in two weeks and we will review the sugar report."
+      }
+    ],
+    "allergies_mentioned": [],
+    "unclear": []
+  },
+  "truth": {
+    "expect": [
+      "no medicine change is created, because the doctor says both medicines continue",
+      "warning sign level emergency from the doctor's wording",
+      "follow-up in 14 days computed by code, pending until confirmed"
+    ]
+  }
+}

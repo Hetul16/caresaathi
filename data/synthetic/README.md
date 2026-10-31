@@ -7,7 +7,7 @@ data may ever be added here (the repository is public).
 | Folder | What |
 | --- | --- |
 | `ramesh/docs` | R1 to R10: the hero patient's documents, each with a planted case |
-| `ramesh/visits` | V1 to V3: scripted visits (segments, speakers, and a recorded expected extraction) |
+| `ramesh/visits` | V1 to V4 (V4 is plain English): scripted visits (segments, speakers, and a recorded expected extraction) |
 | `ramesh/truth` | `<id>.truth.json`: what the app must find, plus the planted cases |
 | `margaret/`, `hans/` | Smaller sets: US pharmacy style and German formats |
 | `render.py` | Turns the text documents into PNG photos and PDFs (fixed seeds) for testing the live reader |

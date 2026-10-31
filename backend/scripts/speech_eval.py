@@ -3,6 +3,7 @@
     cd backend
     python scripts\\speech_eval.py              # 12 clips per language, about $0.02
     python scripts\\speech_eval.py --clips 20
+    python scripts\\speech_eval.py --only en_us   # just English, keeps the other languages
 
 FLEURS is read speech (sentences from Wikipedia text), not doctor-visit conversation, so this measures how well the model hears Hindi and
 Marathi voices, NOT how well it follows a Hinglish consultation. The Trust page says so. Only the first part of each archive is downloaded
@@ -32,7 +33,7 @@ from app.config import get_settings  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "data" / "live_results" / "latest.json"
 HF = "https://huggingface.co/datasets/google/fleurs/resolve/main/data"
-LANGS = {"hi_in": "Hindi", "mr_in": "Marathi"}
+LANGS = {"en_us": "English", "hi_in": "Hindi", "mr_in": "Marathi"}
 _PUNCT = re.compile(r"[।॥.,!?;:\"'()\[\]{}\-–—‘’“”]")
 
 
@@ -105,6 +106,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--clips", type=int, default=12)
     ap.add_argument("--bytes", type=int, default=24_000_000)
+    ap.add_argument("--only", help="measure just this FLEURS config (for example en_us) and keep the other languages already in the report")
     a = ap.parse_args()
     cfg = get_settings()
     if cfg.model_mode != "live" or not cfg.meta_api_key:
@@ -114,6 +116,8 @@ def main() -> int:
     before = spend.total()
     langs: dict[str, dict] = {}
     for code, name in LANGS.items():
+        if a.only and code != a.only:
+            continue
         rows = []
         tot = {"plain": [0, 0, 0, 0], "hint": [0, 0, 0, 0]}          # word errors, words, char errors, chars
         for fname, wav, ref in clips(code, a.clips, a.bytes):
@@ -142,8 +146,10 @@ def main() -> int:
         print(f"{name}: {len(rows)} clips | no hint WER {rate(tot['plain'], 0)} CER {rate(tot['plain'], 2)} | with languageBias WER {rate(tot['hint'], 0)} CER {rate(tot['hint'], 2)}")
     report = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {"generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                                                                               "synthetic_data_only": True, "mode": "live", "sections": {}, "history": [], "not_measured": []}
+    kept = report.get("speech", {}).get("languages", {}) if a.only else {}
+    langs = {**kept, **langs}
     report["speech"] = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "model": cfg.meta_asr_model, "dataset": "Google FLEURS test split (CC BY 4.0)",
-                        "what": "Real human voices reading sentences. This measures how well the model hears Hindi and Marathi. It is not a doctor-visit conversation, so it does not show how well a Hinglish consultation is understood.",
+                        "what": "Real human voices reading sentences. This measures how well the model hears each language. It is not a doctor-visit conversation, so it does not show how well a Hinglish consultation is understood.",
                         "cost_usd": round(spend.total() - before, 4), "languages": langs}
     report["not_measured"] = [x for x in report.get("not_measured", []) if "Voice Transcribe" not in x] + [
         "Muse Voice Transcribe on a real Hinglish doctor-visit conversation (the clips above are read sentences, not a consultation)"]

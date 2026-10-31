@@ -597,6 +597,41 @@
       ],
       "passed": 3,
       "total": 3
+    },
+    "visits_en": {
+      "title": "Reading an English doctor visit",
+      "what": "The scripted plain-English visit, three runs: the warning sign and the follow-up must be found, and no medicine change may be invented because the doctor says both medicines continue.",
+      "cases": [
+        {
+          "id": "V4 run 1",
+          "ok": true,
+          "chest_pain_warning": true,
+          "follow_up": true,
+          "invented_medicine_change": false,
+          "validated": true,
+          "seconds": 19.5
+        },
+        {
+          "id": "V4 run 2",
+          "ok": true,
+          "chest_pain_warning": true,
+          "follow_up": true,
+          "invented_medicine_change": false,
+          "validated": true,
+          "seconds": 25.3
+        },
+        {
+          "id": "V4 run 3",
+          "ok": true,
+          "chest_pain_warning": true,
+          "follow_up": true,
+          "invented_medicine_change": false,
+          "validated": true,
+          "seconds": 25.8
+        }
+      ],
+      "passed": 3,
+      "total": 3
     }
   },
   "not_measured": [
@@ -637,11 +672,11 @@
     }
   ],
   "speech": {
-    "generated_at": "2026-10-31T11:52:26+00:00",
+    "generated_at": "2026-10-31T12:30:17+00:00",
     "model": "muse-voice-transcribe-1.0",
     "dataset": "Google FLEURS test split (CC BY 4.0)",
-    "what": "Real human voices reading sentences. This measures how well the model hears Hindi and Marathi. It is not a doctor-visit conversation, so it does not show how well a Hinglish consultation is understood.",
-    "cost_usd": 0.0521,
+    "what": "Real human voices reading sentences. This measures how well the model hears each language. It is not a doctor-visit conversation, so it does not show how well a Hinglish consultation is understood.",
+    "cost_usd": 0.0197,
     "languages": {
       "hi_in": {
         "language": "Hindi",
@@ -1349,6 +1384,361 @@
               "word_errors": 4,
               "words": 30,
               "seconds": 3.8
+            }
+          }
+        ]
+      },
+      "en_us": {
+        "language": "English",
+        "clips": 20,
+        "failed": 0,
+        "without_language_hint": {
+          "wer": 0.084,
+          "cer": 0.053
+        },
+        "with_language_hint": {
+          "wer": 0.089,
+          "cer": 0.057
+        },
+        "cases": [
+          {
+            "id": "1003119935936341070.wav",
+            "ok": true,
+            "reference": "however due to the slow communication channels styles in the west could lag behind by 25 to 30 year",
+            "plain": {
+              "heard": "However, due to the slow communication channels, styles in in the West could lag behind by 25 to 30 years.",
+              "word_errors": 2,
+              "words": 19,
+              "seconds": 4.8
+            },
+            "hint": {
+              "heard": "However, due to the slow communication channels, styles in the west could lag behind by 25 to 30 years.",
+              "word_errors": 1,
+              "words": 19,
+              "seconds": 2.5
+            }
+          },
+          {
+            "id": "10052240106321793346.wav",
+            "ok": true,
+            "reference": "all nouns alongside the word sie for you always begin with a capital letter even in the middle of a sentence",
+            "plain": {
+              "heard": "All nouns alongside the world's say for for you always begin with a capital letter. Even in the middle of a sentence.",
+              "word_errors": 4,
+              "words": 21,
+              "seconds": 2.7
+            },
+            "hint": {
+              "heard": "All nouns alongside the words say for say for you always begin with a a capital letter. Even in the middle of a sentence.",
+              "word_errors": 5,
+              "words": 21,
+              "seconds": 2.7
+            }
+          },
+          {
+            "id": "10167324587744183095.wav",
+            "ok": true,
+            "reference": "to the north and within easy reach is the romantic and fascinating town of sintra and which was made famous to foreigners after a glowing account of its splendours recorded by lord byron",
+            "plain": {
+              "heard": "To the north and within easy reach is the romantic and fascinating town of Sintra and which was made famous to foreigners after a glowing account of its splendorous recorded by Lord Byron.",
+              "word_errors": 1,
+              "words": 33,
+              "seconds": 3.3
+            },
+            "hint": {
+              "heard": "To the north north and within easy reach is the romantic and fascinating town of Sintra and and which was made famous to foreigners after a glowing account of its its splendorous recorded by Lord Byron. Byron.",
+              "word_errors": 5,
+              "words": 33,
+              "seconds": 3.2
+            }
+          },
+          {
+            "id": "10197164397713068203.wav",
+            "ok": true,
+            "reference": "the cabbage juice changes color depending on how acidic or basic alkaline the chemical is",
+            "plain": {
+              "heard": "The cabbage juice changes color depending on how acidic, basic, alkaline the chemical is.",
+              "word_errors": 1,
+              "words": 15,
+              "seconds": 2.3
+            },
+            "hint": {
+              "heard": "The cabbage juice changes color depending on how acidic, basic, alkaline the chemical is.",
+              "word_errors": 1,
+              "words": 15,
+              "seconds": 1.8
+            }
+          },
+          {
+            "id": "10233995782544396174.wav",
+            "ok": true,
+            "reference": "many people don't think about them as dinosaurs because they have feathers and can fly",
+            "plain": {
+              "heard": "Many people people don't think about them as dinosaurs because they have feathers and can fly.",
+              "word_errors": 1,
+              "words": 16,
+              "seconds": 1.7
+            },
+            "hint": {
+              "heard": "Many people don't think about them as dinosaurs because they have feathers and can fly.",
+              "word_errors": 0,
+              "words": 16,
+              "seconds": 2.1
+            }
+          },
+          {
+            "id": "10235738076911595987.wav",
+            "ok": true,
+            "reference": "the hospital has followed protocol for infection control including separating the patient from others to prevent possible infection of others",
+            "plain": {
+              "heard": "The The hospital has followed protocol for infection control, including separating the patient from others to to prevent possible infection of others.",
+              "word_errors": 2,
+              "words": 20,
+              "seconds": 3.0
+            },
+            "hint": {
+              "heard": "The hospital has followed protocol for infection control, including separating the patient from others to prevent possible infection of others.",
+              "word_errors": 0,
+              "words": 20,
+              "seconds": 3.0
+            }
+          },
+          {
+            "id": "10323357556845456822.wav",
+            "ok": true,
+            "reference": "the northern marianas emergency management office said that there were no damages reported in the nation",
+            "plain": {
+              "heard": "The Northern Marianas Emergency Management Office said that there were no were no damages reported in the nation. nation.",
+              "word_errors": 3,
+              "words": 16,
+              "seconds": 2.7
+            },
+            "hint": {
+              "heard": "the northern Marianas Emergency Management Office said that there were no damages reported in the nation.",
+              "word_errors": 0,
+              "words": 16,
+              "seconds": 2.4
+            }
+          },
+          {
+            "id": "10335587906469246566.wav",
+            "ok": true,
+            "reference": "twentieth century research has shown that there are two pools of genetic variation hidden and expressed",
+            "plain": {
+              "heard": "20th century research has shown that there are two pools of genetic variation hidden and expressed.",
+              "word_errors": 1,
+              "words": 16,
+              "seconds": 1.9
+            },
+            "hint": {
+              "heard": "Twentieth Century research has shown that that there are two pools of genetic variation hidden and expressed.",
+              "word_errors": 1,
+              "words": 16,
+              "seconds": 2.2
+            }
+          },
+          {
+            "id": "10344335557154974057.wav",
+            "ok": true,
+            "reference": "the aspect ratio of this format dividing by twelve to obtain the simplest whole-number ratio is therefore said to be 3:2",
+            "plain": {
+              "heard": "The aspect ratio of this format, dividing by 12 to obtain the simplest whole number ratio, is therefore said to be 3 to 2.",
+              "word_errors": 2,
+              "words": 23,
+              "seconds": 2.9
+            },
+            "hint": {
+              "heard": "The aspect ratio of this format, dividing by 12 to obtain the simplest whole number ratio, is therefore said to be three to two.",
+              "word_errors": 4,
+              "words": 23,
+              "seconds": 3.0
+            }
+          },
+          {
+            "id": "1036771894648013441.wav",
+            "ok": true,
+            "reference": "as light pollution in their heyday was not the kind of problem it is today they are usually located in cities or at campuses easier to reach than those built in modern times",
+            "plain": {
+              "heard": "As air pollution in their heyday was not the kind of problem it is today, they are usually located in cities or at campuses easier easier to reach than those built in modern times.",
+              "word_errors": 2,
+              "words": 33,
+              "seconds": 2.8
+            },
+            "hint": {
+              "heard": "As air pollution in their heyday was not the kind of problem it is today, they are usually located in cities or at campuses easier easier to reach than those built in modern times.",
+              "word_errors": 2,
+              "words": 33,
+              "seconds": 2.6
+            }
+          },
+          {
+            "id": "1038214857203833067.wav",
+            "ok": true,
+            "reference": "through the night between 150 and 200 copies were made now known as dunlap broadsides",
+            "plain": {
+              "heard": "The the night between 1.50 and 200 copies were made now known as Dunlap broadsides.",
+              "word_errors": 3,
+              "words": 15,
+              "seconds": 2.0
+            },
+            "hint": {
+              "heard": "The night between 1:50 and 200 copies were made now known as Dunlap broadsides.",
+              "word_errors": 3,
+              "words": 15,
+              "seconds": 2.0
+            }
+          },
+          {
+            "id": "10383288285905292158.wav",
+            "ok": true,
+            "reference": "for example each year students from bennet school in north carolina design a website about their trip to the state capital each year the website gets remodeled but old versions are kept online to serve as a scrapbook",
+            "plain": {
+              "heard": "For example, each of your students from Bennett School in North Carolina designed a website about their trip to the state capital. Each year Each year, the website gets remodeled, but old versions are kept online to serve as a scrapbook.",
+              "word_errors": 6,
+              "words": 38,
+              "seconds": 3.3
+            },
+            "hint": {
+              "heard": "For example, each of your students from Bennett School in North Carolina designed a website about their trip to the state capitol, each year the year the website gets remodeled but old old versions are kept online to serve as a scrapbook.",
+              "word_errors": 8,
+              "words": 38,
+              "seconds": 3.4
+            }
+          },
+          {
+            "id": "10405958125670257178.wav",
+            "ok": true,
+            "reference": "lion prides act much like packs of wolves or dogs animals surprisingly similar to lions but not other big cats in behavior and also very deadly to their prey",
+            "plain": {
+              "heard": "Lion prides act much like packs of wolves or dogs, animals surprisingly similar to lions, but not other big cats, in behavior and also very very deadly to their prey.",
+              "word_errors": 1,
+              "words": 29,
+              "seconds": 2.6
+            },
+            "hint": {
+              "heard": "Lion prides act much like packs of wolves or dogs, animals surprisingly similar to lions, but not other big cats in behavior and also very deadly to their prey.",
+              "word_errors": 0,
+              "words": 29,
+              "seconds": 3.3
+            }
+          },
+          {
+            "id": "10411016628242228511.wav",
+            "ok": true,
+            "reference": "the city is also the base to climb the nyiragongo volcano along with some of the cheapest mountain gorilla tracking in africa",
+            "plain": {
+              "heard": "The city is also the base to climb the Nyiragongo volcano along with some of the cheapest mountain gorilla trafficking in Africa.",
+              "word_errors": 1,
+              "words": 22,
+              "seconds": 2.6
+            },
+            "hint": {
+              "heard": "The city is also the base to climb the Nyiragongo volcano along with some of the cheapest mountain gorilla trafficking in Africa.",
+              "word_errors": 1,
+              "words": 22,
+              "seconds": 2.5
+            }
+          },
+          {
+            "id": "1042003289011443756.wav",
+            "ok": true,
+            "reference": "the internet combines elements of both mass and interpersonal communication",
+            "plain": {
+              "heard": "The internet combines elements of both mass and interpersonal communication.",
+              "word_errors": 0,
+              "words": 10,
+              "seconds": 1.7
+            },
+            "hint": {
+              "heard": "The internet combines elements of both mass and interpersonal communication.",
+              "word_errors": 0,
+              "words": 10,
+              "seconds": 1.8
+            }
+          },
+          {
+            "id": "1043394666292127188.wav",
+            "ok": true,
+            "reference": "these theories look at what it is about certain people that make them want the things that they do and what things in their environment will make them do or not do certain things",
+            "plain": {
+              "heard": "These things look at what it is about certain people that make them want the things that they do do and what things in their environment will make them do or or not do certain things.",
+              "word_errors": 3,
+              "words": 34,
+              "seconds": 3.5
+            },
+            "hint": {
+              "heard": "These things look at what it is about certain people that make them want to things that they do and what things in their environment will make them do or not do certain things.",
+              "word_errors": 2,
+              "words": 34,
+              "seconds": 3.2
+            }
+          },
+          {
+            "id": "1045619486290403122.wav",
+            "ok": true,
+            "reference": "for example the most common still image photography format in the world is 35mm which was the dominant film size at the close of the analog film era",
+            "plain": {
+              "heard": "For example, the most common still image photography format in the world is 35 millimeter, which was the dominant film size at the close of the analog film era.",
+              "word_errors": 2,
+              "words": 28,
+              "seconds": 3.5
+            },
+            "hint": {
+              "heard": "For example, the most common still image photography format in the world is 35 millimeter, which was the dominant film size at the close of the analog film era.",
+              "word_errors": 2,
+              "words": 28,
+              "seconds": 3.7
+            }
+          },
+          {
+            "id": "1046653381869710616.wav",
+            "ok": true,
+            "reference": "the term safari in popular use refers to overland travel to view the stunning african wildlife particularly on savanna",
+            "plain": {
+              "heard": "The term safari in popular use refers to overland travel to view the stunning African wildlife, particularly on savanna.",
+              "word_errors": 0,
+              "words": 19,
+              "seconds": 2.4
+            },
+            "hint": {
+              "heard": "The term safari in popular use refers refers to overland travel to view the stunning African wildlife particularly on savanna.",
+              "word_errors": 1,
+              "words": 19,
+              "seconds": 2.3
+            }
+          },
+          {
+            "id": "10471564175308895403.wav",
+            "ok": true,
+            "reference": "but there are a lot of things about birds that still look like a dinosaur",
+            "plain": {
+              "heard": "But there are a lot of things about birds that still look like a dinosaur.",
+              "word_errors": 0,
+              "words": 15,
+              "seconds": 2.0
+            },
+            "hint": {
+              "heard": "But there are a lot of things about birds that that still look like a dinosaur.",
+              "word_errors": 1,
+              "words": 15,
+              "seconds": 1.8
+            }
+          },
+          {
+            "id": "10481451226514948764.wav",
+            "ok": true,
+            "reference": "women it is recommended that any women travellers say that they are married regardless of actual marital status",
+            "plain": {
+              "heard": "Women. is recommended that any women travelers say that they are married regardless of actual marital status.",
+              "word_errors": 2,
+              "words": 18,
+              "seconds": 2.3
+            },
+            "hint": {
+              "heard": "women. is recommended that any women travelers say that they are married regardless of actual marital status.",
+              "word_errors": 2,
+              "words": 18,
+              "seconds": 2.5
             }
           }
         ]

@@ -189,3 +189,17 @@ def test_a_second_recording_cannot_be_added_to_a_visit(family):
 def test_scripts_are_listed_and_labeled_synthetic(family):
     scripts = family.get("/visit-scripts").json()
     assert [s["id"] for s in scripts] == ["V1", "V2", "V3"] and next(s for s in scripts if s["id"] == "V2")["experimental"] is True
+
+
+def test_the_english_visit_turns_into_a_warning_sign_and_a_follow_up_but_no_medicine_change(family):
+    """V4 is plain English. The doctor says both medicines continue, so nothing about them is proposed as a change."""
+    d = start_mock(family, "V4", language_hint="en")
+    assert d["status"] in ("completed", "needs_review") and d["language_hint"] == "en"
+    plan = family.plan()
+    titles = [c["title"].lower() for c in plan["pending_changes"]]
+    assert any("chest pain" in t for t in titles) and not any("metformin" in t or "atorvastatin" in t for t in titles)
+    chest = next(c for c in plan["pending_changes"] if "chest pain" in c["title"].lower())
+    assert chest["source"]["kind"] == "visit_segment" and "fifteen minutes" in chest["source"]["quote"]
+    fu = [f for f in family.get(f"/patients/{family.pid}/follow-ups").json() if "sugar" in f["what"].lower()]
+    assert fu and fu[0]["due_text"] == "in two weeks" and fu[0]["status"] == "pending" and fu[0]["due_date"]
+    assert any(s["id"] == "V4" and s["language"] == "en" for s in family.get("/visit-scripts").json())

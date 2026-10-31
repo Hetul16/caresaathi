@@ -132,6 +132,28 @@ def visits(client, runs: int = 3) -> list[dict]:
     return rows
 
 
+def visits_en(client, runs: int = 3) -> list[dict]:
+    """The scripted plain-English visit (V4): the warning sign and the follow-up must be found, and NO medicine change may be invented,
+    because the doctor only says both medicines continue."""
+    script = json.loads((SYN / "ramesh" / "visits" / "V4.json").read_text(encoding="utf-8"))
+    segs = [(f"seg-{s['idx']}", s["speaker"], s["text"]) for s in script["segments"]]
+    rows = []
+    for i in range(runs):
+        t0 = time.monotonic()
+        try:
+            raw, _ = client.extract_visit(segs)
+            v = validate_visit(raw, {sid: text for sid, _, text in segs})
+            d = v.data
+            chest = bool(d) and any(it.kind == "warning_sign" and "chest" in it.title.lower() for it in d.items)
+            follow = bool(d) and any("two week" in f.due_text.lower() or "2 week" in f.due_text.lower() for f in d.follow_ups)
+            invented = bool(d) and any(it.kind == "medicine" and it.change in ("new", "changed", "stopped") for it in d.items)
+            rows.append({"id": f"V4 run {i + 1}", "ok": bool(v.ok and chest and follow and not invented), "chest_pain_warning": chest, "follow_up": follow,
+                         "invented_medicine_change": invented, "validated": bool(v.ok), "seconds": round(time.monotonic() - t0, 1)})
+        except ModelError as e:
+            rows.append({"id": f"V4 run {i + 1}", "ok": False, "error": str(e)[:120]})
+    return rows
+
+
 def main() -> int:
     cfg = get_settings()
     if cfg.model_mode != "live" or not cfg.meta_api_key:
@@ -144,12 +166,14 @@ def main() -> int:
     caught, plain = judge(client)
     lab = labels(client)
     vis = visits(client)
+    vis_en = visits_en(client)
     sections = {
         "documents": {"title": "Reading documents", "what": "Photos and PDFs of 7 fictional documents, medicines and schedules compared with the ground truth.", "cases": docs},
         "allergy_card": {"title": "Recording an allergy from a photo", "what": "The fictional allergy card must end up as a recorded penicillin allergy after the app's own checks.", "cases": allergy},
         "judge_catches": {"title": "Second check catches reassuring or advising wording", "what": "Unsafe sentences, including paraphrases the keyword guard misses and Hinglish.", "cases": caught},
         "judge_plain": {"title": "Second check leaves plain read-backs alone", "what": "Sentences that only read back or ask a question must not be flagged.", "cases": plain},
         "labels": {"title": "Reading packaging", "what": "Pictures of strips and boxes, plus a loose pill with no text, which must be refused.", "cases": lab},
+        "visits_en": {"title": "Reading an English doctor visit", "what": "The scripted plain-English visit, three runs: the warning sign and the follow-up must be found, and no medicine change may be invented because the doctor says both medicines continue.", "cases": vis_en},
         "visits": {"title": "Reading a doctor visit", "what": "The scripted Hinglish visit, three runs: the dose change, the chest-pain warning and the follow-up must all be found.", "cases": vis},
     }
     for sec in sections.values():

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { LiveCase, LiveData, LiveReport } from "@/lib/types";
 
-const ORDER = ["documents", "allergy_card", "labels", "visits", "judge_catches", "judge_plain"];
+const ORDER = ["documents", "allergy_card", "labels", "visits", "visits_en", "judge_catches", "judge_plain"];
 const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 
 function detail(c: LiveCase): string {
@@ -11,6 +11,7 @@ function detail(c: LiveCase): string {
   if (c.text) return `${c.text.slice(0, 110)}${c.text.length > 110 ? "…" : ""} → ${c.result}`;
   const exp = c.expected?.join(", ") ?? "";
   const got = c.got?.join(", ") ?? "";
+  if (c.invented_medicine_change !== undefined) return `warning ${c.chest_pain_warning ? "found" : "MISSED"}, follow-up ${c.follow_up ? "found" : "MISSED"}, invented medicine change: ${c.invented_medicine_change ? "YES" : "none"}`;
   if (c.amlodipine_change !== undefined) return `dose change ${c.amlodipine_change ? "found" : "MISSED"}, chest-pain warning ${c.chest_pain_warning ? "found" : "MISSED"}, follow-up ${c.follow_up ? "found" : "MISSED"}`;
   return `wanted: ${exp || "nothing"} · got: ${got || "nothing"}`;
 }
@@ -65,18 +66,18 @@ export function LiveResults() {
 
       {r.speech && (
         <article className="card item" aria-labelledby="speech-h">
-          <div className="item-top"><div><h3 id="speech-h">Hearing Hindi and Marathi voices</h3>
+          <div className="item-top"><div><h3 id="speech-h">Hearing English, Hindi and Marathi voices</h3>
             <p className="detail" style={{ marginTop: 4 }}>{r.speech.what} {r.speech.dataset}. Word error rate: lower is better.</p></div>
             <span className="pill pill-blue">{r.speech.model}</span></div>
           <div className="stats" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
-            {Object.entries(r.speech.languages).map(([k, l]) => {
+            {["en_us", "hi_in", "mr_in"].filter((k) => r.speech!.languages[k]).map((k) => [k, r.speech!.languages[k]] as const).map(([k, l]) => {
               const a = l.without_language_hint.wer, b = l.with_language_hint.wer;
               const pct = (x: number | null) => (x === null ? "n/a" : `${Math.round(x * 100)}%`);
               return (
                 <div key={k} className="stat">
                   <p className="stat-n" style={{ fontSize: "clamp(34px, 4vw, 54px)", whiteSpace: "nowrap", color: (b ?? 1) > 0.2 ? "var(--gold)" : undefined }}>{pct(b)}</p>
-                  <p>{l.language}, with the language told to the model</p>
-                  <small style={{ color: "var(--ink-3)" }}>{pct(a)} when the language is not told · {l.clips} clips, characters wrong: {pct(l.with_language_hint.cer)}</small>
+                  <p>{l.language}{k === "en_us" ? "" : ", with the language told to the model"}</p>
+                  <small style={{ color: "var(--ink-3)" }}>{k === "en_us" ? "" : `${pct(a)} when the language is not told · `} {l.clips} clips, characters wrong: {pct(l.with_language_hint.cer)}</small>
                 </div>
               );
             })}
