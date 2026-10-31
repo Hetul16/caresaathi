@@ -11,6 +11,7 @@ import { CardPanel } from "./CardPanel";
 import { CrewPanel } from "./CrewPanel";
 import { LabelPanel } from "./LabelPanel";
 import { OutcomesPanel } from "./OutcomesPanel";
+import { ReadingChecks } from "./ReadingChecks";
 import { DoctorPanel } from "./DoctorPanel";
 import { ChatPanel } from "./ChatPanel";
 import { FamilyPanel } from "./FamilyPanel";
@@ -126,6 +127,7 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
                     </div>
                   </div>
                 )}
+                {live && <ReadingChecks patientId={live.patientId} canApprove={canApprove} toast={toast.show} onChange={live.reload} />}
                 {p.open_conflicts.map((c) => live
                   ? <ConflictCard key={c.id} c={c} askLabel="Copy the question" note="Take it to the doctor or pharmacist."
                       onAsk={() => copyQuestion(c.doctor_question)}

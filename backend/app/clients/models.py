@@ -85,6 +85,7 @@ class ModelClient(Protocol):
     def word(self, kind: str, facts: dict, language: str) -> tuple[str, Usage]: ...
     def next_step(self, goal: str, tools: dict[str, str], done: list[str], has_doctor_link: bool) -> tuple[dict, Usage]: ...
     def read_label(self, file: DocFile) -> tuple[dict, Usage]: ...
+    def second_read_document(self, pages: list[PageText]) -> tuple[str, Usage]: ...
 
 
 # ----------------------------------------------------------------------------------------------
@@ -138,6 +139,12 @@ LABEL_PROMPT = (
     '"form":"Tablets","expiry":"08/2027","batch":"B123"}],"loose_pill_without_text":false}'
 )
 
+
+SECOND_READ_LEAD = (
+    "You are the SECOND, independent reader of this document. Do not leave out a medicine line because a digit or word is smudged, blurred or "
+    "hard to read: extract it with your single best reading, and describe in `unreadable` which part was unclear. Do not guess a number that "
+    "is not visible; read each digit and unit one at a time."
+)
 
 EXTRACT_EXAMPLE = (
     '{"schema_version":"extract.v1","document":{"doc_type":"prescription","doc_date":"14/09/2026","issuer":"<clinic>","language":"en"},'
@@ -275,8 +282,14 @@ class LiveModelClient:
             raise ModelError("transcription was not valid JSON") from e
         return pages, usage
 
-    def extract_document(self, pages: list[PageText], hint_doc_type: str | None) -> tuple[str, Usage]:
-        prompt = (f"{EXTRACT_PROMPT} Return one JSON object shaped like this example (replace the placeholders; add or remove entries as the "
+    def second_read_document(self, pages: list[PageText]) -> tuple[str, Usage]:
+        """A second, independent reading with a different instruction (D-54). It is told not to skip a line because part of it is hard to
+        read, which is exactly where the first reader tends to decline. The two readings are compared by code, never merged by the model."""
+        return self.extract_document(pages, None, variant=True)
+
+    def extract_document(self, pages: list[PageText], hint_doc_type: str | None, variant: bool = False) -> tuple[str, Usage]:
+        lead = (SECOND_READ_LEAD + " ") if variant else ""
+        prompt = (f"{lead}{EXTRACT_PROMPT} Return one JSON object shaped like this example (replace the placeholders; add or remove entries as the "
                   f"document requires; use [] for a list with nothing in it): {EXTRACT_EXAMPLE}\n<document>\n{numbered(pages)}\n</document>")
         # With the schema forced, a live run returned "unreadable: Tool call is pending" and no allergy for a clear allergy card, so the
         # schema is not forced; an example and temperature 0 are steadier. The JSON is then repaired (labels only, never facts: see
@@ -530,6 +543,9 @@ class FakeModelClient:
                 name = m.group(1).strip()
                 products.append({"brand": None, "ingredients": [{"name": name, "strength": m.group(2)}]})
         return {"lines": lines, "products": products, "loose_pill_without_text": False}, self._usage("read_label")
+
+    def second_read_document(self, pages: list[PageText]) -> tuple[str, Usage]:
+        return self.extract_document(pages, None)
 
     def next_step(self, goal: str, tools: dict[str, str], done: list[str], has_doctor_link: bool) -> tuple[dict, Usage]:
         return default_next_step(done, has_doctor_link), self._usage("agent_step")

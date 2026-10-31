@@ -15,7 +15,7 @@ from .errors import ServiceError
 DOC_TYPES = ("prescription", "lab_report", "discharge_summary", "specialist_letter", "imaging_report", "other")
 
 
-def ingest_document(s: Session, *, patient_id: UUID, user_id: UUID, data: bytes, filename: str, doc_type: str) -> dict[str, Any]:
+def ingest_document(s: Session, *, patient_id: UUID, user_id: UUID, data: bytes, filename: str, doc_type: str, allow_text: bool = False) -> dict[str, Any]:
     """Validate, store and record a document. Returns {"id", "status", "doc_type", "new"}; `new` is False for a duplicate."""
     cfg = get_settings()
     if not data:
@@ -23,8 +23,8 @@ def ingest_document(s: Session, *, patient_id: UUID, user_id: UUID, data: bytes,
     if len(data) > cfg.max_upload_bytes:
         raise ServiceError(413, "validation-failed", "The file is too large")
     mime = sniff_mime(data)
-    if mime is None and cfg.model_mode == "fake" and filename.lower().endswith(".txt"):
-        mime = "text/plain"          # development only: the offline reader takes plain text
+    if mime is None and (cfg.model_mode == "fake" or allow_text) and filename.lower().endswith(".txt"):
+        mime = "text/plain"          # offline mode, or the demo family (allow_text): the offline reader takes plain text; the live reader does not
     if mime is None:
         raise ServiceError(415, "validation-failed", "Please upload a photo (JPEG or PNG) or a PDF")
     if doc_type not in DOC_TYPES:

@@ -162,3 +162,16 @@ export interface OutcomesBoard {
   items: OutcomeItem[]; follow_ups: { total: number; waiting_for_confirmation: number; confirmed: number; done: number };
   doctor_thread: { questions_sent: number; replies_received: number; replies_not_yet_used: number };
   usable_replies: { id: string; doctor_name: string; body: string; at: string }[]; note: string }
+
+// ---- live model report (Trust page) ----
+export interface LiveCase { id?: string; text?: string; ok: boolean; expected?: string[]; got?: string[]; result?: string; error?: string; note?: string; seconds?: number;
+  amlodipine_change?: boolean; chest_pain_warning?: boolean; follow_up?: boolean }
+export interface LiveSection { title: string; what: string; passed: number; total: number; cases: LiveCase[] }
+export interface LiveData { generated_at: string; reader_model: string; cost_usd: number; minutes: number; sections: Record<string, LiveSection>;
+  history: { generated_at: string; sections: Record<string, [number, number]> }[]; not_measured: string[] }
+export type LiveReport = ({ available: true } & LiveData) | { available: false };
+
+// ---- two-reader check (A5) ----
+export interface SecondReading { title: string | null; strength: string | null; frequency: string | null; duration: number | null; quantity: number | null; quote: string | null; page: number | null; line: number | null }
+export interface SecondRead { id: string; medicine: string; document: string; differs_in: string[]; reading_a: SecondReading | null; reading_b: SecondReading | null;
+  chosen: "a" | "b" | "neither" | null; chosen_by: string | null; chosen_at: string | null }

@@ -17,12 +17,13 @@ from ..safety.validate import validate_extraction
 from ..services.audit import timeline, write_audit
 from ..services.omissions import raise_omission_flags
 from ..services.plan import apply_document_extraction, record_model_call
+from ..services.second_reads import run_second_read
 
 log = logging.getLogger("caresaathi.pipeline")
 
 
-def process_document(document_id: UUID) -> None:
-    client = get_model_client()
+def process_document(document_id: UUID, client=None) -> None:
+    client = client or get_model_client()
     storage = get_storage()
 
     with worker_session() as s:
@@ -70,6 +71,8 @@ def process_document(document_id: UUID) -> None:
                                                issuer = :iss WHERE id = :i"""),
                   {"t": meta.doc_type if doc["doc_type"] == "other" else doc["doc_type"], "l": meta.language,
                    "iss": meta.issuer, "i": document_id})
+        # Two-reader check: only when the first reading said part of the page was unclear (D-54). Held medicines are skipped below.
+        run_second_read(s, patient_id=patient_id, document_id=document_id, pages=pages, validated=validated, client=client)
         res = apply_document_extraction(
             s, patient_id=patient_id, document_id=document_id, validated=validated, raw_output=raw, page_lines=page_lines,
             user_id=doc["uploaded_by"], client=client, model_call_id=mc2)

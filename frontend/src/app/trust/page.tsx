@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Icon } from "@/components/Icon";
+import { LiveResults } from "@/components/LiveResults";
 import type { TrustRun } from "@/lib/types";
 
 const NICE: Record<string, string> = {
@@ -45,6 +46,9 @@ export default function Trust() {
         <span className="pill">{run.stored ? "Stored run" : "Not stored"}</span>
       </div>
 
+      <LiveResults />
+
+      <div className="section-title" style={{ margin: "10px 0 14px" }}><h2>The code around the model</h2><span className="pill">Runs offline, no model needed</span></div>
       <div className="stack">
         {run.categories.map((c) => {
           const pct = Math.round((c.passed / c.total) * 100);

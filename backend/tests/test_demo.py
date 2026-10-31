@@ -34,6 +34,12 @@ def test_the_demo_story_produces_every_planted_flag(family):
     assert [c["title"] for c in changed] == ["Amlodipine 5 mg"] and changed[0]["source"]["quote"].startswith("ab main amlodipine")
     assert any("emergency" in c["title"].lower() for c in plan["pending_changes"])
 
+    # the two-reader check: a smudged strength is held for a person, not applied
+    reads = family.get(f"/patients/{pid}/second-reads").json()["reads"]
+    assert [(r["medicine"], r["differs_in"]) for r in reads] == [("Losartan", ["strength"])]
+    assert reads[0]["reading_a"]["strength"] == "5 mg" and reads[0]["reading_b"]["strength"] == "50 mg" and reads[0]["chosen"] is None
+    assert not any("Losartan" in i["title"] for i in plan["items"])
+
     # nothing is confirmed on the family's behalf
     assert not any(i["confirmed"] for i in plan["items"])
     assert len(family.get(f"/patients/{pid}/follow-ups").json()) >= 3 and family.get(f"/patients/{pid}/supply").json()

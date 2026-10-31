@@ -70,3 +70,17 @@ def latest():
                                        "actual": (r["actual"] or {}).get("actual")} for r in rs if not r["passed"]]})
     summary = {"total": len(results), "passed": sum(1 for r in results if r["passed"]), "categories": cats}
     return _payload(str(row["id"]), row["finished_at"].isoformat() if row["finished_at"] else "", row["git_sha"], row["model"], summary, True)
+
+
+LIVE_RESULTS = ROOT / "data" / "live_results" / "latest.json"
+
+
+@router.get("/trust/live")
+def live_results():
+    """What was measured on the LIVE Meta model, from the committed report (`scripts/live_report.py`). Public: failures are included.
+    It is a file, not a live call, so opening this page never spends credit and never depends on the model being reachable."""
+    try:
+        data = json.loads(LIVE_RESULTS.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"available": False}
+    return {"available": True, **data}
