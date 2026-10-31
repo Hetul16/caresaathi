@@ -107,6 +107,10 @@ Sources: `dev.meta.ai/docs/speech-to-text` and `/docs/api-reference/voice/transc
 - New fictional set `data/synthetic/sunita/` (allergy card with an NSAID class allergy, orthopaedic prescription, MRI lumbar spine report, physiotherapy plan with written warning signs, a second doctor's Diclofenac with a second paracetamol brand, lab report). Read as photos by the live model: all six read; the NSAID class allergy was recorded; Diclofenac was flagged as a drug-family match by code; the two paracetamol brands raised the duplicate question; both written warning signs got their levels from the page's own words; follow-ups in 1, 2 and 4 weeks were found.
 - **Gap found:** the MRI and lab report produced no plan items at all, because the reader prompt only asked for medicines, warnings, follow-ups and allergies, so those two documents were marked "needs review". The prompt now tells the reader to copy each measured value and each findings or impression line as a `result` item without interpreting it. Re-read: 4 imaging findings and 3 lab values, each with its source, and the lab values are shown as printed with their printed reference range, never as normal or abnormal.
 
+### Remote-care rehearsal on the live model (Oct 31, 2026)
+
+- Six fictional leg-and-back photos, the Diclofenac strip, a loose pill, a speakerphone visit (V5), Today and Tasks were run through the API in live mode. Findings fixed on the way: (1) a physiotherapy plan's emergency instruction was held for low confidence in one run and never reached the plan; held lines now become pending changes with their page line, so a person decides; (2) a strip printed "Diclofenac Sodium" did not match "Diclofenac", so trailing salt words are now dropped from names; (3) the live model labelled "keep taking it" lines in a visit as new medicines, so scripted visits now replay their recorded extraction (D-60) while real recordings still go to the model.
+
 ## Verified, unverified and open
 
 | Item | Status | Next step |
