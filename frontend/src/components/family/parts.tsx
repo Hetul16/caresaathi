@@ -165,7 +165,7 @@ export function DuplicateCard({ d, onCopy }: { d: DuplicateGroup; onCopy: () => 
 
 function ExplainBox({ itemKey, explain }: { itemKey: string; explain: (key: string) => Promise<Explanation> }) {
   const { lang } = useI18n();
-  const { speak, speaking, stop } = useSpeech(speechLocale[lang]);
+  const { speak, speaking, stop, available: voiceAvailable } = useSpeech(speechLocale[lang]);
   const [e, setE] = useState<Explanation | null>(null);
   const [busy, setBusy] = useState(false);
   async function go() {
@@ -177,7 +177,8 @@ function ExplainBox({ itemKey, explain }: { itemKey: string; explain: (key: stri
     <div className="question-box" style={{ flexBasis: "100%" }}>
       <p>{e.text}</p>
       <div className="item-foot" style={{ marginTop: 8 }}>
-        <button className="btn btn-quiet btn-sm" onClick={() => (speaking ? stop() : speak(e.text))}><Icon name="volume" /> {speaking ? "Stop" : "Listen"}</button>
+        <button className="btn btn-quiet btn-sm" disabled={voiceAvailable === false} title={voiceAvailable === false ? "This device has no voice for this language" : undefined}
+          onClick={() => (speaking ? stop() : speak(e.text))}><Icon name="volume" /> {speaking ? "Stop" : "Listen"}</button>
         <SourceChip source={e.source} />
         {!e.confirmed && <span className="pill pill-marigold">Not confirmed yet</span>}
         {!e.passed && <span className="pill pill-amber">A safe default text is shown</span>}

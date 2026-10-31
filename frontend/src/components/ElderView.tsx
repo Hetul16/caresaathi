@@ -12,6 +12,13 @@ import { VoiceOrb, useMicLevel, useSpeech, type OrbState } from "@/components/Vo
 
 const SLOTS = ["morning", "noon", "evening", "night"] as const;
 
+// Shown when the device itself has no voice for this language. The words are on screen either way; only reading aloud is unavailable.
+const NO_VOICE: Record<string, string> = {
+  en: "This device has no English voice installed, so reading aloud is off. The words are still on the screen.",
+  hi: "इस डिवाइस में हिन्दी आवाज़ नहीं है, इसलिए पढ़कर सुनाना बंद है। शब्द स्क्रीन पर मौजूद हैं। (फ़ोन पर आमतौर पर हिन्दी आवाज़ होती है।)",
+  mr: "या डिव्हाइसवर मराठी आवाज नाही, त्यामुळे वाचून दाखवणे बंद आहे. शब्द स्क्रीनवर आहेत. (फोनवर सहसा आवाज उपलब्ध असतो.)",
+};
+
 const VOICE_NEEDS_LIVE: Record<string, string> = {
   en: "Voice questions are not available yet. You can type your question below.",
   hi: "आवाज़ से सवाल अभी उपलब्ध नहीं है। आप नीचे अपना सवाल लिख सकते हैं।",
@@ -31,7 +38,7 @@ export function ElderView({ plan, emergencyHref, patientId }: { plan: CarePlan; 
   const listening = patientId ? rec.state === "recording" : localListening;
   const level = patientId ? rec.level : mic.level;
   const error = patientId ? (rec.state === "denied" || rec.state === "unsupported" ? "mic" : null) : mic.error;
-  const { speak, repeat, stop, speaking } = useSpeech(speechLocale[lang]);
+  const { speak, repeat, stop, speaking, available: voiceAvailable } = useSpeech(speechLocale[lang]);
 
   // The elder only hears medicines the family has confirmed, and nothing under an open conflict.
   const conflictNames = plan.open_conflicts.map((c) => c.medicine.toLowerCase());
@@ -94,10 +101,14 @@ export function ElderView({ plan, emergencyHref, patientId }: { plan: CarePlan; 
         </div>
       )}
 
+      {voiceAvailable === false && (
+        // This device has no voice for the chosen language, so reading aloud is off rather than read in the wrong voice (D-65).
+        <p className="elder-novoice" role="status">{NO_VOICE[lang]}</p>
+      )}
       <div className="elder-tools">
-        <button className="btn btn-primary" onClick={readAll}><Icon name="volume" /> {t("listen")}</button>
-        <button className="btn btn-quiet" onClick={() => repeat(false)}><Icon name="repeat" /> {t("repeat")}</button>
-        <button className="btn btn-quiet" onClick={() => repeat(true)}><Icon name="clock" /> {t("slower")}</button>
+        <button className="btn btn-primary" onClick={readAll} disabled={voiceAvailable === false}><Icon name="volume" /> {t("listen")}</button>
+        <button className="btn btn-quiet" onClick={() => repeat(false)} disabled={voiceAvailable === false}><Icon name="repeat" /> {t("repeat")}</button>
+        <button className="btn btn-quiet" onClick={() => repeat(true)} disabled={voiceAvailable === false}><Icon name="clock" /> {t("slower")}</button>
       </div>
 
       {patientId && (

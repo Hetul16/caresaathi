@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { Icon } from "./Icon";
 
@@ -72,16 +72,47 @@ export function VoiceOrb({ state, onToggle, level }: { state: OrbState; onToggle
 }
 
 // Interim text-to-speech with the browser voice. The product voice comes from the TTS provider chosen in D-08.
+//
+// The voices belong to the viewer's device, not to us (D-65). Many Windows and desktop Linux machines ship no Hindi or Marathi voice at all.
+// Setting `lang = "hi-IN"` on such a machine does not fail: the browser quietly hands the Devanagari text to an English voice, which reads
+// nonsense to someone who may not be able to read the screen. So the voice is chosen explicitly, and when the language has none we say so
+// instead of speaking it badly.
+function pickVoice(voices: SpeechSynthesisVoice[], locale: string): SpeechSynthesisVoice | null {
+  const base = locale.split("-")[0].toLowerCase();
+  return voices.find((v) => v.lang.replace("_", "-").toLowerCase() === locale.toLowerCase())
+      ?? voices.find((v) => v.lang.replace("_", "-").toLowerCase().startsWith(base + "-"))
+      ?? voices.find((v) => v.lang.toLowerCase() === base)
+      ?? null;
+}
+
 export function useSpeech(locale: string) {
   const [speaking, setSpeaking] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const last = useRef<{ text: string; rate: number } | null>(null);
+
+  // The list arrives asynchronously in most browsers, and on some it is empty until the event fires.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const read = () => setVoices(window.speechSynthesis.getVoices());
+    read();
+    window.speechSynthesis.addEventListener("voiceschanged", read);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", read);
+  }, []);
+
+  const supported = typeof window !== "undefined" && "speechSynthesis" in window;
+  const voice = useMemo(() => pickVoice(voices, locale), [voices, locale]);
+  // Unknown until the list loads; false means this device has no voice for that language.
+  const available = voices.length === 0 ? null : voice !== null;
 
   const speak = useCallback((text: string, rate = 0.9) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const v = pickVoice(window.speechSynthesis.getVoices(), locale);
+    if (!v) return;                       // no voice for this language: stay silent rather than read it in the wrong one
     window.speechSynthesis.cancel();
     last.current = { text, rate };
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = locale;
+    u.voice = v;
+    u.lang = v.lang;
     u.rate = rate;
     u.onstart = () => setSpeaking(true);
     u.onend = () => setSpeaking(false);
@@ -99,5 +130,5 @@ export function useSpeech(locale: string) {
   }, []);
 
   useEffect(() => stop, [stop]);
-  return { speak, repeat, stop, speaking };
+  return { speak, repeat, stop, speaking, available, supported, voiceName: voice?.name ?? null };
 }

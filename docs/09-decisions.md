@@ -316,6 +316,13 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Why:** Argon2 makes one password guess slow and did nothing about a thousand of them. A healthcare-adjacent app with no login throttle is an easy and fair criticism.
 - **Limit, written down rather than hidden:** the counters live in one process's memory. `docs/19-deployment.md` deploys a single API process, which the spend ledger already assumes, so this holds there. Several processes would each keep their own count; a shared store is the production answer. Nothing is encrypted at rest by the application.
 
+### D-65 Reading aloud uses a voice the device actually has, or says it cannot
+- **Status:** Accepted (Nov 1, 2026)
+- **Decision:** The read-aloud picks a `SpeechSynthesisVoice` matching the chosen language explicitly (exact locale, then the language prefix). When the device has no voice for that language, Elder mode shows a line in that language saying reading aloud is unavailable and the Listen, Repeat and Slower buttons are disabled; the family-side Listen button is disabled too. Nothing is ever spoken with a mismatched voice.
+- **Why:** Setting `utterance.lang = "hi-IN"` does not fail when no Hindi voice exists; the browser hands the Devanagari text to an English voice, which reads nonsense to a person who may not be able to read the screen. Measured on Nov 1 on this Windows laptop in Chrome: **English has en-IN voices; Hindi and Marathi have none at all.** Android phones usually ship Hindi (and often Marathi) through Google text-to-speech, so the same page reads aloud there.
+- **Consequence for the demo:** record the Hindi or Marathi read-aloud on an Android phone, or install the Windows language pack first. On this laptop that part of the demo will show the honest "no voice on this device" line instead.
+- **Still open:** D-08's hosted text-to-speech provider is not chosen or built, so the voice remains the viewer's own. A server-side voice would remove the dependency entirely and is the real fix.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

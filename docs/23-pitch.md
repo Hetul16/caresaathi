@@ -107,7 +107,9 @@ Say it plainly and early. No real users. Marathi speech is experimental. The Hin
 | 1:00–1:40 | **The Timeline**: two paracetamols overlap, the NSAID bar is red | Creativity: the moment they repeat |
 | 1:40–2:10 | Open the flag: the WHO ATC class behind it, and the question for the doctor | Technical ambition: code decides, not the model |
 | 2:10–2:30 | Ask "is it safe to stop this" and let it refuse | The thing nobody else shows |
-| 2:30–2:50 | Elder mode on a phone, in Hindi, with the picture schedule | Who it is actually for |
+| 2:30–2:50 | Elder mode **on an Android phone**, in Hindi, with the picture schedule | Who it is actually for |
 | 2:50–3:00 | `/trust`, including the failures, and one line of what is not proven | Credibility |
+
+Record the Hindi read-aloud on a phone. The voices belong to the viewer's device, and this laptop has no Hindi or Marathi voice (D-65); on it the app honestly says so instead of reading Devanagari in an English voice.
 
 Cut from the bottom if it runs long, but never cut the refusal or the Timeline.
