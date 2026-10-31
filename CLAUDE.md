@@ -37,6 +37,7 @@ If documents disagree, the higher one wins. Change a decision, then update `docs
 | 2 | `docs/19-deployment.md` | How to get a public link for the judges: tunnel, one server with Docker, managed platform; checks before submitting |
 | 2 | `docs/20-demo-video-script.md` | The final 3-minute video: story, shot list with voice-over, setup, fallbacks, cut list |
 | 2 | `docs/21-why-and-go-to-market.md` | Why we built it, who it is for, positioning, go to market, global plan, risks, what is not proven |
+| 2 | `docs/22-remote-care-story.md` | The recommended demo story: Priya in Toronto caring for her mother in Pune, step by step, with the clicks and the words |
 | 2 | `db/schema.sql`, `db/roles_and_grants.sql`, `db/seed_drug_families.sql` | The pre-hackathon baseline schema. `db/tests/run_tests.sh` runs 69 checks. New tables arrive as migrations (`docs/16-database-design.md`, section 9) |
 
 The docs are long. Read only the section you need.

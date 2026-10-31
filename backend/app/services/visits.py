@@ -122,6 +122,11 @@ def process_visit(visit_id: UUID, client: ModelClient | None = None) -> None:
         v = s.execute(text("SELECT * FROM visits WHERE id = :v"), {"v": visit_id}).mappings().first()
         if v is None or v["status"] not in ("recording", "processing", "failed"):
             return
+        if v["origin"] == "mock":
+            # A scripted visit replays the script's recorded expected extraction, in live mode too, so the demo is repeatable. Live reading of the
+            # same scripts is measured separately (scripts/live_report.py, shown on the Trust page); a real recording always goes to the model (D-60).
+            from ..clients.models import FakeModelClient
+            client = FakeModelClient()
         s.execute(text("UPDATE visits SET status = 'processing', failure_note = NULL WHERE id = :v"), {"v": visit_id})
         patient_id: UUID = v["patient_id"]
         have_segments = s.execute(text("SELECT count(*) FROM transcript_segments WHERE visit_id = :v"), {"v": visit_id}).scalar_one() > 0

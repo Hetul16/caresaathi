@@ -75,6 +75,12 @@ def main() -> int:
                 (d / "pdf").mkdir(exist_ok=True)
                 shutil.copy2(pdf, d / "pdf" / (stem + ".pdf"))
         lines.append("")
+    extras = OUT / "Sunita_Deshmukh" / "extras"                  # the strip her father photographs at home, and a loose pill the app must refuse
+    extras.mkdir(exist_ok=True)
+    for name in ("strip_diclofenac_50.png", "loose_pill.png"):
+        if (REND / "labels" / name).exists():
+            shutil.copy2(REND / "labels" / name, extras / name)
+    lines.append("Sunita_Deshmukh/extras: strip_diclofenac_50.png (Label check: matches the second prescription and the NSAID-family flag) and loose_pill.png (refused).")
     lines.append("Each patient folder also has a pdf subfolder with the same documents as PDFs.")
     (OUT / "README.txt").write_text("\n".join(lines), encoding="utf-8")
     visible = Path.home() / "Desktop" / "CareSaathi_Demo_Uploads"      # a copy outside the repository, so an editor that hides git-ignored folders still shows it

@@ -6,6 +6,9 @@ from datetime import date
 
 _FORM_WORDS = {"tab", "tabs", "tablet", "tablets", "cap", "caps", "capsule", "capsules", "syp", "syrup",
                "inj", "injection", "drops", "oint", "ointment", "cream", "gel", "susp", "suspension"}
+# Salt words printed AFTER the name on many strips ("Diclofenac Sodium", "Metformin Hydrochloride"). Dropped only when they are the last word of a
+# name with at least two words, so "sodium valproate", "ferrous sulfate" and "calcium carbonate" keep their names.
+_SALT_WORDS = {"sodium", "potassium", "hydrochloride", "hcl", "besylate", "maleate", "tartrate", "succinate", "mesylate"}
 _PUNCT = re.compile(r"[^\w\s]+", re.UNICODE)
 _STRENGTH = re.compile(r"\b\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml|iu|%)\b", re.IGNORECASE)
 _WS = re.compile(r"\s+")
@@ -16,6 +19,8 @@ def normalize_medicine_name(raw: str) -> str:
     s = _STRENGTH.sub(" ", raw.casefold())
     s = _PUNCT.sub(" ", s)
     words = [w for w in s.split() if w not in _FORM_WORDS]
+    while len(words) >= 2 and words[-1] in _SALT_WORDS:
+        words.pop()
     return _WS.sub(" ", " ".join(words)).strip()
 
 

@@ -85,3 +85,16 @@ def test_another_family_cannot_use_it(family, client, admin):
     other = Family(client, admin, "Someone Else")
     r = client.post(f"/api/v1/patients/{family.pid}/label-check", headers=other.h, files={"file": ("l.txt", b"Metformin Tablets 500 mg", "text/plain")})
     assert r.status_code == 404
+
+
+def test_a_salt_name_on_the_strip_still_matches_the_nsaid_class_allergy(family):
+    """"Diclofenac Sodium" is how many strips print it. The exact name fails, then the salt word is dropped, and the drug-family match is found."""
+    from pathlib import Path
+    docs = Path(__file__).resolve().parents[2] / "data" / "synthetic" / "sunita" / "docs"
+    for stem, kind in (("S1", "other"), ("S5", "prescription")):
+        f = next(docs.glob(f"{stem}_*.txt"))
+        family.upload(f.read_text(encoding="utf-8"), f.name, doc_type=kind)
+    p = _check(family, "Diclofenac Sodium Tablets IP 50 mg\nBatch D4410  Exp 03/2028")["products"][0]
+    assert p["verdict"] == "matches" and "diclofenac" in p["plan_item"]["title"].lower()
+    assert any(a["match"] in ("direct", "drug_family") and "nsaid" in a["allergy"].lower() for a in p["allergy"])
+    assert all("Question for the doctor or pharmacist" in a["text"] for a in p["allergy"])

@@ -110,7 +110,7 @@ VISIT_PROMPT = (
     "(1) Work only from the transcript. Never add anything the speakers did not say, and never use outside medical knowledge. "
     "(2) items: every medicine, test, appointment, warning sign, restriction or instruction the DOCTOR states. change is 'new' for a new "
     "one, 'changed' when the doctor changes a dose or schedule (put the new dose in details), 'stopped' only if the doctor says to stop, "
-    "'unchanged_mention' when the doctor says it continues as before. A patient or family member only asking a question is not an item. "
+    "'unchanged_mention' when the doctor says it continues as before or tells them to keep taking it (continue, keep it up, same as before, chalu rakhiye, jaari rakhiye, pehle jaisi), even if a way of taking it, such as 'when needed, up to three times a day', is repeated; never 'new' for a medicine the family is already taking. A patient or family member only asking a question is not an item. "
     "(3) Every item and follow-up needs source.segment_ids that exist in the transcript and source.quote copied EXACTLY, in the original "
     "language and spelling, from those segments; if you cannot quote it, leave it out. "
     "(4) Medicine details use ingredients[{name,strength}], dose_text, frequency_text, instructions_text, as the doctor said them; for "
@@ -479,6 +479,9 @@ class FakeModelClient:
                                "duration_days": int(days.group(1)) if days else None}
                     if qty:
                         details["quantity"] = {"value": int(qty.group(1)), "unit": "tablets"}
+                    note = re.search(r"\b(if pain|if fever|if needed|as needed|after food|before food|with food)\b", rest, re.I)
+                    if note:
+                        details["instructions_text"] = note.group(1).lower()
                     items.append({"kind": "medicine", "title": name, "details": details, "source": src, "confidence": 0.9})
                     continue
                 a = _ALLERGY.search(line.strip())

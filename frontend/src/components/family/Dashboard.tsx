@@ -11,6 +11,9 @@ import { CardPanel } from "./CardPanel";
 import { CrewPanel } from "./CrewPanel";
 import { LabelPanel } from "./LabelPanel";
 import { OutcomesPanel } from "./OutcomesPanel";
+import { TodayPanel } from "./TodayPanel";
+import { TodayGlance } from "./TodayGlance";
+import { TasksPanel } from "./TasksPanel";
 import { ReadingChecks } from "./ReadingChecks";
 import { DoctorPanel } from "./DoctorPanel";
 import { ChatPanel } from "./ChatPanel";
@@ -21,7 +24,7 @@ import { VisitPanel } from "./VisitPanel";
 import { DemoLoader } from "../DemoLoader";
 import { writeSelected } from "@/lib/live";
 
-type Tab = "overview" | "plan" | "documents" | "visits" | "tracker" | "ask" | "outcomes" | "crew" | "doctor" | "label" | "card" | "family" | "approvals" | "history";
+type Tab = "overview" | "plan" | "documents" | "visits" | "tracker" | "ask" | "today" | "tasks" | "outcomes" | "crew" | "doctor" | "label" | "card" | "family" | "approvals" | "history";
 
 export interface LiveCtx { patientId: string; reload: () => void }
 
@@ -63,7 +66,7 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
     { id: "plan", label: "Care plan", icon: "list", count: p.items.filter((i) => !i.confirmed && !i.alert_level).length || undefined },
     ...(live ? [{ id: "documents" as Tab, label: "Documents", icon: "file" as IconName }, { id: "visits" as Tab, label: "Visits", icon: "mic" as IconName },
                 { id: "tracker" as Tab, label: "Tracker", icon: "calendar" as IconName }, { id: "ask" as Tab, label: "Ask", icon: "quote" as IconName },
-                { id: "outcomes" as Tab, label: "Outcomes", icon: "check" as IconName },
+                { id: "today" as Tab, label: "Today", icon: "clock" as IconName }, { id: "tasks" as Tab, label: "Tasks", icon: "list" as IconName }, { id: "outcomes" as Tab, label: "Outcomes", icon: "check" as IconName },
                 { id: "crew" as Tab, label: "Care crew", icon: "sparkle" as IconName }, { id: "doctor" as Tab, label: "Doctor link", icon: "stethoscope" as IconName },
                 { id: "label" as Tab, label: "Label check", icon: "pill" as IconName },
                 { id: "card" as Tab, label: "Emergency Card", icon: "card" as IconName }, { id: "family" as Tab, label: "Family", icon: "users" as IconName }] : []),
@@ -116,6 +119,7 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
 
             {tab === "overview" && (
               <>
+                {live && <TodayGlance patientId={live.patientId} go={setTab} />}
                 {empty && (
                   <div className="card empty">
                     <span className="empty-ic"><Icon name="file" /></span>
@@ -190,6 +194,10 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
             {tab === "tracker" && live && <TrackerPanel patientId={live.patientId} canApprove={canApprove} toast={toast.show} onChange={live.reload} />}
 
             {tab === "ask" && live && <ChatPanel patientId={live.patientId} />}
+
+            {tab === "tasks" && live && <TasksPanel patientId={live.patientId} toast={toast.show} />}
+
+            {tab === "today" && live && <TodayPanel patientId={live.patientId} toast={toast.show} onChange={live.reload} />}
 
             {tab === "outcomes" && live && <OutcomesPanel patientId={live.patientId} canApprove={canApprove} toast={toast.show} onChange={live.reload} />}
 

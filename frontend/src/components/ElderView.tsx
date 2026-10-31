@@ -7,6 +7,7 @@ import { useWavRecorder } from "@/lib/recorder";
 import { speechLocale, useI18n } from "@/lib/i18n";
 import { spokenDose } from "@/lib/spoken";
 import { Icon } from "@/components/Icon";
+import { ElderCheckin } from "@/components/ElderCheckin";
 import { VoiceOrb, useMicLevel, useSpeech, type OrbState } from "@/components/VoiceOrb";
 
 const SLOTS = ["morning", "noon", "evening", "night"] as const;
@@ -107,6 +108,8 @@ export function ElderView({ plan, emergencyHref, patientId }: { plan: CarePlan; 
           <button className="btn btn-quiet" style={{ minHeight: 58 }} disabled={asking || !typed.trim()}><Icon name="check" /> OK</button>
         </form>
       )}
+
+      {patientId && <ElderCheckin patientId={patientId} lang={lang} />}
 
       <h2 className="elder-title">{t("todayMedicines")}</h2>
       <div className="dose-grid">

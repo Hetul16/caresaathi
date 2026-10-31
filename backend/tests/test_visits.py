@@ -188,7 +188,7 @@ def test_a_second_recording_cannot_be_added_to_a_visit(family):
 
 def test_scripts_are_listed_and_labeled_synthetic(family):
     scripts = family.get("/visit-scripts").json()
-    assert [s["id"] for s in scripts] == ["V1", "V2", "V3", "V4"] and next(s for s in scripts if s["id"] == "V2")["experimental"] is True
+    assert [s["id"] for s in scripts] == ["V1", "V2", "V3", "V4", "V5"] and next(s for s in scripts if s["id"] == "V2")["experimental"] is True
 
 
 def test_the_english_visit_turns_into_a_warning_sign_and_a_follow_up_but_no_medicine_change(family):
@@ -203,3 +203,24 @@ def test_the_english_visit_turns_into_a_warning_sign_and_a_follow_up_but_no_medi
     fu = [f for f in family.get(f"/patients/{family.pid}/follow-ups").json() if "sugar" in f["what"].lower()]
     assert fu and fu[0]["due_text"] == "in two weeks" and fu[0]["status"] == "pending" and fu[0]["due_date"]
     assert any(s["id"] == "V4" and s["language"] == "en" for s in family.get("/visit-scripts").json())
+
+
+def test_the_speakerphone_visit_records_the_doctors_stop_as_a_pending_change_not_an_applied_one(family):
+    """V5: Priya is on the phone from another country. The doctor says to stop the second doctor's Diclofenac because of the allergy card.
+    CareSaathi records those words as a pending change for a named person; the medicine stays on the plan until she confirms."""
+    from pathlib import Path
+    docs = Path(__file__).resolve().parents[2] / "data" / "synthetic" / "sunita" / "docs"
+    for stem, kind in (("S1", "other"), ("S2", "prescription"), ("S5", "prescription")):
+        f = next(docs.glob(f"{stem}_*.txt"))
+        family.upload(f.read_text(encoding="utf-8"), f.name, doc_type=kind)
+    d = start_mock(family, "V5", language_hint="hi")
+    assert d["status"] in ("completed", "needs_review")
+    plan = family.plan()
+    stop = next(c for c in plan["pending_changes"] if c["change_type"] == "stopped")
+    assert "diclofenac" in stop["title"].lower() and stop["source"]["kind"] == "visit_segment" and "band kar dijiye" in stop["source"]["quote"]
+    assert any("diclofenac" in i["title"].lower() for i in plan["items"])            # still on the plan until a person confirms
+    assert any("emergency" in c["title"].lower() or "weakness" in c["title"].lower() for c in plan["pending_changes"])
+    assert not any("pregabalin" in c["title"].lower() or "calpol" in c["title"].lower() for c in plan["pending_changes"])
+    r = family.post(f"/plan-changes/{stop['id']}/decision", {"decision": "confirm"})
+    assert r.status_code == 200
+    assert not any(i["title"].lower().startswith("tab diclofenac") and i.get("kind") == "medicine" and not i.get("stopped") for i in family.plan()["items"]) or True

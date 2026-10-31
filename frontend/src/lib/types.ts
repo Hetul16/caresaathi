@@ -179,3 +179,13 @@ export type LiveReport = ({ available: true } & LiveData) | { available: false }
 export interface SecondReading { title: string | null; strength: string | null; frequency: string | null; duration: number | null; quantity: number | null; quote: string | null; page: number | null; line: number | null }
 export interface SecondRead { id: string; medicine: string; document: string; differs_in: string[]; reading_a: SecondReading | null; reading_b: SecondReading | null;
   chosen: "a" | "b" | "neither" | null; chosen_by: string | null; chosen_at: string | null }
+
+// ---- daily check-ins (C7) ----
+export interface TodayItem { item_key: string; title: string; units: number; status: "later" | "due" | "not_marked" | "taken" | "not_taken"; marked_by: string | null; marked_at: string | null; how: string }
+export interface TodaySlot { slot: "morning" | "noon" | "evening" | "night"; label: string; time: string; items: TodayItem[] }
+export interface TodayView { date: string; now: string; slots: TodaySlot[]; summary: { taken: number; not_taken: number; due: number; not_marked: number; later: number };
+  checkin: { pain: number | null; note: string | null; at: string } | null; last_activity: string | null; note: string }
+export interface WellbeingHistory { days: number; days_with_entry: number; entries: { date: string; pain: number | null; note: string | null; by: string }[]; note: string }
+
+// ---- family tasks (C8) ----
+export interface CareTask { id: string; title: string; due_date: string | null; status: "open" | "done"; assigned_to: string | null; created_by: string; done_by: string | null; overdue: boolean; done_at: string | null }

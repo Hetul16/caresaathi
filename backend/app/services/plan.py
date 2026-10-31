@@ -213,6 +213,18 @@ def apply_document_extraction(s: Session, *, patient_id: UUID, document_id: UUID
     for i, item in enumerate(data.items):
         if i in validated.rejected_items or i in validated.review_items:
             res.skipped_for_review += 1
+            # A line the checks were unsure about is NOT dropped silently. Found on Oct 31: a physiotherapy plan's emergency instruction was held for
+            # "low confidence" and simply never reached the plan. It becomes a PENDING change with its page line, so a named person decides.
+            # (A disagreement between two readings has its own screen, and a rejected line, whose quote is not on the page, is never shown.)
+            if i not in validated.rejected_items and validated.review_items.get(i) != "two_reader_disagreement":
+                held_src = make_source_ref(s, patient_id=patient_id, document_id=document_id, page=item.source.page,
+                                           line_start=item.source.line_start, line_end=item.source.line_end, quote=item.source.quote)
+                held = {"kind": item.kind, "title": item.title.strip(), "details": dict(item.details or {}), "held_because": validated.review_items.get(i)}
+                if item.kind == "warning_sign":
+                    held["alert_level"] = validated.alert_levels.get(i)
+                s.execute(text("""INSERT INTO plan_changes (patient_id, extraction_id, change_type, after_state, source_ref_id, requires_confirmation, status)
+                                  VALUES (:p, :e, 'new', CAST(:a AS jsonb), :src, true, 'pending')"""),
+                          {"p": patient_id, "e": ext_id, "a": _j(held), "src": held_src})
             continue
         details = dict(item.details or {})
         if item.kind == "medicine":

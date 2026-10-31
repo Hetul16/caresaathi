@@ -282,6 +282,18 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Status:** Accepted (Oct 31, 2026)
 - **Decision:** Two defects found by running the whole product through a browser against the live model. (1) Uploading the allergy card and an Amoxicillin prescription together raised no conflict: each was processed in its own transaction and neither saw the other's uncommitted row, and an allergy found after a medicine was not re-checked for documents (it was for visits). Fix: a per-patient advisory lock around the database write that decides conflicts (model calls stay parallel), plus a recheck of every current medicine whenever a new allergy is recorded. Three tests reproduce it and fail without the fix. (2) Live-model wording of the allergy flag and the doctor's question was chatty and leaked an internal label ("drug_family"). The allergy flag, the doctor question, the omission question and the duplicate question are now fixed templates (English, Hindi, Marathi) in live mode too, as they already were offline; the model still words explanations. The invariant that the model only words the flag is kept as an option, not a requirement; the safer choice is the default.
 
+### D-58 Daily check-ins: marked by a person, shown as entered, never interpreted
+- **Status:** Accepted (Oct 31, 2026)
+- **Decision:** For remote care, a family can see which of today's doses were marked taken or not taken, by whom and when, and the patient's own daily pain number (0 to 10) and short note. Doses shown are only confirmed medicines with a plain schedule, not held by an open allergy flag, and not "if pain" medicines; a course with a stated number of days ends after that many days from the day it was added. Times are fixed standard ones (8, 13, 19, 22), a dose with no mark after two hours is "not marked yet", which only means nobody marked it. Marking "not taken" adds a neutral timeline line that ends "Ask the doctor or pharmacist what to do". Pain entries are listed as entered with a count of days; there is no average, trend, colour, threshold or word such as better or worse, because reading a pattern into them is a clinical judgement (see the Health Timeline discussion). Migration 0012 adds `dose_logs` and `wellbeing_checkins` with CHECKs and RLS. The elder's screen uses the family's signed-in session on the elder's device; a device login for the elder alone and push or WhatsApp alerts are not built.
+
+### D-59 Family tasks are coordination only
+- **Status:** Accepted (Oct 31, 2026)
+- **Decision:** A task board lets any member add, assign to another member of the same family, date and finish a task (collect a refill, go with her to physiotherapy). Done needs a named person and a time (a CHECK). A task never says what to give or when. Overdue is computed from the date. Migration 0013 adds `care_tasks`.
+
+### D-60 Scripted (mock) visits always replay the recorded extraction
+- **Status:** Accepted (Oct 31, 2026), amends D-40
+- **Decision:** A mock visit is a scripted synthetic conversation, so its extraction is the script's recorded answer in live mode as well. Run live on Oct 31, the model labelled "keep taking it" lines as new medicines and added noise to the pending list; a repeatable demo needs the clean answer. This does not weaken the evidence: the live model's reading of the same scripts (Hindi and English) is measured separately and shown on the Trust page, and a real recording always goes to the model. The Visits screen already labels these as "Mock visit · scripted".
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

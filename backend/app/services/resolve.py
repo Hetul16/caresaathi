@@ -13,10 +13,25 @@ from sqlalchemy.orm import Session
 from ..safety.normalize import normalize_medicine_name
 
 
+# Salt words printed after the medicine name on Indian strips ("Diclofenac Sodium", "Metformin Hydrochloride"). They are removed only AFTER an exact
+# match on the full name has failed, so names that really contain them ("sodium valproate") still match as themselves.
+_SALT_WORDS = {"sodium", "potassium", "hydrochloride", "hcl", "besylate", "maleate", "tartrate", "succinate", "mesylate"}
+
+
 def resolve_substance(s: Session, raw: str) -> UUID | None:
     n = normalize_medicine_name(raw)
     if not n:
         return None
+    found = _lookup(s, n)
+    if found is None:
+        words = n.split()
+        trimmed = [w for w in words if w not in _SALT_WORDS]
+        if trimmed and len(trimmed) < len(words):
+            found = _lookup(s, " ".join(trimmed))
+    return found
+
+
+def _lookup(s: Session, n: str) -> UUID | None:
     row = s.execute(text("""
         SELECT id FROM drug_substances
         WHERE substance_normalized = :n

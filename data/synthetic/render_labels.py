@@ -59,10 +59,11 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     strip("strip_amlodipine_5", ["Amlodipine Tablets IP", "5 mg", "Batch B2231   Mfg 02/2026   Exp 01/2028", "SYNTHETIC - FICTIONAL"])
     strip("strip_amlodipine_10", ["Amlodipine Tablets IP", "10 mg", "Batch B9910   Exp 06/2027", "SYNTHETIC - FICTIONAL"])
+    strip("strip_diclofenac_50", ["Diclofenac Sodium Tablets IP", "50 mg", "Batch D4410   Exp 03/2028", "SYNTHETIC - FICTIONAL"])
     box("box_amoxicillin", "AMOXYLONG", ["Amoxicillin Capsules 500 mg", "10 capsules   Batch A771   Exp 09/2027", "SYNTHETIC - FICTIONAL"])
     box("box_ibuprofen", "PAINEZ 400", ["Ibuprofen Tablets IP 400 mg", "Batch P118   Exp 11/2027", "SYNTHETIC - FICTIONAL"])
     loose_pill()
-    print(f"drew 5 label pictures into {OUT}")
+    print(f"drew 6 label pictures into {OUT}")
     return 0
 
 
