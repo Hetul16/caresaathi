@@ -65,6 +65,13 @@ export function ConflictCard({ c, onAsk, onAck, askLabel = "Ask the doctor", not
         <span className="pill pill-rose"><Icon name="alert" className="icon" /> Open</span>
       </div>
       <p>{c.flag}</p>
+      {c.basis && (
+        <details className="basis">
+          <summary>{c.basis.confirmed ? `Why: both are ${c.basis.atc_group} in the WHO ATC classification` : "Why: our own reference list, not confirmed"}</summary>
+          <p>{c.basis.text}</p>
+          {c.basis.source && <p className="basis-src">{c.basis.source}{c.basis.checked_on ? ` · checked ${c.basis.checked_on}` : ""}</p>}
+        </details>
+      )}
       <div className="question-box">{c.doctor_question}</div>
       <div className="item-foot">
         <button className="btn btn-primary btn-sm" onClick={onAsk}><Icon name={onAck ? "copy" : "stethoscope"} /> {askLabel}</button>

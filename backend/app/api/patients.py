@@ -19,6 +19,7 @@ from ..services.patients import create_patient as new_patient
 from ..services.audit import timeline, write_audit
 from ..services.readmodel import age_of, item_detail, source_of
 from .deps import db, problem, require_member
+from ..services.reference import family_basis, reference_check
 from ..services.tracking import duplicates as dup_groups
 from .plan import awaiting_actions, omission_list, pending_changes
 
@@ -126,6 +127,8 @@ def care_plan(patient_id: UUID, s: Session = Depends(db, scope="function")):
     open_conflicts = [{"id": str(c["id"]), "match": c["match"], "medicine": c["medicine"],
                        "flag": c["flag"] or ("Could not check this ingredient against the reference list. Please ask the pharmacist."
                                              if c["match"] == "unresolved" else "Please ask the doctor or pharmacist about this."),
+                       # why a family match was made: the WHO ATC group, stated by code (D-63). Null for a direct name match.
+                       "basis": family_basis(s, c["id"]),
                        "doctor_question": c["question"] or "Please ask the doctor or pharmacist about this."} for c in conflicts]
 
     tl = s.execute(text("""SELECT id, occurred_at, summary, event_type, actor_type FROM timeline_events
@@ -138,7 +141,8 @@ def care_plan(patient_id: UUID, s: Session = Depends(db, scope="function")):
     return {
         "patient": {"id": str(pat["id"]), "name": pat["full_name"], "preferred_language": pat["preferred_language"],
                     "age": age_of(pat["date_of_birth"])},
-        "reference_list_reviewed": False,
+        "reference_list_reviewed": False,          # a pharmacist has still not signed it off; the ATC check below is not that
+        "reference_check": reference_check(s),
         "allergies": {"state": state, "items": allergies},
         "open_conflicts": open_conflicts, "items": items, "pending_changes": pending_changes(s, patient_id),
         "omissions": omission_list(s, patient_id),

@@ -68,7 +68,7 @@ def scratch_db():
         ["psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c",
          f"DROP DATABASE IF EXISTS {TEST_DB} WITH (FORCE)", "-c", f"CREATE DATABASE {TEST_DB}"],
         ["bash", "-c", f"pg_dump -U postgres -s caresaathi | psql -U postgres -q -d {TEST_DB} -v ON_ERROR_STOP=1"],
-        ["bash", "-c", f"pg_dump -U postgres -a -t drug_families -t drug_substances -t drug_family_members caresaathi"
+        ["bash", "-c", f"pg_dump -U postgres -a -t drug_families -t drug_substances -t drug_family_members -t reference_checks caresaathi"
                        f" | psql -U postgres -q -d {TEST_DB} -v ON_ERROR_STOP=1"],
     ]
     for cmd in steps:
@@ -139,6 +139,15 @@ class Family:
         self.admin.execute("""INSERT INTO family_members (patient_id, user_id, member_role, status, can_approve, can_manage_members)
                               VALUES (%s, %s, 'child', 'active', %s, false)""", (self.pid, uid, can_approve))
         return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
+@pytest.fixture(autouse=True)
+def _no_signup_cap():
+    """Every test signs up a fresh family from one address, which the real per-address cap on account creation would block after ten.
+    The cap itself is exercised in test_ratelimit.py; here it is reset between tests so it does not limit the harness."""
+    from app.safety.ratelimit import limiter
+    limiter.clear("register_ip", "testclient")
+    yield
 
 
 @pytest.fixture

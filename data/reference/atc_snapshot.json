@@ -1,0 +1,328 @@
+{
+  "checked_on": "2026-10-31",
+  "source": "WHO ATC classification, via the US National Library of Medicine RxClass API (https://rxnav.nlm.nih.gov)",
+  "caveat": "A classification of what a substance is. Not a pharmacist review, and not a statement about cross-reactivity between families. A substance with confirmed=false stays an unreviewed entry in our own list.",
+  "families": {
+    "cephalosporins": {
+      "atc_prefix": "J01D",
+      "atc_name": "Other beta-lactam antibacterials (cephalosporins)",
+      "members": [
+        "cefixime",
+        "ceftriaxone",
+        "cefuroxime",
+        "cephalexin"
+      ]
+    },
+    "macrolides": {
+      "atc_prefix": "J01F",
+      "atc_name": "Macrolides, lincosamides and streptogramins",
+      "members": [
+        "azithromycin",
+        "clarithromycin"
+      ]
+    },
+    "nsaids": {
+      "atc_prefix": "M01A",
+      "atc_name": "Antiinflammatory and antirheumatic products, non-steroids",
+      "members": [
+        "aspirin",
+        "diclofenac",
+        "ibuprofen",
+        "naproxen"
+      ]
+    },
+    "penicillins": {
+      "atc_prefix": "J01C",
+      "atc_name": "Beta-lactam antibacterials, penicillins",
+      "members": [
+        "amoxicillin",
+        "ampicillin",
+        "cloxacillin",
+        "flucloxacillin",
+        "penicillin",
+        "piperacillin"
+      ]
+    },
+    "sulfonamides": {
+      "atc_prefix": "J01E",
+      "atc_name": "Sulfonamides and trimethoprim",
+      "members": [
+        "sulfamethoxazole"
+      ]
+    }
+  },
+  "substances": {
+    "cefixime": {
+      "rxcui": "25033",
+      "atc": [
+        {
+          "code": "J01DD",
+          "name": "Third-generation cephalosporins"
+        }
+      ],
+      "families": {
+        "cephalosporins": true
+      }
+    },
+    "ceftriaxone": {
+      "rxcui": "2193",
+      "atc": [
+        {
+          "code": "J01DD",
+          "name": "Third-generation cephalosporins"
+        }
+      ],
+      "families": {
+        "cephalosporins": true
+      }
+    },
+    "cefuroxime": {
+      "rxcui": "2194",
+      "atc": [
+        {
+          "code": "J01DC",
+          "name": "Second-generation cephalosporins"
+        },
+        {
+          "code": "S01AA",
+          "name": "Antibiotics"
+        }
+      ],
+      "families": {
+        "cephalosporins": true
+      }
+    },
+    "cephalexin": {
+      "rxcui": "215948",
+      "atc": [
+        {
+          "code": "J01DB",
+          "name": "First-generation cephalosporins"
+        }
+      ],
+      "families": {
+        "cephalosporins": true
+      }
+    },
+    "azithromycin": {
+      "rxcui": "1298839",
+      "atc": [
+        {
+          "code": "J01FA",
+          "name": "Macrolides"
+        },
+        {
+          "code": "S01AA",
+          "name": "Antibiotics"
+        }
+      ],
+      "families": {
+        "macrolides": true
+      }
+    },
+    "clarithromycin": {
+      "rxcui": "21212",
+      "atc": [
+        {
+          "code": "J01FA",
+          "name": "Macrolides"
+        }
+      ],
+      "families": {
+        "macrolides": true
+      }
+    },
+    "aspirin": {
+      "rxcui": "1191",
+      "atc": [
+        {
+          "code": "A01AD",
+          "name": "Other agents for local oral treatment"
+        },
+        {
+          "code": "B01AC",
+          "name": "Platelet aggregation inhibitors excl. heparin"
+        },
+        {
+          "code": "N02AJ",
+          "name": "Opioids in combination with non-opioid analgesics"
+        },
+        {
+          "code": "N02BA",
+          "name": "Salicylic acid and derivatives"
+        }
+      ],
+      "families": {
+        "nsaids": false
+      }
+    },
+    "diclofenac": {
+      "rxcui": "3355",
+      "atc": [
+        {
+          "code": "D11AX",
+          "name": "Other dermatologicals"
+        },
+        {
+          "code": "M01AB",
+          "name": "Acetic acid derivatives and related substances"
+        },
+        {
+          "code": "M02AA",
+          "name": "Antiinflammatory preparations, non-steroids for topical use"
+        },
+        {
+          "code": "S01BC",
+          "name": "Antiinflammatory agents, non-steroids"
+        }
+      ],
+      "families": {
+        "nsaids": true
+      }
+    },
+    "ibuprofen": {
+      "rxcui": "5640",
+      "atc": [
+        {
+          "code": "C01EB",
+          "name": "Other cardiac preparations"
+        },
+        {
+          "code": "G02CC",
+          "name": "Antiinflammatory products for vaginal administration"
+        },
+        {
+          "code": "M01AE",
+          "name": "Propionic acid derivatives"
+        },
+        {
+          "code": "M02AA",
+          "name": "Antiinflammatory preparations, non-steroids for topical use"
+        },
+        {
+          "code": "N02AJ",
+          "name": "Opioids in combination with non-opioid analgesics"
+        },
+        {
+          "code": "R02AX",
+          "name": "Other throat preparations"
+        }
+      ],
+      "families": {
+        "nsaids": true
+      }
+    },
+    "naproxen": {
+      "rxcui": "7258",
+      "atc": [
+        {
+          "code": "G02CC",
+          "name": "Antiinflammatory products for vaginal administration"
+        },
+        {
+          "code": "M01AE",
+          "name": "Propionic acid derivatives"
+        },
+        {
+          "code": "M02AA",
+          "name": "Antiinflammatory preparations, non-steroids for topical use"
+        },
+        {
+          "code": "N02CC",
+          "name": "Selective serotonin (5HT1) agonists"
+        }
+      ],
+      "families": {
+        "nsaids": true
+      }
+    },
+    "amoxicillin": {
+      "rxcui": "133008",
+      "atc": [
+        {
+          "code": "J01CA",
+          "name": "Penicillins with extended spectrum"
+        }
+      ],
+      "families": {
+        "penicillins": true
+      }
+    },
+    "ampicillin": {
+      "rxcui": "203115",
+      "atc": [
+        {
+          "code": "J01CA",
+          "name": "Penicillins with extended spectrum"
+        },
+        {
+          "code": "S01AA",
+          "name": "Antibiotics"
+        }
+      ],
+      "families": {
+        "penicillins": true
+      }
+    },
+    "cloxacillin": {
+      "rxcui": "2625",
+      "atc": [
+        {
+          "code": "J01CF",
+          "name": "Beta-lactamase resistant penicillins"
+        }
+      ],
+      "families": {
+        "penicillins": true
+      }
+    },
+    "flucloxacillin": {
+      "rxcui": "4448",
+      "atc": [
+        {
+          "code": "J01CF",
+          "name": "Beta-lactamase resistant penicillins"
+        }
+      ],
+      "families": {
+        "penicillins": true
+      }
+    },
+    "penicillin": {
+      "rxcui": null,
+      "atc": [],
+      "families": {
+        "penicillins": false
+      }
+    },
+    "piperacillin": {
+      "rxcui": "8339",
+      "atc": [
+        {
+          "code": "J01CA",
+          "name": "Penicillins with extended spectrum"
+        }
+      ],
+      "families": {
+        "penicillins": true
+      }
+    },
+    "sulfamethoxazole": {
+      "rxcui": "10178",
+      "atc": [
+        {
+          "code": "J01EB",
+          "name": "Short-acting sulfonamides"
+        }
+      ],
+      "families": {
+        "sulfonamides": true
+      }
+    }
+  },
+  "summary": {
+    "memberships_checked": 17,
+    "confirmed_by_atc": 15,
+    "not_confirmed": 2
+  }
+}

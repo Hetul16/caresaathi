@@ -15,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 
 from ..config import get_settings
 from ..db import auth_session
+from ..safety.ratelimit import client_key, limiter
 from ..security import hash_password, hash_token, make_access_token, new_token, verify_password
 from .deps import current_user_id, problem
 
@@ -85,10 +86,19 @@ def _user_out(row) -> dict:
             "phone": row["phone_e164"], "preferred_language": row["preferred_language"]}
 
 
+def _too_many(seconds: int):
+    """Same wording for a locked account and a wrong password, so the reply never says whether an account exists."""
+    return problem(429, "too-many-attempts", "Too many attempts. Please wait and try again.",
+                   f"Try again in about {max(1, seconds // 60)} minute{'s' if seconds >= 120 else ''}.")
+
+
 @router.post("/register", status_code=201)
 def register(body: RegisterIn, request: Request, response: Response):
     if not body.email and not body.phone:
         raise problem(422, "validation-failed", "Enter an email address or a phone number")
+    ip = client_key(request)
+    if (wait := limiter.retry_after("register_ip", ip)):
+        raise _too_many(wait)
     uid = uuid4()
     with auth_session() as s:
         try:
@@ -98,8 +108,10 @@ def register(body: RegisterIn, request: Request, response: Response):
                        "l": body.preferred_language, "h": hash_password(body.password)})
         except IntegrityError:
             s.rollback()
+            limiter.record_failure("register_ip", ip)
             raise problem(409, "account-exists", "An account with these details already exists",
                           "Try signing in instead.")
+        limiter.record_failure("register_ip", ip)        # every creation counts toward the per-address cap, success or not
         tokens = _issue(response, s, uid, request.headers.get("user-agent"))
         row = s.execute(text("SELECT * FROM users WHERE id=:i"), {"i": uid}).mappings().one()
     return {**tokens, "user": _user_out(row)}
@@ -109,12 +121,22 @@ def register(body: RegisterIn, request: Request, response: Response):
 def login(body: LoginIn, request: Request, response: Response):
     ident = body.identifier.strip()
     phone = re.sub(r"[\s-]", "", ident)
+    ip, who = client_key(request), ident.lower()
+    # Checked before the password is verified, so a locked account costs an attacker a request and no Argon2 work.
+    for rule, key in (("login_identifier", who), ("login_ip", ip)):
+        if (wait := limiter.retry_after(rule, key)):
+            raise _too_many(wait)
     with auth_session() as s:
         row = s.execute(text("""SELECT * FROM users WHERE is_active AND (email = :e OR phone_e164 = :p)"""),
-                        {"e": ident.lower(), "p": phone}).mappings().first()
+                        {"e": who, "p": phone}).mappings().first()
         ok = verify_password(row["password_hash"] if row else None, body.password)
         if not row or not ok:
+            w = max(limiter.record_failure("login_identifier", who), limiter.record_failure("login_ip", ip))
+            if w:
+                raise _too_many(w)
             raise problem(401, "invalid-credentials", "Email, phone or password is not right")
+        limiter.clear("login_identifier", who)
+        limiter.clear("login_ip", ip)
         tokens = _issue(response, s, row["id"], request.headers.get("user-agent"))
     return {**tokens, "user": _user_out(row)}
 

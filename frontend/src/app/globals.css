@@ -480,3 +480,10 @@ button { font: inherit; color: inherit; }
 .tl-key .k.stripe { border: 1px solid var(--gold); background: repeating-linear-gradient(135deg, rgba(255,185,56,.7) 0 3px, rgba(255,185,56,.15) 3px 6px); }
 .tl-key .k.flag { border: 1.5px solid var(--coral); background: var(--rose-tint); }
 @media (prefers-reduced-motion: no-preference) { .tl-bar { transition: transform .15s var(--ease), box-shadow .15s; } .tl-bar:hover { transform: translateY(-1px); } }
+
+/* Why a drug-family match was made (family/parts.tsx): the WHO ATC group, stated by code, never by the model. */
+.basis { border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: 8px 12px; background: rgba(255,255,255,.03); }
+.basis summary { cursor: pointer; font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; color: var(--ink-2); }
+.basis summary:focus-visible { box-shadow: var(--ring); border-radius: 4px; }
+.basis p { margin: 8px 0 0; font-size: 15px; color: var(--ink-2); }
+.basis .basis-src { font-size: 12.5px; color: var(--ink-3); }

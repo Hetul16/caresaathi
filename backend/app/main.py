@@ -26,6 +26,13 @@ app.add_middleware(
 )
 
 
+# The API answers with JSON and nothing else, so it may forbid everything (D-64). The interactive docs page is the one exception:
+# it loads Swagger UI from a CDN, so it gets its own policy rather than weakening the policy that covers patient data.
+_API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+_DOCS_CSP = ("default-src 'none'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://cdn.jsdelivr.net "
+             "'unsafe-inline'; img-src 'self' data: https://fastapi.tiangolo.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'")
+
+
 @app.middleware("http")
 async def request_id(request: Request, call_next):
     rid = request.headers.get("x-request-id") or uuid.uuid4().hex
@@ -34,6 +41,13 @@ async def request_id(request: Request, call_next):
     resp.headers["X-Request-Id"] = rid
     resp.headers.setdefault("X-Content-Type-Options", "nosniff")
     resp.headers.setdefault("Referrer-Policy", "no-referrer")
+    resp.headers.setdefault("X-Frame-Options", "DENY")
+    resp.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+    resp.headers.setdefault("Cross-Origin-Resource-Policy", "same-site")
+    resp.headers.setdefault("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=(), usb=()")
+    resp.headers.setdefault("Content-Security-Policy", _DOCS_CSP if request.url.path.startswith("/api/docs") else _API_CSP)
+    if s.public_base_url.startswith("https"):      # only where TLS is actually terminated, so local development still works over http
+        resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     return resp
 
 

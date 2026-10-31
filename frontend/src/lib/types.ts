@@ -18,11 +18,15 @@ export interface Allergy {
   source: SourceRef;
 }
 
+export interface FamilyBasis { confirmed: boolean; atc_code: string | null; atc_group: string | null; atc_name: string | null;
+  family: string; text: string; source: string | null; checked_on: string | null }
+
 export interface OpenConflict {
   id: string;
   match: "direct" | "drug_family" | "unresolved";
   medicine: string;
   flag: string;
+  basis?: FamilyBasis | null;       // why a family match was made: the WHO ATC group, stated by code
   doctor_question: string;
 }
 
@@ -88,6 +92,7 @@ export interface CarePlan {
   timeline: TimelineEvent[];
   last_updated_at: string | null;
   reference_list_reviewed: boolean;
+  reference_check?: { source: string; caveat: string; checked_on: string; memberships_checked?: number; confirmed_by_atc?: number; not_confirmed?: number } | null;
   can_approve?: boolean;           // live plans only: whether this member may confirm and approve
   duplicates?: DuplicateGroup[];
 }

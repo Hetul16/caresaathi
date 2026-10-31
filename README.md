@@ -10,11 +10,12 @@ Honest numbers: backend tests pass against a real Postgres (see the latest run i
 
 ## For judges: where to look
 
-- **Product tour in one page:** `docs/20-demo-video-script.md` follows one family through every feature. The system map and the decisions behind it are in `docs/13-architecture.md` and `docs/09-decisions.md` (D-01 to D-56).
+- **Product tour in one page:** `docs/20-demo-video-script.md` follows one family through every feature. The system map and the decisions behind it are in `docs/13-architecture.md` and `docs/09-decisions.md` (D-01 to D-64).
 - **The demo story (remote care):** `docs/22-remote-care-story.md` follows Priya in Toronto caring for her mother in Pune, step by step.
 - **Why it exists and who it is for:** `docs/21-why-and-go-to-market.md` covers the problem, the first customer, positioning, go to market, the global plan, risks and what is not proven.
 - **Evidence, including failures:** the Trust page (`/trust` in the running app) shows the safety suite and the live Meta-model measurements: documents, allergy card, labels, scripted visits in Hindi and English, the second-pass judge in both directions, and Hindi, Marathi and English speech on real recordings. The raw report is `data/live_results/latest.json`; `backend/scripts/live_report.py` and `speech_eval.py` regenerate it.
-- **Safety rules in code:** `backend/app/safety/` (output guard, permission gate, injection detector, two-reader comparison), the database CHECKs in `backend/migrations/`, and one test file per feature in `backend/tests/` (378 tests).
+- **How the allergy check is grounded:** the drug-family list is checked against the WHO ATC classification (`data/reference/atc_snapshot.json`, rebuilt by `backend/scripts/atc_check.py`). A family flag shows the ATC group behind it. Two of seventeen memberships came back unconfirmed and say so on the screen. It is not a pharmacist review (D-63).
+- **Safety rules in code:** `backend/app/safety/` (output guard, permission gate, injection detector, two-reader comparison), the database CHECKs in `backend/migrations/`, and one test file per feature in `backend/tests/` (422 tests).
 - **What is new work:** everything outside the files listed under "What existed before the hackathon" below. The commit history shows the order.
 - **What is not done:** the claim file, WhatsApp, a studio-quality voice (the browser voice is used), and real-patient data. Marathi speech is experimental.
 
@@ -41,3 +42,7 @@ CareSaathi is a care-coordination and document-organization tool for family care
 `docs/09-decisions.md` wins over every other file. `docs/05-scope.md` defines the spine and the gates.
 
 Last database test run: all passed (schema checks and row-level security checks).
+
+## Attribution
+
+This product uses publicly available data from the U.S. National Library of Medicine (NLM), National Institutes of Health, Department of Health and Human Services; NLM is not responsible for the product and does not endorse or recommend this or any other product. The drug-class data is the WHO ATC classification served through NLM's RxClass API (https://rxnav.nlm.nih.gov), looked up once and committed as `data/reference/atc_snapshot.json`.
