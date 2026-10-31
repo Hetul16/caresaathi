@@ -70,6 +70,10 @@ def main() -> int:
             target = d / (stem + src.suffix)
             shutil.copy2(src, target)
             lines.append(f"  {target.name:<42} {note}")
+            pdf = REND / f"{doc_id}.pdf"                      # the same document as a PDF, for trying PDF upload
+            if pdf.exists() and src.suffix != ".pdf":
+                (d / "pdf").mkdir(exist_ok=True)
+                shutil.copy2(pdf, d / "pdf" / (stem + ".pdf"))
         lines.append("")
     (OUT / "README.txt").write_text("\n".join(lines), encoding="utf-8")
     print(f"built {OUT}")
