@@ -294,6 +294,11 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Status:** Accepted (Oct 31, 2026), amends D-40
 - **Decision:** A mock visit is a scripted synthetic conversation, so its extraction is the script's recorded answer in live mode as well. Run live on Oct 31, the model labelled "keep taking it" lines as new medicines and added noise to the pending list; a repeatable demo needs the clean answer. This does not weaken the evidence: the live model's reading of the same scripts (Hindi and English) is measured separately and shown on the Trust page, and a real recording always goes to the model. The Visits screen already labels these as "Mock visit · scripted".
 
+### D-61 A WhatsApp-style chat preview in the web app; real WhatsApp is roadmap
+- **Status:** Accepted (Oct 31, 2026)
+- **Decision:** The Chat tab shows the existing flows (photo of a document, photo of a medicine box, questions, "Taken" taps) in a WhatsApp-style screen on the same endpoints and checks as the website. It is labelled "not connected to WhatsApp". A real WhatsApp channel (Cloud API, test number limited to 5 verified recipients, templates outside the 24 h window, public webhook, Opus voice-note conversion, review of Meta's health-content policy) is not built and is described as the next step, not as a feature.
+- **Why:** About one day of work and no Meta approval, against 4 to 6 days plus approvals for the real channel, with the video due Nov 3.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |
