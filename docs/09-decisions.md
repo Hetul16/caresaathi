@@ -258,6 +258,14 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Status:** Accepted (Oct 28, 2026)
 - **Decision:** A member with approval rights can read a stored reply once with the visit reader. The result is PENDING plan changes (and undated follow-ups) whose source is a new kind, `doctor_message`, holding the doctor's exact words; the words are never filed as a family member's. Quotes must appear in the reply, as for visits. A named member confirms each change on the Overview, as for a visit (D-18). Migration 0010 adds the enum value, the link from a source to the stored reply, and read-once columns, each with a CHECK.
 
+### D-52 Outcomes board: own the outcome, not the engagement
+- **Status:** Accepted (Oct 31, 2026)
+- **Decision:** Allergy flags and omission flags are tracked as questions. A question is answered only when a member with approval rights records the answer: either a stored doctor reply (copied word for word and linked to the reply) or a note typed by a named member who says who told them. Migration 0011 adds `question_answers` with one answer per flag and CHECKs on the source kind. Recording an answer marks the flag resolved, with the person's name; a flag closed by the older "settled" button without an answer is counted separately as "closed with no answer on record". The board shows counts, days open (computed from stored times) and follow-up and doctor-thread totals. It never judges an answer and never says anything is safe. Duplicate-ingredient questions are computed, not stored, and are not on the board yet.
+
+### D-53 Positioning: pre-crisis, and used at trigger moments
+- **Status:** Accepted (Oct 31, 2026)
+- **Decision:** The pitch says CareSaathi aims to catch a mix-up between two papers early, before it becomes an emergency visit. The supporting fact is limited to what the source says: in one single-hospital retrospective study (PMC11654400, 339 patients), patients with a medication discrepancy had about twice the risk of an ED visit within a month (hazard ratio 2.13). We do not claim CareSaathi prevents emergency visits; it has not been measured. The product is used at forced events (a discharge, a visit, a new prescription, a refill, a follow-up), so daily engagement is not a goal and is not measured. Consent language may say scoped, revocable and logged; it does not claim to follow any national consent framework.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

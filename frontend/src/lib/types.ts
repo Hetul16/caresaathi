@@ -152,3 +152,13 @@ export interface LabelProduct { brand: string | null; ingredients: { name: strin
   verdict: "matches" | "different_strength" | "not_in_plan" | "could_not_read"; text: string; question: string | null;
   plan_item: { title: string; detail: string; source: SourceRef } | null; allergy: { ingredient: string; match: string; text: string; allergy?: string; source?: SourceRef }[] }
 export interface LabelResult { products: LabelProduct[]; printed_lines: string[]; dropped_unprinted: number; note: string }
+
+// ---- outcomes board (C6) ----
+export interface OutcomeAnswer { text: string; answered_by: string; source_kind: "doctor_message" | "family_note"; recorded_by: string; recorded_at: string }
+export interface OutcomeItem { kind: "allergy_conflict" | "reconciliation_flag"; id: string; title: string; label: string; question: string;
+  status: "open" | "seen" | "asked" | "answered" | "closed_without_answer"; raised_at: string; days_open: number; answer: OutcomeAnswer | null }
+export interface OutcomesBoard {
+  summary: { raised: number; answered: number; waiting: number; closed_without_answer: number; oldest_waiting_days: number | null; average_days_to_answer: number | null };
+  items: OutcomeItem[]; follow_ups: { total: number; waiting_for_confirmation: number; confirmed: number; done: number };
+  doctor_thread: { questions_sent: number; replies_received: number; replies_not_yet_used: number };
+  usable_replies: { id: string; doctor_name: string; body: string; at: string }[]; note: string }

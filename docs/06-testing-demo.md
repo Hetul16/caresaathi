@@ -50,12 +50,12 @@ Show only features built after kickoff. The screens are in the design canvas "Ca
 
 | Time | Scene | What viewers see |
 | --- | --- | --- |
-| 0:00 to 0:15 | Hook | Priya, in another city, and one real fact: in one hospital study, 96% of medication discrepancies at care transitions were omissions (say "one study"). Then the title |
+| 0:00 to 0:15 | Hook | Priya, in another city, and one real fact: in one hospital study, 96% of medication discrepancies at care transitions were omissions, and patients with a discrepancy had about twice the risk of an emergency visit (say "one study"; do not say we prevent emergency visits). Then the title and: "catch the mix-up before it becomes an emergency" |
 | 0:15 to 0:35 | Photo to care plan | Priya photographs Ramesh's allergy card, clinic prescription and a second doctor's prescription. Muse Spark reads them and the plan fills in. Tap an item: the exact page and line |
 | 0:35 to 0:50 | Two catches, both in code | The amoxicillin line raises the penicillin-family flag with a drafted question. The omission catch shows atorvastatin missing from the new list, with both sources |
 | 0:50 to 1:15 | Label check | A phone photo of a strip: "reads Amlodipine 5 mg, your documents say 10 mg" with both numbers and a question. Then a loose pill: "I can only read printed text". Say: it knows what it cannot do |
 | 1:15 to 1:50 | Care crew | Goal: "Prepare us for Thursday's visit". Six steps appear one by one, each labelled automatic or asks first. The brief appears with a source on every line. The last step waits: Priya approves, her name appears in the trace |
-| 1:50 to 2:15 | Doctor link | A second window, no sign-in: the doctor sees the allergy first and the family's questions, and types a reply. Back on Priya's screen: "Dr. Joshi's exact words", then "Read changes from this reply", and one pending change with the doctor's quote. Priya confirms it |
+| 1:50 to 2:15 | Doctor link | A second window, no sign-in: the doctor sees the allergy first and the family's questions, and types a reply. Back on Priya's screen: "Dr. Joshi's exact words", then "Read changes from this reply", and one pending change with the doctor's quote. Priya confirms it. On the Outcomes board the penicillin question moves to Answered, with the doctor's words and how many days it took |
 | 2:15 to 2:35 | Visit and voice | The scripted Hinglish visit (labelled as a mock) becomes a pending diff with the doctor's words. Elder mode reads the next medicine in Hindi with its source |
 | 2:35 to 2:50 | Picture schedule and card | The large-print sun-and-moon schedule in Hindi; the Emergency Card link, then revoke it and show it stop working |
 | 2:50 to 3:00 | Proof and close | The trust panel with real numbers and failures, the spend ledger line, and the pitch line |
@@ -65,8 +65,8 @@ Optional: swap in at most one of the follow-up tracker, fridge sheet or claim fi
 ### Slide outline (8 slides)
 
 1. Title: CareSaathi and the pitch line.
-2. The problem: one family situation and the evidence, with its limits.
-3. The solution: a care-coordination tool, voice-first, in your language, with a source on every line.
+2. The problem: one family situation and the evidence, with its limits. Add: the mix-up is found early, before it becomes an emergency; we do not claim to prevent emergency visits.
+3. The solution: a care-coordination tool, voice-first, in your language, with a source on every line. Used at trigger moments (discharge, visit, prescription, refill, follow-up), not every day; the outcome we own is answered questions.
 4. How it works: the flow from document to care plan to diff, with the allergy and omission checks done in code.
 5. Features: visit listener, omission catch, allergy catch, Emergency Card, and the extras that passed their tests.
 6. Built on Meta: which model does what (Spark reads documents and words the questions; Voice Transcribe hears the visit) and what we measured.
@@ -75,7 +75,7 @@ Optional: swap in at most one of the follow-up tracker, fridge sheet or claim fi
 
 ### Pitch script (60 seconds)
 
-Families leave a doctor's clinic and forget half of what they were told. Between a hospital and home, medicines get lost, and the papers are in English while Papa reads Hindi. CareSaathi is a care-coordination tool for the family. It listens to the visit, turns the doctor's own words and the documents into a care plan where every line has a source, and notices when a medicine disappears between two papers. It checks allergies in code, not in the model, and it explains the plan to Papa by voice in his language. It never gives medical advice. Every flag ends with a question for the doctor or the pharmacist. Built on Muse Spark and Muse Voice Transcribe during this hackathon, with the test results and our failures in the README.
+Families leave a doctor's clinic and forget half of what they were told. Between a hospital and home, medicines get lost, and the papers are in English while Papa reads Hindi. CareSaathi is for those moments: a discharge, a visit, a new prescription, a refill. It listens to the visit, turns the doctor's own words and the documents into a care plan where every line has a source, and notices when a medicine disappears between two papers. Every flag becomes a question that stays open until someone writes down the doctor's answer, so we measure answers, not app opens. It checks allergies in code, not in the model, and it explains the plan to Papa by voice in his language. It never gives medical advice. Built on Muse Spark and Muse Voice Transcribe during this hackathon, with the test results and our failures in the README.
 
 ### Live demo tips
 
@@ -92,6 +92,8 @@ Families leave a doctor's clinic and forget half of what they were told. Between
 | --- | --- |
 | Can it tell me what this loose pill is? | No, by design. A wrong answer could hurt someone and it would be medical advice. It reads printed text on a strip, box or tube and compares it with the family's documents. For anything else it says so and sends the question to the pharmacist |
 | Is the agent safe? | It can only call six registered tools, at most six steps per goal, and none of them changes a medicine or dose. Anything that reaches another person waits for a named family member's approval, and every step is stored and shown. The model only picks the order; code decides what runs |
+| Will people open it every day? | No, and it does not need them to. It is used when something changes: a discharge, a visit, a new prescription, a refill, a follow-up. What we track is whether each question got an answer from a doctor or pharmacist, shown on the Outcomes board |
+| Do you prevent emergency visits? | We do not claim that and have not measured it. One hospital study found about twice the emergency-visit risk in patients with a medication discrepancy. We aim to catch the mix-up early; proving the effect would need a real study |
 | Is this medical advice? | No. It copies what the doctor and the documents say, compares documents with each other, matches allergies in code, and sends every flag back to the doctor or pharmacist as a question. It has no tool for diagnosis, dosing or substitutes |
 | What if the model is wrong? | Every item shows its source, a second reading flags disagreements, risky actions need a named person's approval, and here are our measured error rates and failures |
 | What did you build during the event? | Everything except the files listed in the README as pre-hackathon planning: documents, diagrams, a database design and a mockup. All code, migrations, prompts and tests are from Oct 26 to Nov 4 |

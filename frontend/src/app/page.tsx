@@ -92,6 +92,28 @@ export default function Home() {
 
       <section className="wrap band">
         <Reveal as="header" className="band-head">
+          <p className="eyebrow">When it is used</p>
+          <h2>Not every day. <em>At the moments that matter.</em></h2>
+          <p>
+            Families do not need another app to open daily. They need help when something changes: a discharge, a doctor visit, a new prescription, a refill, a follow-up.
+            CareSaathi works at those moments and keeps every question open until a person writes down the answer.
+          </p>
+        </Reveal>
+        <ul className="trust-row" aria-label="Moments when CareSaathi is used" style={{ marginTop: 18 }}>
+          <li><Icon name="file" /> A discharge</li>
+          <li><Icon name="stethoscope" /> A doctor visit</li>
+          <li><Icon name="pill" /> A new prescription</li>
+          <li><Icon name="repeat" /> A refill</li>
+          <li><Icon name="calendar" /> A follow-up</li>
+        </ul>
+        <p style={{ color: "var(--ink-2)", marginTop: 14, maxWidth: "70ch" }}>
+          The aim is to catch a mix-up between two papers early, before it turns into an emergency visit. In one hospital study, patients with a medication discrepancy
+          had about twice the risk of an emergency visit within a month. We do not claim that CareSaathi prevents emergency visits; we have not measured that.
+        </p>
+      </section>
+
+      <section className="wrap band">
+        <Reveal as="header" className="band-head">
           <p className="eyebrow">The promise</p>
           <h2>Built so it <em>cannot</em> overstep.</h2>
           <p>These are not instructions to a model. They are rules in code and in the database, tested on every change.</p>
