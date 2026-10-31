@@ -6,7 +6,15 @@ Status (Oct 31, 2026): the backend and website run locally and the whole spine i
 
 How it is meant to be used: at trigger moments (a discharge, a visit, a new prescription, a refill, a follow-up), not every day. The aim is to catch a mix-up between two papers early. In one hospital study, patients with a medication discrepancy had about twice the risk of an emergency visit within a month; we do not claim CareSaathi prevents emergency visits and have not measured it.
 
-Honest numbers: backend tests pass against a real Postgres (see the latest run in the commit history), and the 220-case adversarial suite passes 215; the 5 it does not pass are paraphrased reassurances the keyword guard misses, listed at `/trust`. Live Meta models (documents, visits, labels, the second-pass judge) have been run on synthetic data; the measurements, including what failed and was fixed, are in `docs/10-hackathon-facts.md`. Not measured yet: Muse Voice Transcribe on real Hindi or Marathi speech.
+Honest numbers: backend tests pass against a real Postgres (see the latest run in the commit history), and the adversarial suite passes 215 of 220 cases offline (206 of 211 when the server runs in live mode, which skips the offline-reader cases); the misses are paraphrased reassurances the keyword guard cannot catch, listed at `/trust`. Live Meta models (documents, labels, visits in Hindi and English, the second-pass judge) and Muse Voice Transcribe on real English, Hindi and Marathi recordings (public FLEURS test set) have been measured; the numbers, including what failed and was fixed, are in `docs/10-hackathon-facts.md` and on `/trust`. Not measured yet: a real recorded Hinglish doctor-visit conversation, and real phone photos of packaging.
+
+## For judges: where to look
+
+- **Product tour in one page:** `docs/20-demo-video-script.md` follows one family through every feature. The system map and the decisions behind it are in `docs/13-architecture.md` and `docs/09-decisions.md` (D-01 to D-56).
+- **Evidence, including failures:** the Trust page (`/trust` in the running app) shows the safety suite and the live Meta-model measurements: documents, allergy card, labels, scripted visits in Hindi and English, the second-pass judge in both directions, and Hindi, Marathi and English speech on real recordings. The raw report is `data/live_results/latest.json`; `backend/scripts/live_report.py` and `speech_eval.py` regenerate it.
+- **Safety rules in code:** `backend/app/safety/` (output guard, permission gate, injection detector, two-reader comparison), the database CHECKs in `backend/migrations/`, and one test file per feature in `backend/tests/` (378 tests).
+- **What is new work:** everything outside the files listed under "What existed before the hackathon" below. The commit history shows the order.
+- **What is not done:** the claim file, WhatsApp, a studio-quality voice (the browser voice is used), and real-patient data. Marathi speech is experimental.
 
 ## What existed before the hackathon (Oct 24 to Oct 25, 2026)
 
