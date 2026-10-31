@@ -165,7 +165,10 @@ EXTRACT_PROMPT = (
     "OD, BD or twice daily, put exactly that text in frequency_text (never leave it out and never put it only in dose_text); "
     "add quantity {value, unit} only if a quantity is written. Put every follow-up phrase (\"review in two weeks\") in "
     "follow_ups[{what, due_text, source}] using the words as written: never compute or guess a date. For a brand name "
-    "with its ingredient printed beside it, list the printed ingredient in ingredients."
+    "with its ingredient printed beside it, list the printed ingredient in ingredients. For a laboratory or imaging report, copy EACH measured "
+    "value and EACH findings or impression line as its own item of kind 'result': title is the test name as written, or for a findings or impression line a short copy of the finding itself (for example 'L4-L5 disc bulge') so that no two items share a title; details has "
+    "text (the exact line) and, when printed, value, unit and reference_range. Do not interpret a result: never say it is normal, abnormal, high, "
+    "low or serious, and never add a diagnosis that the page does not state."
 )
 
 

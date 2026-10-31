@@ -1,0 +1,12 @@
+{
+  "document_id": "S5",
+  "synthetic": true,
+  "items": [
+    {"kind": "medicine", "name": "Diclofenac", "strength": "50 mg", "frequency": "1-0-1"},
+    {"kind": "medicine", "name": "Dolo", "strength": "650", "frequency": "1-1-1", "ingredient": "paracetamol"}
+  ],
+  "planted": [
+    {"case": "class_allergy", "expect": "Diclofenac belongs to the NSAID family named on the allergy card (S1): a drug-family flag with a question for the doctor, found by code, never a verdict"},
+    {"case": "duplicate_ingredient", "expect": "Calpol 650 (S2) and Dolo 650 (S5) are two brands of one ingredient: a question for the pharmacist"}
+  ]
+}

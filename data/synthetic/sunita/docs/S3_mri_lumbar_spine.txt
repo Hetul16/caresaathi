@@ -1,0 +1,10 @@
+SYNTHETIC DOCUMENT - FICTIONAL PATIENT
+SAMPLE IMAGING CENTRE, PUNE - MRI LUMBAR SPINE
+Page 1 of 1
+Date: 18/10/2026
+Patient: Sunita Deshmukh, 68 y
+Findings: L4-L5 disc bulge with mild narrowing on the left side.
+Findings: L5-S1 disc dehydration.
+Findings: Mild degenerative changes of the lumbar spine.
+Impression: Disc bulge at L4-L5, left sided.
+Reported by Dr. Kale, Radiologist

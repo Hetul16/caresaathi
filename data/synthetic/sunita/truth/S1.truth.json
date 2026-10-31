@@ -1,0 +1,8 @@
+{
+  "document_id": "S1",
+  "synthetic": true,
+  "items": [],
+  "planted": [
+    {"case": "class_allergy", "expect": "allergy state listed: NSAIDs (a drug class), source is the card line"}
+  ]
+}

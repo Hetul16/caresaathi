@@ -1,0 +1,13 @@
+{
+  "document_id": "S2",
+  "synthetic": true,
+  "items": [
+    {"kind": "medicine", "name": "Calpol", "strength": "650", "frequency": "1-1-1", "ingredient": "paracetamol"},
+    {"kind": "medicine", "name": "Pregabalin", "strength": "75 mg", "frequency": "0-0-1"},
+    {"kind": "medicine", "name": "Pantoprazole", "strength": "40 mg", "frequency": "1-0-0"},
+    {"kind": "medicine", "name": "Calcium Carbonate", "strength": "500 mg", "frequency": "0-1-0"}
+  ],
+  "planted": [
+    {"case": "follow_up", "expect": "review in 2 weeks, anchor 2026-10-20"}
+  ]
+}

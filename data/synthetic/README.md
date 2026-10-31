@@ -20,3 +20,7 @@ data may ever be added here (the repository is public).
 - Visit audio is **not** included. Record the scripts with two real voices (or label any text-to-speech audio as such).
   Without audio, the "mock visit" button replays a script's recorded answer through the same pipeline; it is labeled in the app.
 - Hindi, Marathi and German text must be reviewed by a native speaker before it is shown in the demo.
+
+## Sunita Deshmukh (leg and back set, added Oct 31)
+
+A fictional 68-year-old with low back pain going down the left leg. Files in `sunita/docs`: S1 allergy card (an NSAID class allergy), S2 orthopaedic prescription, S3 MRI lumbar spine report, S4 physiotherapy plan with written warning signs, S5 a second doctor's prescription (Diclofenac, which is in the NSAID family, and a second paracetamol brand (Calpol in S2, Dolo in S5)), S6 a lab report. Upload order for the demo: S1, S2, S3, S4, S6, then S5. Expected: a drug-family flag on Diclofenac, a paracetamol duplicate question, written warning signs with levels from the document's own words, follow-ups in 2 and 4 weeks. All of it is fictional and none of it is medical advice. Never upload real family records to the live model: the contributor tier may train on prompts.

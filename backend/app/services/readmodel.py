@@ -15,6 +15,9 @@ def source_of(r: Any) -> dict:
 
 
 def item_detail(det: dict) -> str | None:
+    if det.get("value") not in (None, ""):          # a lab result: the value as printed, and the printed reference range, never a verdict
+        shown = f"{det['value']} {det.get('unit') or ''}".strip()
+        return shown + (f" (reference {det['reference_range']})" if det.get("reference_range") else "")
     parts = (det.get("frequency_text"), f"{det['duration_days']} days" if det.get("duration_days") else None,
              det.get("instructions_text"))
     return ", ".join(x for x in parts if x) or None

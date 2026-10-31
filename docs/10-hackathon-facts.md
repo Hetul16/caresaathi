@@ -102,6 +102,11 @@ Sources: `dev.meta.ai/docs/speech-to-text` and `/docs/api-reference/voice/transc
 
 - A scripted browser walked the demo video's path (26 checks: three photos, flags, label check, two-reader choice, care crew with approval, doctor window and reply, reply read into a follow-up, outcomes answer, visit, confirm, picture schedule, elder mode, Emergency Card revoke, Trust page). The first runs found two real defects, both fixed in D-57: a missed allergy conflict when the allergy card and a prescription were processed at the same time, and clumsy live wording of the allergy question that leaked an internal label. Three of the early failures were the test's own timing and letter-case checks, not product faults.
 
+### A leg-and-back set, and a gap it exposed (Oct 31, 2026)
+
+- New fictional set `data/synthetic/sunita/` (allergy card with an NSAID class allergy, orthopaedic prescription, MRI lumbar spine report, physiotherapy plan with written warning signs, a second doctor's Diclofenac with a second paracetamol brand, lab report). Read as photos by the live model: all six read; the NSAID class allergy was recorded; Diclofenac was flagged as a drug-family match by code; the two paracetamol brands raised the duplicate question; both written warning signs got their levels from the page's own words; follow-ups in 1, 2 and 4 weeks were found.
+- **Gap found:** the MRI and lab report produced no plan items at all, because the reader prompt only asked for medicines, warnings, follow-ups and allergies, so those two documents were marked "needs review". The prompt now tells the reader to copy each measured value and each findings or impression line as a `result` item without interpreting it. Re-read: 4 imaging findings and 3 lab values, each with its source, and the lab values are shown as printed with their printed reference range, never as normal or abnormal.
+
 ## Verified, unverified and open
 
 | Item | Status | Next step |

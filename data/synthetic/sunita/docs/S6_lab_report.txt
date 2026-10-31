@@ -1,0 +1,8 @@
+SYNTHETIC DOCUMENT - FICTIONAL PATIENT
+SAMPLE DIAGNOSTIC LAB, PUNE - LAB REPORT
+Page 1 of 1
+Date: 19/10/2026
+Patient: Sunita Deshmukh, 68 y
+Vitamin D (25-OH): 14 ng/mL (reference 30 to 100)
+Calcium: 8.9 mg/dL (reference 8.5 to 10.5)
+ESR: 28 mm/hr (reference 0 to 20)
