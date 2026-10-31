@@ -75,7 +75,16 @@ def main() -> int:
                 (d / "pdf").mkdir(exist_ok=True)
                 shutil.copy2(pdf, d / "pdf" / (stem + ".pdf"))
         lines.append("")
+    lines.append("Each patient folder also has a pdf subfolder with the same documents as PDFs.")
     (OUT / "README.txt").write_text("\n".join(lines), encoding="utf-8")
+    visible = Path.home() / "Desktop" / "CareSaathi_Demo_Uploads"      # a copy outside the repository, so an editor that hides git-ignored folders still shows it
+    try:
+        if visible.exists():
+            shutil.rmtree(visible)
+        shutil.copytree(OUT, visible)
+        print(f"copy for browsing: {visible}")
+    except OSError as e:
+        print(f"(could not copy to the desktop: {e})")
     print(f"built {OUT}")
     print("\n".join(lines))
     return 0
