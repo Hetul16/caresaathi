@@ -32,15 +32,22 @@ export function SiteHeader() {
   // Standalone pages: the public Emergency Card and the split-screen sign-in pages carry their own chrome.
   if (path.startsWith("/e/") || path === "/login" || path === "/signup") return null;
   const initials = (user?.display_name ?? "?").split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  // Elder mode is the whole app for the person being cared for. The logo must not carry them off to the marketing site, and the evidence
+  // page is written for the family, so neither is a way out of her screen (D-67). Language and sign-out stay.
+  const elder = path.startsWith("/app/elder") || path.startsWith("/app/emergency");
   return (
     <header className="site-header">
       <div className="wrap">
-        <Link className="brand" href="/" aria-label="CareSaathi home">
-          <Logo />
-          <span>{t("appName")}</span>
-        </Link>
+        {elder ? (
+          <span className="brand"><Logo /><span>{t("appName")}</span></span>
+        ) : (
+          <Link className="brand" href="/" aria-label="CareSaathi home">
+            <Logo />
+            <span>{t("appName")}</span>
+          </Link>
+        )}
         <div className="header-actions">
-          <Link href="/trust" className="btn btn-quiet btn-sm hide-sm">Trust</Link>
+          {!elder && <Link href="/trust" className="btn btn-quiet btn-sm hide-sm">Trust</Link>}
           <div className="lang-switch" role="group" aria-label="Language">
             {LANGS.map((l) => (
               <button key={l.code} type="button" aria-pressed={lang === l.code} aria-label={l.name} onClick={() => setLang(l.code)}>

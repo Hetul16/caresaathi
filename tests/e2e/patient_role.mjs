@@ -125,6 +125,13 @@ const chosen = await P.locator(".pcheck-pain button[aria-pressed=true]").innerTe
 const onFold = await P.getByRole("button", { name: /How are you feeling/i }).innerText();
 ok("she can say how she feels, and it stays on screen", chosen.trim() === "6" && /6/.test(onFold), `chose ${chosen.trim()}`);
 
+// Nothing on her screen should carry her off it. The only links allowed are the Emergency card and the emergency phone number.
+const links = await P.locator("a:visible").evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+ok("her screen offers no way out except the emergency card",
+   links.every((h) => /emergency|^tel:/.test(h ?? "") || (h ?? "").startsWith("#")),   // "#main" is the skip-to-content link
+   JSON.stringify(links));
+ok("the logo does not take her to the marketing site", (await P.locator("a.brand").count()) === 0);
+
 // she must not be able to reach Family mode
 await P.goto(BASE + "/app", { waitUntil: "networkidle" });
 await P.waitForTimeout(2500);
