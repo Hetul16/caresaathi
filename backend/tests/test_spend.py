@@ -1,8 +1,15 @@
-"""Spend guard (D-50): live calls are priced, logged, and refused before they are made once the limit is reached."""
+"""Spend guard (D-50): live calls are priced, logged, and refused before they are made once the limit is reached.
+
+The ledger is a table now (D-68), so these need the scratch database. `cfg` empties it first: every total asserted below is the whole
+ledger, and the append-only rules mean only a superuser with the triggers off can empty it.
+"""
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy import text as sql
+from sqlalchemy.orm import Session
 
+from app import db
 from app.clients import models, spend
 
 
@@ -14,8 +21,16 @@ def _settings(tmp_path, **kw):
     return SimpleNamespace(**base)
 
 
+def _empty_the_ledger(admin) -> None:
+    """Only possible as the owner with the triggers off, which is the point of the two tests at the bottom of this file."""
+    admin.execute("ALTER TABLE model_spend DISABLE TRIGGER USER")
+    admin.execute("DELETE FROM model_spend")
+    admin.execute("ALTER TABLE model_spend ENABLE TRIGGER USER")
+
+
 @pytest.fixture
-def cfg(tmp_path, monkeypatch):
+def cfg(tmp_path, monkeypatch, scratch_db, admin):
+    _empty_the_ledger(admin)
     s = _settings(tmp_path)
     monkeypatch.setattr(spend, "get_settings", lambda: s)
     return s
@@ -133,3 +148,55 @@ def test_allergy_flags_and_questions_are_built_from_templates_even_in_live_mode(
         assert u.model == "template"
     assert calls == [] and spend.total() == 0                      # nothing was sent to the model and nothing was spent
     assert "?" in c.word("omission_question", {"medicine": "Atorvastatin 20 mg"}, "en")[0]
+
+
+def test_a_priced_call_is_kept_when_the_request_that_spent_it_rolls_back(cfg):
+    """The money left Meta's side whether or not our transaction committed. This is why `add` opens its own (D-68)."""
+    with pytest.raises(RuntimeError):
+        with Session(db.engine_app()) as s, s.begin():
+            s.execute(sql("SELECT 1"))
+            spend.add(0.25, model="m", purpose="read_document")
+            raise RuntimeError("the upload failed after the model had already answered")
+    assert spend.total() == pytest.approx(0.25)
+
+
+def test_a_ledger_that_cannot_be_read_refuses_the_call(cfg, monkeypatch):
+    """An unknown total is not a safe total: with no ledger there is no cap, so nothing live may run."""
+    def unreachable():
+        raise OSError("connection refused")
+    monkeypatch.setattr(spend, "engine_app", unreachable)
+    with pytest.raises(spend.SpendLimitReached, match="could not be read"):
+        spend.check()
+
+
+def test_the_app_cannot_change_or_remove_a_priced_call(cfg):
+    spend.add(0.10, model="m", purpose="read_document")
+    with Session(db.engine_app()) as s, s.begin():
+        with pytest.raises(Exception, match="permission denied"):
+            s.execute(sql("UPDATE model_spend SET usd = 0"))
+    with Session(db.engine_app()) as s, s.begin():
+        with pytest.raises(Exception, match="permission denied"):
+            s.execute(sql("DELETE FROM model_spend"))
+    assert spend.total() == pytest.approx(0.10)
+
+
+def test_not_even_the_owner_can_edit_the_ledger_with_the_triggers_on(cfg, admin):
+    spend.add(0.10, model="m", purpose="read_document")
+    for stmt in ("UPDATE model_spend SET usd = 0", "DELETE FROM model_spend", "TRUNCATE model_spend"):
+        with pytest.raises(Exception, match="append-only"):
+            admin.execute(stmt)
+    assert spend.total() == pytest.approx(0.10)
+
+
+def test_an_old_file_ledger_is_imported_once_and_never_twice(cfg, tmp_path):
+    f = tmp_path / "spend.jsonl"
+    lines = ['{"t": 1, "usd": 0.2, "model": "m", "purpose": "read_document"}', 'not json',
+             '{"t": 2, "usd": 0.05, "model": "m", "purpose": "judge_text"}']
+    f.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    n, usd = spend.import_file()
+    assert (n, usd) == (2, 0.25) and spend.total() == pytest.approx(0.25)
+    assert not f.exists() and (tmp_path / "spend.jsonl.imported").exists()        # renamed, so a rerun cannot find it
+    f.write_text('{"t": 3, "usd": 0.2, "model": "m", "purpose": "read_document"}\n', encoding="utf-8")
+    with pytest.raises(RuntimeError, match="already holds imported rows"):
+        spend.import_file()
+    assert spend.total() == pytest.approx(0.25)                                   # the second attempt added nothing

@@ -340,6 +340,13 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Not changed:** the pain scale is still 0 to 10 and still the patient's own number. Reducing it to three faces would mean the app deciding what a face is worth, which safety invariant 6 does not allow.
 
 
+### D-68 The spend ledger lives in the database, not in a file
+- **Status:** Accepted (Nov 1, 2026)
+- **Decision:** every priced live call is a row in the append-only `model_spend` table (migration 0016). `spend.add()` opens its own transaction, because the money left whether or not the request that spent it committed. `spend.check()` refuses the call when the ledger cannot be read at all: an unknown total is not a safe total (invariant 10). The old `spend.jsonl` is imported once with `scripts/spend.py --import-file`, which renames the file so it cannot be counted twice.
+- **Why:** the guard counted from a file beside local storage. That survives a restart on a server with a disk and does not on a free platform, where the API container has no persistent disk: every redeploy, restart and 15-minute idle spin-down reset the total to zero. A public link, a live key and a cap that resets several times a day is an open tap on the $150 credit. The cap only means something if it outlives the container.
+- **Append-only, and tested:** no UPDATE or DELETE is granted to either role, and a trigger refuses both plus TRUNCATE for every role including the owner. Five tests cover it, including the rollback case and the owner being refused.
+- **Not changed:** the prices, the limit and `spend_baseline_usd` stay in config. The table records money, not patients: it carries no patient column, and its row-level policy is deliberately unscoped so the guard totals every row whoever is signed in.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |
