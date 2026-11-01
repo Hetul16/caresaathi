@@ -230,6 +230,9 @@
 .check { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; color: var(--ink-2); cursor: pointer; }
 .check input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--signal); flex: none; }
 .check.has-error { color: var(--coral); }
+/* A right that cannot be granted at all, rather than one left unticked: it has to read as unavailable, not as merely off. */
+.check:has(input:disabled) { opacity: 0.45; cursor: not-allowed; text-decoration: line-through; text-decoration-thickness: 1px; }
+.check input:disabled { cursor: not-allowed; }
 
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 4px; gap: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 14px; border: 1px solid var(--line-soft); }
 .seg button { min-height: 46px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; font-weight: 700; display: grid; place-items: center; align-content: center; color: var(--ink-2); transition: background 200ms, color 200ms; }
