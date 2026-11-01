@@ -1,18 +1,27 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/lib/api";
-import type { TodayView } from "@/lib/types";
+import type { TodayItem, TodayView } from "@/lib/types";
 import { Icon } from "@/components/Icon";
 
 type Lang = "en" | "hi" | "mr";
-// Fixed words. Hindi and Marathi have not been reviewed by a native speaker yet (docs/10-hackathon-facts.md).
-const T: Record<Lang, { title: string; took: string; not: string; taken: string; notTaken: string; later: string; pain: string; scale: string; saved: string; none: string; note: string; err: string; listen: string }> = {
-  en: { title: "Today", took: "I took it", not: "I did not take it", taken: "Taken", notTaken: "Marked not taken", later: "Later today", pain: "How is your pain today?", scale: "0 means no pain. 10 means the most pain.", saved: "Saved. Your family can see it.",
-        none: "Nothing is on your list for today.", note: "Your family will see what you tap.", err: "Could not save. Please try again.", listen: "Listen" },
-  hi: { title: "आज", took: "मैंने ले ली", not: "मैंने नहीं ली", taken: "ले ली", notTaken: "नहीं ली", later: "आज बाद में", pain: "आज दर्द कैसा है?", scale: "0 यानी कोई दर्द नहीं। 10 यानी सबसे ज़्यादा दर्द।", saved: "सेव हो गया। आपका परिवार इसे देख सकता है।",
-        none: "आज आपकी सूची में कुछ नहीं है।", note: "आप जो दबाते हैं, आपका परिवार उसे देखता है।", err: "सेव नहीं हो सका। कृपया फिर कोशिश करें।", listen: "सुनें" },
-  mr: { title: "आज", took: "मी घेतली", not: "मी घेतली नाही", taken: "घेतली", notTaken: "घेतली नाही", later: "आज नंतर", pain: "आज वेदना कशी आहे?", scale: "0 म्हणजे वेदना नाही. 10 म्हणजे सर्वात जास्त वेदना.", saved: "जतन झाले. तुमचे कुटुंब ते पाहू शकते.",
-        none: "आज तुमच्या यादीत काही नाही.", note: "तुम्ही जे दाबता ते तुमचे कुटुंब पाहते.", err: "जतन झाले नाही. कृपया पुन्हा प्रयत्न करा.", listen: "ऐका" },
+
+// Written for someone who may be ill, tired, or unable to read the screen. One job is on it: say whether the medicine due right now was
+// taken. What is still to come, what is already done, and how they feel are each one line until they ask for them.
+// Hindi and Marathi have not been reviewed by a native speaker yet (docs/10-hackathon-facts.md).
+const T: Record<Lang, Record<string, string>> = {
+  en: { now: "Take now", took: "I took it", not: "I did not take it", taken: "Taken", notTaken: "Not taken", listen: "Read this to me",
+        nothing: "Nothing to take right now.", next: "Next", later: "Later today", done: "Finished today", medicines: "medicines",
+        medicine: "medicine", feel: "How are you feeling?", pain: "0 means no pain. 10 means the most pain.",
+        saved: "Saved. Your family can see it.", none: "Nothing is on your list for today.", err: "Could not save. Please try again." },
+  hi: { now: "अभी लेनी है", took: "मैंने ले ली", not: "मैंने नहीं ली", taken: "ले ली", notTaken: "नहीं ली", listen: "पढ़कर सुनाएँ",
+        nothing: "अभी कुछ नहीं लेना है।", next: "अगली", later: "आज बाद में", done: "आज हो गया", medicines: "दवाइयाँ",
+        medicine: "दवा", feel: "आप कैसा महसूस कर रहे हैं?", pain: "0 यानी कोई दर्द नहीं। 10 यानी सबसे ज़्यादा दर्द।",
+        saved: "सेव हो गया। आपका परिवार इसे देख सकता है।", none: "आज आपकी सूची में कुछ नहीं है।", err: "सेव नहीं हो सका। कृपया फिर कोशिश करें।" },
+  mr: { now: "आता घ्यायची", took: "मी घेतली", not: "मी घेतली नाही", taken: "घेतली", notTaken: "घेतली नाही", listen: "वाचून दाखवा",
+        nothing: "आत्ता काही घ्यायचे नाही.", next: "पुढची", later: "आज नंतर", done: "आज झाले", medicines: "औषधे",
+        medicine: "औषध", feel: "तुम्हाला कसे वाटते आहे?", pain: "0 म्हणजे वेदना नाही. 10 म्हणजे सर्वात जास्त वेदना.",
+        saved: "जतन झाले. तुमचे कुटुंब ते पाहू शकते.", none: "आज तुमच्या यादीत काही नाही.", err: "जतन झाले नाही. कृपया पुन्हा प्रयत्न करा." },
 };
 const SLOT: Record<Lang, Record<string, string>> = {
   en: { morning: "Morning", noon: "Noon", evening: "Evening", night: "Night" },
@@ -20,12 +29,14 @@ const SLOT: Record<Lang, Record<string, string>> = {
   mr: { morning: "सकाळी", noon: "दुपारी", evening: "संध्याकाळी", night: "रात्री" },
 };
 
-// The elder's check-in: tap each medicine as taken or not, and tap a pain number. Everything is recorded with the family's signed-in session
-// and shown to the family. Nothing here says what a missed dose means.
+type Row = TodayItem & { slot: string; time: string };
+
 export function ElderCheckin({ patientId, lang, speak }: { patientId: string; lang: Lang; speak?: (text: string) => void }) {
   const t = T[lang];
   const [v, setV] = useState<TodayView | null>(null);
   const [msg, setMsg] = useState("");
+  const [open, setOpen] = useState({ later: false, done: false, feel: false });
+  const toggle = (k: "later" | "done" | "feel") => setOpen((o) => ({ ...o, [k]: !o[k] }));
   const load = useCallback(async () => { try { setV(await api<TodayView>(`/patients/${patientId}/today`)); } catch { /* the rest of the screen still works */ } }, [patientId]);
   useEffect(() => { load(); const id = setInterval(load, 60000); return () => clearInterval(id); }, [load]);
 
@@ -38,44 +49,88 @@ export function ElderCheckin({ patientId, lang, speak }: { patientId: string; la
     catch (e) { setMsg(e instanceof ApiError ? e.detail || e.title : t.err); }
   }
   if (!v) return null;
-  const spoken = (slot: string, title: string, units: number) => `${SLOT[lang][slot]}: ${title}, ${units}`;
+
+  const all: Row[] = v.slots.flatMap((sl) => sl.items.map((it) => ({ ...it, slot: sl.slot, time: sl.time })));
+  const nowRows = all.filter((r) => r.status === "due" || r.status === "not_marked");
+  const laterRows = all.filter((r) => r.status === "later");
+  const doneRows = all.filter((r) => r.status === "taken" || r.status === "not_taken");
+  const count = (n: number) => `${n} ${n === 1 ? t.medicine : t.medicines}`;
+  const mixedSlots = new Set(nowRows.map((r) => r.slot)).size > 1;
+
+  // The whole card in one sentence, so it can be heard instead of read.
+  const readNow = () => speak?.([t.now, ...nowRows.map((r) => `${r.title}, ${r.units}`)].join(". "));
+
+  const buttons = (r: Row) => (
+    <div className="pcheck-acts">
+      <button className="btn btn-primary pcheck-took" onClick={() => dose(r.item_key, r.slot, "taken")}><Icon name="check" /> {t.took}</button>
+      <button className="btn btn-quiet pcheck-not" onClick={() => dose(r.item_key, r.slot, "not_taken")}>{t.not}</button>
+    </div>
+  );
+  const name = (r: Row, when: boolean) => (
+    <p className="pcheck-name">{r.title} <small>&times; {r.units}</small>{when && <small className="pcheck-when"> &middot; {SLOT[lang][r.slot]} {r.time}</small>}</p>
+  );
+  const fold = (k: "later" | "done" | "feel", icon: "clock" | "check" | "heart", label: string, tail?: ReactNode) => (
+    <button className="pcheck-foldbtn" aria-expanded={open[k]} onClick={() => toggle(k)}>
+      <Icon name={icon} /><span>{label}</span>{tail}<span className="pcheck-caret" aria-hidden="true">{open[k] ? "▴" : "▾"}</span>
+    </button>
+  );
 
   return (
-    <section aria-labelledby="ec-h" style={{ maxWidth: 720, margin: "0 auto 28px", display: "grid", gap: 14 }}>
-      <h2 id="ec-h" className="elder-title" style={{ margin: 0 }}>{t.title}</h2>
-      {v.slots.length === 0 && <p className="card card-pad" style={{ fontSize: 20 }}>{t.none}</p>}
-      {v.slots.map((sl) => (
-        <div key={sl.slot} className="card card-pad" style={{ display: "grid", gap: 12 }}>
-          <h3 style={{ fontSize: 26, margin: 0 }}>{SLOT[lang][sl.slot]} <small style={{ color: "var(--ink-3)", fontSize: 16 }}>{sl.time}</small></h3>
-          {sl.items.map((it) => (
-            <div key={it.item_key} style={{ display: "grid", gap: 8 }}>
-              <p style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>{it.title} <small style={{ fontWeight: 400, color: "var(--ink-2)" }}>× {it.units}</small></p>
-              {it.status === "taken" && <p className="pill pill-leaf" style={{ justifySelf: "start", fontSize: 18 }}><Icon name="check" /> {t.taken} {it.marked_at}</p>}
-              {it.status === "not_taken" && <p className="pill pill-rose" style={{ justifySelf: "start", fontSize: 18 }}>{t.notTaken}</p>}
-              {it.status === "later" && <p className="pill" style={{ justifySelf: "start", fontSize: 18 }}>{t.later}</p>}
-              {(it.status === "due" || it.status === "not_marked") && (
-                <div className="item-foot" style={{ gap: 10 }}>
-                  <button className="btn btn-primary" style={{ minHeight: 64, fontSize: 22, flex: 1 }} onClick={() => dose(it.item_key, sl.slot, "taken")}><Icon name="check" /> {t.took}</button>
-                  <button className="btn btn-quiet" style={{ minHeight: 64, fontSize: 18 }} onClick={() => dose(it.item_key, sl.slot, "not_taken")}>{t.not}</button>
-                </div>
-              )}
-              {speak && <button className="btn btn-quiet" style={{ justifySelf: "start", minHeight: 44 }} onClick={() => speak(spoken(sl.slot, it.title, it.units))}
-                                aria-label={`${t.listen}: ${it.title}`}><Icon name="volume" /> {t.listen}</button>}
-            </div>
-          ))}
-        </div>
-      ))}
+    <section aria-labelledby="pcheck-h" className="pcheck">
+      <h2 id="pcheck-h" className="sr-only">{t.now}</h2>
+      {all.length === 0 && <p className="card card-pad pcheck-clear">{t.none}</p>}
 
-      <div className="card card-pad" style={{ display: "grid", gap: 10 }}>
-        <h3 style={{ fontSize: 26, margin: 0 }}>{t.pain}</h3>
-        <p style={{ color: "var(--ink-2)", margin: 0 }}>{t.scale}</p>
-        <div role="group" aria-label={t.pain} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(58px, 1fr))", gap: 8 }}>
-          {Array.from({ length: 11 }, (_, n) => (
-            <button key={n} className={v.checkin?.pain === n ? "btn btn-primary" : "btn btn-quiet"} style={{ minHeight: 64, fontSize: 24 }} aria-pressed={v.checkin?.pain === n} onClick={() => pain(n)}>{n}</button>
+      {nowRows.length > 0 ? (
+        <div className="card card-pad pcheck-now">
+          <div className="pcheck-head">
+            <h3>{t.now}</h3>
+            {speak && <button className="btn btn-quiet btn-sm" onClick={readNow}><Icon name="volume" /> {t.listen}</button>}
+          </div>
+          {nowRows.map((r) => <div key={r.item_key + r.slot} className="pcheck-row">{name(r, mixedSlots)}{buttons(r)}</div>)}
+        </div>
+      ) : all.length > 0 && (
+        <p className="card card-pad pcheck-clear">
+          <Icon name="check" /> {t.nothing}
+          {laterRows.length > 0 && <small>{t.next}: {SLOT[lang][laterRows[0].slot]} {laterRows[0].time}</small>}
+        </p>
+      )}
+
+      {/* Tapping moves the medicine out of this card and into "Finished today", which is a lot of change under a finger.
+          The confirmation sits where the row was, not at the bottom of the screen. */}
+      {msg && <p role="status" className="pcheck-msg">{msg}</p>}
+
+      {laterRows.length > 0 && (
+        <div className="pcheck-fold">
+          {fold("later", "clock", `${t.later} · ${count(laterRows.length)}`)}
+          {open.later && laterRows.map((r) => <div key={r.item_key + r.slot} className="pcheck-row">{name(r, true)}{buttons(r)}</div>)}
+        </div>
+      )}
+
+      {doneRows.length > 0 && (
+        <div className="pcheck-fold">
+          {fold("done", "check", `${t.done} · ${count(doneRows.length)}`)}
+          {open.done && doneRows.map((r) => (
+            <p key={r.item_key + r.slot} className="pcheck-doneline">
+              <span className={r.status === "taken" ? "pill pill-leaf" : "pill pill-rose"}>{r.status === "taken" ? t.taken : t.notTaken}</span>
+              {r.title} <small>{r.marked_at}</small>
+            </p>
           ))}
         </div>
+      )}
+
+      <div className="pcheck-fold">
+        {fold("feel", "heart", t.feel, v.checkin?.pain != null ? <span className="pill">{v.checkin.pain}</span> : undefined)}
+        {open.feel && (
+          <div className="pcheck-pain">
+            <p>{t.pain}</p>
+            <div role="group" aria-label={t.feel}>
+              {Array.from({ length: 11 }, (_, n) => (
+                <button key={n} className={v.checkin?.pain === n ? "btn btn-primary" : "btn btn-quiet"} aria-pressed={v.checkin?.pain === n} onClick={() => pain(n)}>{n}</button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-      <p role="status" style={{ color: "var(--ink-2)", fontSize: 18, margin: 0 }}>{msg || t.note}</p>
     </section>
   );
 }

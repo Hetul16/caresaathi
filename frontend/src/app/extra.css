@@ -234,6 +234,36 @@
 .check:has(input:disabled) { opacity: 0.45; cursor: not-allowed; text-decoration: line-through; text-decoration-thickness: 1px; }
 .check input:disabled { cursor: not-allowed; }
 
+/* ---- Elder check-in (D-67): one job on the screen, everything else one line until asked for ---- */
+.pcheck { max-width: 720px; margin: 0 auto 28px; display: grid; gap: 12px; }
+.pcheck-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.pcheck-head h3 { font-size: 24px; margin: 0; letter-spacing: -0.01em; }
+.pcheck-now { border-color: var(--signal); box-shadow: 0 0 0 1px var(--signal) inset; }
+.pcheck-row { display: grid; gap: 10px; padding: 14px 0; border-top: 1px solid var(--line-soft); }
+.pcheck-row:first-of-type { border-top: 0; padding-top: 4px; }
+.pcheck-name { font-size: 24px; font-weight: 800; margin: 0; line-height: 1.25; }
+.pcheck-name small { font-weight: 500; font-size: 18px; color: var(--ink-2); }
+.pcheck-when { display: block; font-size: 16px; color: var(--ink-3); margin-top: 2px; }
+.pcheck-acts { display: grid; gap: 8px; }
+.pcheck-took { min-height: 72px; font-size: 24px; width: 100%; }
+.pcheck-not { min-height: 52px; font-size: 17px; width: 100%; color: var(--ink-2); }
+.pcheck-clear { font-size: 22px; display: grid; gap: 6px; justify-items: center; text-align: center; color: var(--ink-2); }
+.pcheck-clear small { font-size: 17px; color: var(--ink-3); }
+.pcheck-fold { display: grid; }
+.pcheck-foldbtn { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 60px; padding: 0 18px; font: inherit; font-size: 19px;
+  font-weight: 700; text-align: left; color: var(--ink-2); background: var(--card); border: 1px solid var(--line); border-radius: 16px; cursor: pointer; }
+.pcheck-foldbtn:hover { color: var(--ink); border-color: var(--line-strong, var(--signal)); }
+.pcheck-foldbtn > span:first-of-type { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pcheck-foldbtn .pcheck-caret { margin-left: auto; padding-left: 8px; font-size: 20px; }
+.pcheck-foldbtn .pill { font-size: 16px; }
+.pcheck-doneline { display: flex; align-items: center; gap: 10px; font-size: 19px; padding: 12px 18px; margin: 0; }
+.pcheck-doneline small { color: var(--ink-3); margin-left: auto; }
+.pcheck-pain { padding: 14px 18px 4px; display: grid; gap: 10px; }
+.pcheck-pain p { margin: 0; color: var(--ink-2); font-size: 17px; }
+.pcheck-pain div[role="group"] { display: grid; grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); gap: 8px; }
+.pcheck-pain button { min-height: 64px; font-size: 24px; }
+.pcheck-msg { color: var(--ink-2); font-size: 18px; margin: 0; text-align: center; }
+
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 4px; gap: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 14px; border: 1px solid var(--line-soft); }
 .seg button { min-height: 46px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; font-weight: 700; display: grid; place-items: center; align-content: center; color: var(--ink-2); transition: background 200ms, color 200ms; }
 .seg button small { font-size: 12px; font-weight: 400; color: var(--ink-3); }

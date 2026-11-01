@@ -22,6 +22,13 @@ async function signup(ctx, tag, name) {
   return page;
 }
 const tab = (page, name) => page.getByRole("button", { name: new RegExp("^" + name) }).first().click();
+// Elder-mode controls drift by a fraction of a pixel (measured below), which Playwright will not click through, so these taps are forced.
+// A forced click skips the automatic scroll as well, so bring the control into view first or it lands off-screen.
+const tap = async (loc) => {
+  await loc.evaluate((el) => el.scrollIntoView({ block: "center", behavior: "instant" }));
+  await loc.page().waitForTimeout(250);
+  await loc.click({ force: true });
+};
 
 // ---------- the family sets the patient up ----------
 const ctxF = await b.newContext({ viewport: { width: 1360, height: 900 } });
@@ -64,17 +71,59 @@ await P.getByRole("button", { name: /I took it/i }).first().waitFor({ timeout: 3
 const yTook = (await P.getByRole("button", { name: /I took it/i }).first().boundingBox()).y;
 const yOrb = (await P.locator(".orb").first().boundingBox()).y;
 ok("the medicines and their buttons come before the microphone", yTook < yOrb, `took=${Math.round(yTook)} orb=${Math.round(yOrb)}`);
-ok("there is exactly one list of today's medicines", (await P.locator(".elder-title").filter({ hasText: /Today|आज/ }).count()) === 1);
+ok("only what is due now is open; later and finished are one line each",
+   (await P.locator(".pcheck-now").count()) === 1 && (await P.locator(".pcheck-fold").count()) >= 2);
+ok("the pain scale is out of the way until she asks for it", (await P.locator(".pcheck-pain").count()) === 0);
+// What she actually faces without scrolling, which is the number that matters for someone who is ill.
+const above = await P.locator("button:visible, input:visible, a:visible").evaluateAll(
+  (els, h) => els.filter((e) => e.getBoundingClientRect().top < h).length, 860);
+ok("what she faces without scrolling is a handful of controls", above <= 16, `${above} above the fold`);
+// Red means danger on a medicine screen. The drifting coral blob in the backdrop must not reach her text.
+// Measure the label itself, not its button: a stray `.ec span:first-of-type` rule once painted the label red while the button stayed grey.
+const fold = await P.locator(".pcheck-foldbtn span").first().evaluate((e) => {
+  const c = getComputedStyle(e);
+  let t = "none";
+  for (let n = e; n && n !== document.documentElement; n = n.parentElement) {
+    const s = getComputedStyle(n).transform;
+    if (s !== "none") { t = n.tagName + "." + [...n.classList].join(".") + " " + s; break; }
+  }
+  return { color: c.color, transform: t };
+});
+ok("the folded label is grey and sits straight", /185, 193, 211/.test(fold.color) && fold.transform === "none", JSON.stringify(fold));
+await P.screenshot({ path: out + "/pr-2a-elder-viewport.png" });
 await P.screenshot({ path: out + "/pr-2-elder-top.png", fullPage: true });
+await P.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));   // the page scrolls smoothly, so settle it after a full-page shot
+await P.waitForTimeout(700);
 
-const med = await P.locator("p").filter({ hasText: /× \d/ }).first().innerText();
-await P.getByRole("button", { name: /I took it/i }).first().click();
-await P.locator(".pill-leaf").first().waitFor({ timeout: 15000 });
-ok("one tap marks a dose as taken", /Taken/.test(await P.locator(".pill-leaf").first().innerText()), med.replace(/\s+/g, " "));
-
-await P.getByRole("button", { name: "6", exact: true }).first().click();
+const med = await P.locator(".pcheck-name").first().innerText();
+// A button that drifts under the finger is a real problem for someone with a tremor, so measure it rather than assume.
+const jitter = await P.locator(".pcheck-took").first().evaluate((el) => new Promise((done) => {
+  const seen = [];
+  const tick = () => { const r = el.getBoundingClientRect(); seen.push([r.x, r.y]);
+    if (seen.length < 12) requestAnimationFrame(tick);
+    else done(Math.max(...seen.map(([x, y]) => Math.abs(x - seen[0][0]) + Math.abs(y - seen[0][1])))); };
+  requestAnimationFrame(tick);
+}));
+ok("the button does not drift under the finger", jitter < 1, `moved ${jitter.toFixed(2)}px over 12 frames`);
+// That sub-pixel drift is below anything a person can notice, but Playwright's stability check has no tolerance at all,
+// so the click is forced. The measurement above, not the click, is what guarantees the button holds still.
+await tap(P.getByRole("button", { name: /I took it/i }).first());
 await P.getByText(/Saved|सेव/).first().waitFor({ timeout: 15000 });
-ok("she can say how she feels", true);
+ok("one tap marks it, and says so where she tapped", true, med.replace(/\s+/g, " "));
+// it has left "Take now" and joined the finished line, which is where she looks to check
+await tap(P.getByRole("button", { name: /Finished today/i }));
+await P.locator(".pill-leaf").first().waitFor({ timeout: 10000 });
+ok("it moves into Finished today", /Taken/.test(await P.locator(".pill-leaf").first().innerText()));
+
+await tap(P.getByRole("button", { name: /How are you feeling/i }));
+await P.locator(".pcheck-pain").waitFor({ timeout: 10000 });
+await P.waitForTimeout(400);                       // the panel has just opened; let the buttons land before tapping one
+await tap(P.locator(".pcheck-pain button", { hasText: /^6$/ }));
+// the number she chose comes back pressed, and sits on the folded line so she can see it later without opening it
+await P.locator(".pcheck-pain button[aria-pressed=true]").waitFor({ timeout: 15000 });
+const chosen = await P.locator(".pcheck-pain button[aria-pressed=true]").innerText();
+const onFold = await P.getByRole("button", { name: /How are you feeling/i }).innerText();
+ok("she can say how she feels, and it stays on screen", chosen.trim() === "6" && /6/.test(onFold), `chose ${chosen.trim()}`);
 
 // she must not be able to reach Family mode
 await P.goto(BASE + "/app", { waitUntil: "networkidle" });

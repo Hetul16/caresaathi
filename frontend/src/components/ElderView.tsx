@@ -88,7 +88,8 @@ export function ElderView({ plan, emergencyHref, patientId }: { plan: CarePlan; 
   return (
     <div className="elder wrap">
       <h1 className="elder-greet">{t("hello")}, {plan.patient.name.split(" ")[0]}</h1>
-      <p className="elder-sub">{t("tagline")}</p>
+      {/* The tagline is a promise made to the family. The person taking the medicine does not need it on their screen. */}
+      {!patientId && <p className="elder-sub">{t("tagline")}</p>}
 
       {/* What to do today comes first. Signed in, each medicine carries its own "I took it"; the demo has no backend, so it lists them to read. */}
       {patientId
@@ -143,11 +144,15 @@ export function ElderView({ plan, emergencyHref, patientId }: { plan: CarePlan; 
         // This device has no voice for the chosen language, so reading aloud is off rather than read in the wrong voice (D-65).
         <p className="elder-novoice" role="status">{NO_VOICE[lang]}</p>
       )}
-      <div className="elder-tools">
-        <button className="btn btn-primary" onClick={readAll} disabled={voiceAvailable === false}><Icon name="volume" /> {t("listen")}</button>
-        <button className="btn btn-quiet" onClick={() => repeat(false)} disabled={voiceAvailable === false}><Icon name="repeat" /> {t("repeat")}</button>
-        <button className="btn btn-quiet" onClick={() => repeat(true)} disabled={voiceAvailable === false}><Icon name="clock" /> {t("slower")}</button>
-      </div>
+      {/* Signed in, the medicines carry their own "Read this to me", so Repeat and Slower only appear once there is an answer to repeat.
+          Signed out there is no check-in card, so the full row stays as the only way to hear the list. */}
+      {(!patientId || answer) && (
+        <div className="elder-tools">
+          {!patientId && <button className="btn btn-primary" onClick={readAll} disabled={voiceAvailable === false}><Icon name="volume" /> {t("listen")}</button>}
+          <button className="btn btn-quiet" onClick={() => repeat(false)} disabled={voiceAvailable === false}><Icon name="repeat" /> {t("repeat")}</button>
+          <button className="btn btn-quiet" onClick={() => repeat(true)} disabled={voiceAvailable === false}><Icon name="clock" /> {t("slower")}</button>
+        </div>
+      )}
 
       {patientId && (
         <form onSubmit={submitTyped} className="item-foot" style={{ maxWidth: 720, margin: "0 auto 24px", flexWrap: "nowrap" }}>

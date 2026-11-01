@@ -331,6 +331,15 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Limits:** the patient can still read what the care plan shows them, which is the point of Elder mode. There is no separate "the patient may not see the allergy flags" setting; the held-medicine card covers that case by telling them their family is checking something. The `devices` table (a phone paired by code, no password) remains unbuilt and is the kinder long-term answer for someone who cannot manage a password.
 
 
+### D-67 The patient's screen holds one job, and the rest is one line until asked for
+- **Status:** Accepted (Nov 1, 2026)
+- **Decision:** Elder mode opens on the medicines due now, each with a full-width "I took it" and a quieter "I did not take it". What is still to come, what is already finished, and how they feel are each a single folded line. Reading the whole card aloud replaces a Listen button on every row; Repeat and Slower appear only once there is an answer to repeat; the tagline is shown to a visitor on `/demo/elder` but not to the person taking the medicine. Measured on a 400 by 860 phone with two medicines due: **15 controls above the fold**, the first of them "I took it" at 254px, with the microphone at 997px.
+- **Why:** the person using this screen may be ill, tired, or unable to read it. Before this, the whole day's medicines were listed open at every time of day, the pain scale put eleven buttons on screen unasked, and the button that does the one thing she needs sat below the microphone, the answer card, three read-aloud buttons and a text box.
+- **Confirmation where the tap was:** marking a dose moves it out of "Take now" into the folded "Finished today", which is a lot of change under a finger, so the saved message renders where the row was rather than at the end of the section.
+- **Found while building it:** the new section was given the class `ec`, which already existed in `extra.css` as the tilted paper Emergency Card mock on the landing page. The patient's card silently inherited `transform: rotate(-2deg)`, `animation: floaty 6s infinite` and `.ec span:first-of-type { color: #b3261e }`, so her folded lines were painted warning red, sat crooked, and drifted about 0.6px forever. Renamed to `pcheck`. The browser test now measures the label's own colour, the transform of every ancestor, and the drift across twelve frames (0.00px) instead of assuming any of them.
+- **Not changed:** the pain scale is still 0 to 10 and still the patient's own number. Reducing it to three faces would mean the app deciding what a face is worth, which safety invariant 6 does not allow.
+
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |
