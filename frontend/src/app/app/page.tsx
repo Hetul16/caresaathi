@@ -43,6 +43,11 @@ function Live() {
 
   const { plan, error, reload } = useCarePlan(selected);
 
+  // The person being cared for never sees Family mode. The API already refuses them every approval, so this is about not showing an
+  // elderly user a dashboard of tabs that would all answer 403 (D-66).
+  const isPatient = plan?.member_role === "patient";
+  useEffect(() => { if (isPatient) router.replace("/app/elder"); }, [isPatient, router]);
+
   if (pErr || error) {
     return (
       <div className="center-page"><div>
@@ -52,7 +57,7 @@ function Live() {
       </div></div>
     );
   }
-  if (!plan || !selected) {
+  if (!plan || !selected || isPatient) {
     return (
       <div className="wrap fam-shell" aria-busy="true" aria-label="Loading care plan">
         <div className="skeleton" style={{ height: 200 }} /><div className="stack"><div className="skeleton" style={{ height: 90 }} /><div className="skeleton" style={{ height: 160 }} /></div>

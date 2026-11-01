@@ -81,6 +81,8 @@ export interface TimelineEvent {
   kind: "document" | "visit" | "approval" | "alert" | "card" | "plan";
 }
 
+export type MemberRole = "patient" | "child" | "spouse" | "relative" | "attendant" | "nurse" | "other";
+
 export interface CarePlan {
   patient: { id: string; name: string; age: number | null; preferred_language: Lang };
   allergies: { state: AllergyState; items: Allergy[]; source_note?: string };
@@ -94,6 +96,7 @@ export interface CarePlan {
   reference_list_reviewed: boolean;
   reference_check?: { source: string; caveat: string; checked_on: string; memberships_checked?: number; confirmed_by_atc?: number; not_confirmed?: number } | null;
   can_approve?: boolean;           // live plans only: whether this member may confirm and approve
+  member_role?: MemberRole;        // live plans only: "patient" is the person being cared for, and sees Elder mode only
   duplicates?: DuplicateGroup[];
 }
 

@@ -6,13 +6,13 @@ import { Icon } from "@/components/Icon";
 
 type Lang = "en" | "hi" | "mr";
 // Fixed words. Hindi and Marathi have not been reviewed by a native speaker yet (docs/10-hackathon-facts.md).
-const T: Record<Lang, { title: string; took: string; not: string; taken: string; notTaken: string; later: string; pain: string; scale: string; saved: string; none: string; note: string; err: string }> = {
+const T: Record<Lang, { title: string; took: string; not: string; taken: string; notTaken: string; later: string; pain: string; scale: string; saved: string; none: string; note: string; err: string; listen: string }> = {
   en: { title: "Today", took: "I took it", not: "I did not take it", taken: "Taken", notTaken: "Marked not taken", later: "Later today", pain: "How is your pain today?", scale: "0 means no pain. 10 means the most pain.", saved: "Saved. Your family can see it.",
-        none: "Nothing is on your list for today.", note: "Your family will see what you tap.", err: "Could not save. Please try again." },
+        none: "Nothing is on your list for today.", note: "Your family will see what you tap.", err: "Could not save. Please try again.", listen: "Listen" },
   hi: { title: "आज", took: "मैंने ले ली", not: "मैंने नहीं ली", taken: "ले ली", notTaken: "नहीं ली", later: "आज बाद में", pain: "आज दर्द कैसा है?", scale: "0 यानी कोई दर्द नहीं। 10 यानी सबसे ज़्यादा दर्द।", saved: "सेव हो गया। आपका परिवार इसे देख सकता है।",
-        none: "आज आपकी सूची में कुछ नहीं है।", note: "आप जो दबाते हैं, आपका परिवार उसे देखता है।", err: "सेव नहीं हो सका। कृपया फिर कोशिश करें।" },
+        none: "आज आपकी सूची में कुछ नहीं है।", note: "आप जो दबाते हैं, आपका परिवार उसे देखता है।", err: "सेव नहीं हो सका। कृपया फिर कोशिश करें।", listen: "सुनें" },
   mr: { title: "आज", took: "मी घेतली", not: "मी घेतली नाही", taken: "घेतली", notTaken: "घेतली नाही", later: "आज नंतर", pain: "आज वेदना कशी आहे?", scale: "0 म्हणजे वेदना नाही. 10 म्हणजे सर्वात जास्त वेदना.", saved: "जतन झाले. तुमचे कुटुंब ते पाहू शकते.",
-        none: "आज तुमच्या यादीत काही नाही.", note: "तुम्ही जे दाबता ते तुमचे कुटुंब पाहते.", err: "जतन झाले नाही. कृपया पुन्हा प्रयत्न करा." },
+        none: "आज तुमच्या यादीत काही नाही.", note: "तुम्ही जे दाबता ते तुमचे कुटुंब पाहते.", err: "जतन झाले नाही. कृपया पुन्हा प्रयत्न करा.", listen: "ऐका" },
 };
 const SLOT: Record<Lang, Record<string, string>> = {
   en: { morning: "Morning", noon: "Noon", evening: "Evening", night: "Night" },
@@ -22,7 +22,7 @@ const SLOT: Record<Lang, Record<string, string>> = {
 
 // The elder's check-in: tap each medicine as taken or not, and tap a pain number. Everything is recorded with the family's signed-in session
 // and shown to the family. Nothing here says what a missed dose means.
-export function ElderCheckin({ patientId, lang }: { patientId: string; lang: Lang }) {
+export function ElderCheckin({ patientId, lang, speak }: { patientId: string; lang: Lang; speak?: (text: string) => void }) {
   const t = T[lang];
   const [v, setV] = useState<TodayView | null>(null);
   const [msg, setMsg] = useState("");
@@ -38,6 +38,7 @@ export function ElderCheckin({ patientId, lang }: { patientId: string; lang: Lan
     catch (e) { setMsg(e instanceof ApiError ? e.detail || e.title : t.err); }
   }
   if (!v) return null;
+  const spoken = (slot: string, title: string, units: number) => `${SLOT[lang][slot]}: ${title}, ${units}`;
 
   return (
     <section aria-labelledby="ec-h" style={{ maxWidth: 720, margin: "0 auto 28px", display: "grid", gap: 14 }}>
@@ -58,6 +59,8 @@ export function ElderCheckin({ patientId, lang }: { patientId: string; lang: Lan
                   <button className="btn btn-quiet" style={{ minHeight: 64, fontSize: 18 }} onClick={() => dose(it.item_key, sl.slot, "not_taken")}>{t.not}</button>
                 </div>
               )}
+              {speak && <button className="btn btn-quiet" style={{ justifySelf: "start", minHeight: 44 }} onClick={() => speak(spoken(sl.slot, it.title, it.units))}
+                                aria-label={`${t.listen}: ${it.title}`}><Icon name="volume" /> {t.listen}</button>}
             </div>
           ))}
         </div>

@@ -7,7 +7,7 @@ import { Field } from "../auth/Field";
 import { Icon } from "../Icon";
 
 const errText = (e: unknown) => (e instanceof ApiError ? e.detail || e.title : "Something went wrong. Please try again.");
-const ROLES: [string, string][] = [["child", "Son or daughter"], ["spouse", "Husband or wife"], ["relative", "Other relative"], ["attendant", "Attendant"], ["nurse", "Nurse"], ["other", "Someone else"]];
+const ROLES: [string, string][] = [["patient", "The patient"], ["child", "Son or daughter"], ["spouse", "Husband or wife"], ["relative", "Other relative"], ["attendant", "Attendant"], ["nurse", "Nurse"], ["other", "Someone else"]];
 
 export function FamilyPanel({ patientId, canManage, toast }: { patientId: string; canManage: boolean; toast: (m: string) => void }) {
   const { user } = useAuth();
@@ -15,6 +15,7 @@ export function FamilyPanel({ patientId, canManage, toast }: { patientId: string
   const [invites, setInvites] = useState<Invite[]>([]);
   const [fresh, setFresh] = useState<{ url: string } | null>(null);
   const [role, setRole] = useState("child");
+  const isPatient = role === "patient";
   const [label, setLabel] = useState("");
   const [approve, setApprove] = useState(false);
   const [rec, setRec] = useState(false);
@@ -50,14 +51,15 @@ export function FamilyPanel({ patientId, canManage, toast }: { patientId: string
             <div><h3>{m.name}{m.user_id === user?.id ? " (you)" : ""}</h3><p className="detail">{m.relationship ?? m.role}</p></div>
             <div className="item-foot">
               {m.can_manage_members && <span className="pill pill-blue">Manages the family</span>}
-              {m.can_approve ? <span className="pill pill-leaf">Can approve</span> : <span className="pill">Can view</span>}
+              {m.role === "patient" ? <span className="pill pill-blue">The patient · Elder mode</span>
+                : m.can_approve ? <span className="pill pill-leaf">Can approve</span> : <span className="pill">Can view</span>}
               {m.can_view_recordings && <span className="pill">Hears recordings</span>}
             </div>
           </div>
           {canManage && (
             <div className="item-foot">
-              <button className="btn btn-quiet btn-sm" onClick={() => patch(m.id, { can_approve: !m.can_approve }, m.can_approve ? "Approval removed." : "Can now approve.")}>{m.can_approve ? "Remove approval" : "Allow approving"}</button>
-              <button className="btn btn-quiet btn-sm" onClick={() => patch(m.id, { can_view_recordings: !m.can_view_recordings }, "Updated.")}>{m.can_view_recordings ? "Hide recordings" : "Allow recordings"}</button>
+              {m.role !== "patient" && <button className="btn btn-quiet btn-sm" onClick={() => patch(m.id, { can_approve: !m.can_approve }, m.can_approve ? "Approval removed." : "Can now approve.")}>{m.can_approve ? "Remove approval" : "Allow approving"}</button>}
+              {m.role !== "patient" && <button className="btn btn-quiet btn-sm" onClick={() => patch(m.id, { can_view_recordings: !m.can_view_recordings }, "Updated.")}>{m.can_view_recordings ? "Hide recordings" : "Allow recordings"}</button>}
               {m.user_id !== user?.id && <button className="btn btn-quiet btn-sm" onClick={() => patch(m.id, { remove: true }, "Removed from the family.")}><Icon name="ban" /> Remove</button>}
             </div>
           )}
@@ -77,10 +79,17 @@ export function FamilyPanel({ patientId, canManage, toast }: { patientId: string
           <div className="card card-pad stack">
             <fieldset className="lang-pick"><legend>Who are they?</legend>
               <div className="seg" style={{ gridAutoFlow: "row", gridTemplateColumns: "repeat(3, 1fr)" }}>{ROLES.map(([k, v]) => <button key={k} type="button" aria-pressed={role === k} onClick={() => setRole(k)}>{v}</button>)}</div></fieldset>
-            <Field label="How you would describe them (optional)" value={label} onChange={setLabel} placeholder="Brother" />
-            <label className="check"><input type="checkbox" checked={approve} onChange={(e) => setApprove(e.target.checked)} /><span>They can confirm items and approve changes.</span></label>
-            <label className="check"><input type="checkbox" checked={rec} onChange={(e) => setRec(e.target.checked)} /><span>They can read doctor-visit transcripts.</span></label>
-            <label className="check"><input type="checkbox" checked={manage} onChange={(e) => setManage(e.target.checked)} /><span>They can manage the family and invite others.</span></label>
+            <Field label="How you would describe them (optional)" value={label} onChange={setLabel} placeholder={isPatient ? "Mother" : "Brother"} />
+            {isPatient && (
+              <p className="detail" style={{ color: "var(--ink-2)" }}>
+                The patient signs in to Elder mode only: their medicines, one tap to say they took each one, and how they feel today. They
+                cannot confirm the plan, approve a change, read visit transcripts or invite anyone. That is enforced by the database, not by
+                hiding buttons.
+              </p>
+            )}
+            <label className="check"><input type="checkbox" checked={approve && !isPatient} disabled={isPatient} onChange={(e) => setApprove(e.target.checked)} /><span>They can confirm items and approve changes.</span></label>
+            <label className="check"><input type="checkbox" checked={rec && !isPatient} disabled={isPatient} onChange={(e) => setRec(e.target.checked)} /><span>They can read doctor-visit transcripts.</span></label>
+            <label className="check"><input type="checkbox" checked={manage && !isPatient} disabled={isPatient} onChange={(e) => setManage(e.target.checked)} /><span>They can manage the family and invite others.</span></label>
             <div className="item-foot"><button className="btn btn-primary" disabled={busy} onClick={invite}><Icon name="users" /> Make an invitation link</button></div>
           </div>
           {invites.filter((i) => i.status === "open").map((i) => (

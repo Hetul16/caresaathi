@@ -148,6 +148,8 @@ def care_plan(patient_id: UUID, s: Session = Depends(db, scope="function")):
         "omissions": omission_list(s, patient_id),
         "approvals": awaiting_actions(s, patient_id) if member["can_approve"] else [],
         "can_approve": bool(member["can_approve"]),
+        "member_role": member["member_role"],      # 'patient' sends this viewer to Elder mode; the rights above are already false for them
+
         "duplicates": dup_groups(s, patient_id),
         "timeline": [{"id": str(t["id"]), "at": t["occurred_at"].isoformat(), "actor": t["actor_type"].title(),
                       "text": t["summary"], "kind": kind_map.get(t["event_type"], "plan")} for t in tl],

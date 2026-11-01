@@ -323,6 +323,14 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Consequence for the demo:** record the Hindi or Marathi read-aloud on an Android phone, or install the Windows language pack first. On this laptop that part of the demo will show the honest "no voice on this device" line instead.
 - **Still open:** D-08's hosted text-to-speech provider is not chosen or built, so the voice remains the viewer's own. A server-side voice would remove the dependency entirely and is the real fix.
 
+### D-66 The patient is a member of their own care circle, with no rights over it
+- **Status:** Accepted (Nov 1, 2026)
+- **Decision:** The person being cared for gets their own sign-in, invited like any member but with `member_role = 'patient'`. Signing in sends them to Elder mode and nowhere else; `/app` redirects them. What they can do is mark a dose taken or not taken, record how they feel, and ask a question. What they can never do is confirm the care plan, approve a pending change, read a visit transcript or invite anyone. The limit holds at three levels: the invitation form drops the flags, `update_member` refuses to grant them later, and migration 0015 puts a CHECK on both `family_members` and `member_invites` so the database refuses the row. A partial unique index allows one active patient per circle, and `app_accept_invite` answers `patient_exists` rather than failing on the index.
+- **Why:** Elder mode was a view of a relative's signed-in session, so a pain number the patient entered was stored under the relative's name and the audit log was wrong about who said it. Giving the patient their own account fixes the attribution and makes the separation real. Hiding buttons is not a permission model; a judge asking "what stops her approving her own prescription change?" should get a constraint name, not a screenshot.
+- **Also changed:** Elder mode now leads with today's medicines and a large "I took it" on each one. Before this, that button sat below the microphone, the answer card, the read-aloud controls and the question box, and underneath it a second, unpressable copy of the same medicine list. Signed in there is now one list; signed out (`/demo/elder`, which has no backend) the read-only list is still the one shown.
+- **Limits:** the patient can still read what the care plan shows them, which is the point of Elder mode. There is no separate "the patient may not see the allergy flags" setting; the held-medicine card covers that case by telling them their family is checking something. The `devices` table (a phone paired by code, no password) remains unbuilt and is the kinder long-term answer for someone who cannot manage a password.
+
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

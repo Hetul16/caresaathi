@@ -90,6 +90,44 @@ export function ElderView({ plan, emergencyHref, patientId }: { plan: CarePlan; 
       <h1 className="elder-greet">{t("hello")}, {plan.patient.name.split(" ")[0]}</h1>
       <p className="elder-sub">{t("tagline")}</p>
 
+      {/* What to do today comes first. Signed in, each medicine carries its own "I took it"; the demo has no backend, so it lists them to read. */}
+      {patientId
+        ? <ElderCheckin patientId={patientId} lang={lang} speak={speak} />
+        : (
+          <>
+            <h2 className="elder-title">{t("todayMedicines")}</h2>
+            <div className="dose-grid">
+              {heard.map((m) => (
+                <article className="card dose" key={m.item_key}>
+                  <h3>{m.title}</h3>
+                  <div className="dose-times">
+                    {SLOTS.map((s) => m.schedule?.[s] ? (
+                      <span className="dose-time" key={s}>{t(s)} <small>{m.schedule[s]} {t("tablet")}</small></span>
+                    ) : null)}
+                  </div>
+                  {m.detail && <p className="detail" style={{ color: "var(--ink-2)", fontSize: 18 }}>{m.detail}</p>}
+                  <button className="btn btn-quiet" onClick={() => speak(spokenDose(m, lang))}>
+                    <Icon name="volume" /> {t("listen")}
+                  </button>
+                </article>
+              ))}
+            </div>
+          </>
+        )}
+
+      {held.length > 0 && (
+        <div className="dose-grid">
+          <article className="card dose dose-pending" style={{ gridColumn: "1 / -1" }}>
+            <h3 style={{ fontSize: 24 }}>
+              {{ en: "Your family is checking something with the doctor.", hi: "आपका परिवार डॉक्टर से कुछ पूछ रहा है।", mr: "तुमचे कुटुंब डॉक्टरांना काहीतरी विचारत आहे." }[lang]}
+            </h3>
+            <p style={{ color: "var(--ink-2)", fontSize: 18 }}>
+              {{ en: "They will tell you once it is confirmed.", hi: "पुष्टि होते ही वे आपको बताएँगे।", mr: "पुष्टी झाल्यावर ते तुम्हाला सांगतील." }[lang]}
+            </p>
+          </article>
+        </div>
+      )}
+
       <VoiceOrb state={state} onToggle={toggle} level={level} />
       <p className="transcript" aria-live="polite">
         {error === "mic" ? "The microphone is not available. You can still use the buttons below." : asking ? "…" : ""}
@@ -120,35 +158,6 @@ export function ElderView({ plan, emergencyHref, patientId }: { plan: CarePlan; 
         </form>
       )}
 
-      {patientId && <ElderCheckin patientId={patientId} lang={lang} />}
-
-      <h2 className="elder-title">{t("todayMedicines")}</h2>
-      <div className="dose-grid">
-        {heard.map((m) => (
-          <article className="card dose" key={m.item_key}>
-            <h3>{m.title}</h3>
-            <div className="dose-times">
-              {SLOTS.map((s) => m.schedule?.[s] ? (
-                <span className="dose-time" key={s}>{t(s)} <small>{m.schedule[s]} {t("tablet")}</small></span>
-              ) : null)}
-            </div>
-            {m.detail && <p className="detail" style={{ color: "var(--ink-2)", fontSize: 18 }}>{m.detail}</p>}
-            <button className="btn btn-quiet" onClick={() => speak(spokenDose(m, lang))}>
-              <Icon name="volume" /> {t("listen")}
-            </button>
-          </article>
-        ))}
-        {held.length > 0 && (
-          <article className="card dose dose-pending" style={{ gridColumn: "1 / -1" }}>
-            <h3 style={{ fontSize: 24 }}>
-              {{ en: "Your family is checking something with the doctor.", hi: "आपका परिवार डॉक्टर से कुछ पूछ रहा है।", mr: "तुमचे कुटुंब डॉक्टरांना काहीतरी विचारत आहे." }[lang]}
-            </h3>
-            <p style={{ color: "var(--ink-2)", fontSize: 18 }}>
-              {{ en: "They will tell you once it is confirmed.", hi: "पुष्टि होते ही वे आपको बताएँगे।", mr: "पुष्टी झाल्यावर ते तुम्हाला सांगतील." }[lang]}
-            </p>
-          </article>
-        )}
-      </div>
 
       <div className="sos-bar">
         <div className="wrap">

@@ -60,6 +60,8 @@ def accept_invite(s: Session, *, code: str, user_id: UUID) -> dict[str, Any]:
     row = s.execute(text("SELECT r_patient_id, r_outcome FROM app_accept_invite(:h, :u)"), {"h": hash_token(code[:200]), "u": user_id}).first()
     if row is None or row[1] == "unavailable" or row[0] is None:
         raise ServiceError(404, "invite-unavailable", "This invitation is not available. It may have expired or been withdrawn.")
+    if row[1] == "patient_exists":
+        raise ServiceError(409, "patient-exists", "This care circle already has the patient signed in. Remove the existing one first.")
     return {"patient_id": str(row[0]), "status": row[1]}
 
 
@@ -79,9 +81,13 @@ def _managers(s: Session, patient_id: UUID) -> int:
 
 def update_member(s: Session, *, member_id: UUID, user_id: UUID, can_approve: bool | None, can_view_recordings: bool | None,
                   can_manage_members: bool | None, remove: bool) -> dict[str, Any]:
-    m = s.execute(text("SELECT id, patient_id, can_manage_members, status FROM family_members WHERE id = :i FOR UPDATE"), {"i": member_id}).mappings().first()
+    m = s.execute(text("SELECT id, patient_id, member_role, can_manage_members, status FROM family_members WHERE id = :i FOR UPDATE"), {"i": member_id}).mappings().first()
     if m is None:
         raise ServiceError(404, "not-found", "Not found")
+    # The patient holds no rights over their own care plan (migration 0015). The database would refuse the row; answering here turns a
+    # constraint error into a sentence, and leaves "remove" working so a patient can still be taken out of the circle.
+    if m["member_role"] == "patient" and any(x is True for x in (can_approve, can_view_recordings, can_manage_members)):
+        raise ServiceError(409, "patient-has-no-rights", "The patient cannot confirm their own care plan, approve changes, read visit transcripts or invite people")
     loses_manage = remove or can_manage_members is False
     if loses_manage and m["can_manage_members"] and _managers(s, m["patient_id"]) <= 1:
         raise ServiceError(409, "last-manager", "There must always be one person who can manage the family")
