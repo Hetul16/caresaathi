@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     reference_list_require_review: bool = True
     max_upload_bytes: int = 15 * 1024 * 1024
 
+    # Private deployment (D-69). While this is set, every request must carry the same value in the X-Site-Gate header, so a deployment
+    # can be live and unreachable at the same time. Empty, which is the default, means the API answers anyone: that is submission day.
+    site_gate_token: str = ""
+
 
 def production_problems(s: Settings) -> list[str]:
     """When the public address is https the app is treated as deployed: development defaults are not allowed. Returns what to fix."""
@@ -69,6 +73,8 @@ def production_problems(s: Settings) -> list[str]:
     for name in ("database_url_app", "database_url_auth", "database_url_worker"):
         if "change-me" in getattr(s, name):
             out.append(f"{name.upper()} still uses the default change-me password; set the role password first (docs/19-deployment.md)")
+    if s.site_gate_token and len(s.site_gate_token) < 24:
+        out.append("SITE_GATE_TOKEN must be a random value of at least 24 characters, or empty to let the API answer anyone")
     if s.allow_demo_seed and s.model_mode == "live" and "ALLOW_DEMO_SEED" not in __import__("os").environ:
         out.append("set ALLOW_DEMO_SEED explicitly (true keeps the demo family button, false removes it)")
     return out

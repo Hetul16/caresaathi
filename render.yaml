@@ -1,0 +1,62 @@
+# One free web service: the FastAPI backend (docs/19-deployment.md, way D). The website is on Vercel and the database on Neon, because
+# Render's own free Postgres expires 30 days after it is created. Create the Blueprint, then paste the values marked `sync: false`.
+#
+# The image already runs `alembic upgrade head` before uvicorn, so a deploy migrates. It does NOT create the baseline schema or the
+# database roles: do those once by hand against Neon (docs/19, way D, step 2) before the first deploy, or the first migration fails.
+services:
+  - type: web
+    name: caresaathi-api
+    runtime: docker
+    plan: free
+    region: singapore              # put the Neon project in the same region; a cross-region query doubles every page load
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .               # the image copies data/synthetic, which lives above backend/
+    healthCheckPath: /healthz      # left open by the site gate on purpose, so Render can see the container is alive
+    autoDeployTrigger: commit
+    envVars:
+      # --- Neon. One connection string per role, each with ?sslmode=require ---
+      - key: DATABASE_URL_ADMIN
+        sync: false
+      - key: DATABASE_URL_APP
+        sync: false
+      - key: DATABASE_URL_AUTH
+        sync: false
+      - key: DATABASE_URL_WORKER
+        sync: false
+      # --- Cloudflare R2. A free web service has no persistent disk, so uploads cannot stay on it ---
+      - key: STORAGE_BACKEND
+        value: s3
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_BUCKET
+        value: caresaathi
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      # --- The live model. The spend ledger is a table now (D-68), so SPEND_LIMIT_USD survives a restart and really is the ceiling ---
+      - key: MODEL_MODE
+        value: live
+      - key: META_API_KEY
+        sync: false
+      - key: SPEND_LIMIT_USD
+        value: "5.00"
+      - key: ALLOW_CONTRIBUTOR_MODELS
+        value: "true"
+      - key: REFERENCE_LIST_REQUIRE_REVIEW
+        value: "true"
+      - key: ALLOW_DEMO_SEED
+        value: "true"
+      # --- Secrets. Generated here so they never exist in a file; the app refuses to start on https without them ---
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TOKEN_PEPPER
+        generateValue: true
+      # --- Private until submission day (D-69). The SAME value goes in Vercel; clear it in BOTH places to go public ---
+      - key: SITE_GATE_TOKEN
+        sync: false
+      # --- The address people open: the Vercel domain, not this service's. Emergency card links are built from it ---
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

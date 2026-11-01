@@ -347,6 +347,21 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **Append-only, and tested:** no UPDATE or DELETE is granted to either role, and a trigger refuses both plus TRUNCATE for every role including the owner. Five tests cover it, including the rollback case and the owner being refused.
 - **Not changed:** the prices, the limit and `spend_baseline_usd` stay in config. The table records money, not patients: it carries no patient column, and its row-level policy is deliberately unscoped so the guard totals every row whoever is signed in.
 
+### D-69 A deployment can be live and unreachable until submission day
+- **Status:** Accepted (Nov 1, 2026)
+- **Decision:** while `SITE_GATE_TOKEN` is set, the API answers **404** to any request that does not carry the same value in `X-Site-Gate`. The website's Next.js middleware adds the header server-side, so the token never reaches a browser. `/healthz` and `/readyz` stay open, because the host checks them to know the container is alive and they read nothing. Clearing the variable in both places is what makes the deployment public: the order and the checks are in `PUBLIC_LAUNCH.md`.
+- **Why:** the work is finished days before Nov 4 and wants to be on a real address for testing on a phone, but an address that anyone can find is an address where strangers can sign up and spend the model credit. Host-level protection covers the website only; the API has its own public address, which is where the signup, the uploads and the key actually are.
+- **404, not 403:** a crawler that finds the address learns nothing it could act on. A 403 says "there is something here".
+- **A weak gate is refused:** on an `https` address, a token shorter than 24 characters stops the app from starting, so a placeholder cannot be mistaken for protection. Empty is allowed, because empty is submission day.
+
+### D-70 The public link is Vercel plus Render plus Neon plus R2, all on free plans
+- **Status:** Accepted (Nov 1, 2026)
+- **Decision:** the website on Vercel Hobby, the API as one free Render web service built from `backend/Dockerfile` (`render.yaml`), Postgres on Neon's free plan, uploads in a Cloudflare R2 bucket over the existing S3 client. No code changed to make this work: the browser still talks only to the website's own origin, which forwards `/api/*`, so the HttpOnly refresh cookie stays first-party and there is no CORS anywhere.
+- **Why this shape:** checked against the providers' own pages on Nov 1, 2026. Fly.io has no free tier for new accounts; Hugging Face now requires a paid plan for Docker Spaces; Koyeb's free database allows 5 hours of activity a month; Render's own free Postgres expires 30 days after it is created, which is why the database is Neon's and not Render's.
+- **What it costs us:** a free Render service sleeps after 15 minutes and takes about a minute to wake, so it is pinged every 10 minutes during judging -- 744 hours a month, inside the 750 the free plan allows for one service. Render's documentation says plainly not to use free instances for production, and the laptop tunnel (way A) stays as the backup during judging.
+- **Checked, not assumed:** `caresaathi_worker` is created `BYPASSRLS`, which Postgres normally reserves for a superuser, and Neon gives no superuser. Tested against Postgres 16: a non-superuser holding `CREATEROLE` and `BYPASSRLS` -- which is what Neon's owner role is -- can create such a role, so `db/roles_and_grants.sql` runs unchanged. No migration was needed for it.
+
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |

@@ -1,6 +1,7 @@
 """FastAPI application. Base path /api/v1 (docs/15-api-spec.md)."""
 from __future__ import annotations
 
+import secrets
 import uuid
 
 from fastapi import FastAPI, HTTPException, Request
@@ -31,6 +32,23 @@ app.add_middleware(
 _API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
 _DOCS_CSP = ("default-src 'none'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://cdn.jsdelivr.net "
              "'unsafe-inline'; img-src 'self' data: https://fastapi.tiangolo.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'")
+
+
+# A deployment that is live but not yet shown to anyone (D-69). While SITE_GATE_TOKEN is set, the only way in is the matching header,
+# which the website adds server-side; nothing reaches a route, a database connection or the model without it. The answer is 404 rather
+# than 403 so a crawler that finds the address learns nothing from it. The health paths stay open: the host checks them to know the
+# container is alive, and they read nothing. Unset the variable on both ends and the gate is gone -- see PUBLIC_LAUNCH.md.
+_GATE_OPEN = ("/healthz", "/readyz")
+
+
+@app.middleware("http")
+async def site_gate(request: Request, call_next):
+    want = get_settings().site_gate_token
+    if want and request.url.path not in _GATE_OPEN:
+        got = request.headers.get("x-site-gate") or ""
+        if not secrets.compare_digest(got, want):
+            return JSONResponse({"detail": "Not found"}, status_code=404)
+    return await call_next(request)
 
 
 @app.middleware("http")

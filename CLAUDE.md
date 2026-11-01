@@ -34,7 +34,8 @@ If documents disagree, the higher one wins. Change a decision, then update `docs
 | 2 | `docs/16-database-design.md` | Database rules, table inventory, invariants and where each is enforced, RLS, operations |
 | 2 | `docs/17-synthetic-data-plan.md` | Fictional patients, documents, traps, visit scripts, insurance papers, ground-truth format |
 | 2 | `docs/18-rules-and-compliance.md` | Official Rules summary, banned-category framing, new-work disclosure, pre-submission checklist |
-| 2 | `docs/19-deployment.md` | How to get a public link for the judges: tunnel, one server with Docker, managed platform; checks before submitting |
+| 2 | `docs/19-deployment.md` | How to get a public link for the judges: four free plans, one server with Docker, a laptop tunnel; checks before submitting |
+| 2 | `PUBLIC_LAUNCH.md` | The three switches that turn the private deployment public on submission day, in the order that works |
 | 2 | `docs/20-demo-video-script.md` | The final 3-minute video: story, shot list with voice-over, setup, fallbacks, cut list |
 | 2 | `docs/21-why-and-go-to-market.md` | Why we built it, who it is for, positioning, go to market, global plan, risks, what is not proven |
 | 2 | `docs/23-pitch.md` | The pitch arranged around the Indie track criteria: the line, the opening, what to show for each criterion, the depth answers when a judge pushes, and what never to say |
