@@ -102,7 +102,7 @@ Before you record, read sections 7 and 8.
 
 - **It cannot see or verify.** "Taken" means a person marked it. "Not marked" only means nobody marked it; it does not say what that means, and it never says to take a dose late or to skip one.
 - **No push notifications yet.** It is a website. Priya has to open Today. WhatsApp and phone alerts are on the roadmap.
-- **The parent needs a device and someone to set it up** (here, the tablet with the family's signed-in session). A device login for the elder alone is not built.
+- **The parent needs a device and someone to set it up.** Since D-66 the patient has their own sign-in and lands in Elder mode, so the tablet no longer has to hold a relative's session. What is still not built is a password-free paired device (the `devices` table), which is the kinder answer for someone who cannot manage a password.
 - **Pain numbers are shown as entered.** There is no trend line, no "better" or "worse", and no alert threshold, by design: reading a pattern into them is a clinical judgement.
 - **Speech:** Hindi and English are solid; Marathi speech is experimental (see `/trust`).
 - **It does not replace a doctor, a pharmacist or a carer on the ground.**

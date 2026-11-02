@@ -76,7 +76,9 @@ function Live() {
           </label>
         </div>
       )}
-      <Dashboard plan={plan} basePath="/app" live={{ patientId: selected, reload }} />
+      {/* Keyed on the relative so that changing the selection remounts every panel. A panel that kept its own
+          request in flight would otherwise answer with the previous relative's documents, visits or tasks. */}
+      <Dashboard key={selected} plan={plan} basePath="/app" live={{ patientId: selected, reload }} />
     </>
   );
 }

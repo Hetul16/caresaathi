@@ -14,7 +14,7 @@ data may ever be added here (the repository is public).
 
 ## How it is used
 
-- The offline test suite reads the `.txt` files (`backend/tests/test_synthetic_set.py`, `backend/scripts/eval_synthetic.py`).
+- The offline test suite reads the `.txt` files (`backend/tests/test_synthetic_set.py`, and the `extraction_offline` cases in `backend/app/trust/suite.py`).
   The offline reader is a small rule-based stand-in, so those numbers measure the pipeline, not a model.
 - `render.py` makes phone-photo style images (tilt, shadow, blur, noise). Those are what the live Muse Spark reader is tested on.
 - Visit audio is **not** included. Record the scripts with two real voices (or label any text-to-speech audio as such).

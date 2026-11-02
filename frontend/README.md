@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CareSaathi — the website
 
-## Getting Started
+Next.js (App Router) front end for CareSaathi. Mobile first, and served over HTTPS in production because the
+microphone needs it. The project README, one level up, explains what the product is and why.
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+npm install
+npm run dev          # http://localhost:3000, expects the API on http://127.0.0.1:8000
+npm run build        # what Vercel runs
+npx tsc --noEmit     # types
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How it talks to the API
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The browser never calls the API host directly. `next.config.ts` rewrites `/api/*` to `BACKEND_URL`, so every request
+is same-origin: the HttpOnly refresh cookie stays first-party, and there is no CORS and no `SameSite=None`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`src/middleware.ts` adds the `x-site-gate` header to those proxied requests while `SITE_GATE_TOKEN` is set. That is
+what keeps the deployment private before submission day; clearing the variable in both Render and Vercel is what
+makes it public (`PUBLIC_LAUNCH.md`).
 
-## Learn More
+Two server-side environment variables, and neither is ever `NEXT_PUBLIC_*`:
 
-To learn more about Next.js, take a look at the following resources:
+```
+BACKEND_URL=https://caresaathi-api.onrender.com
+SITE_GATE_TOKEN=<the same value as on the API>
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Layout
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Path | What is there |
+| --- | --- |
+| `src/app/app/` | Family mode, signed in. `app/elder/` is Elder mode for the patient's own sign-in (D-66). |
+| `src/app/e/[token]/`, `src/app/d/[token]/` | Emergency Card and doctor link: no account, opened from a random token |
+| `src/app/trust/` | The public evidence page, including what failed |
+| `src/app/demo/` | The same dashboard on a fixed mock plan, with no backend behind it |
+| `src/components/family/` | One panel per tab. Each is given `patientId` and loads its own data. |
+| `src/lib/live.ts` | The hooks that hold the care plan and the list of relatives |
 
-## Deploy on Vercel
+`AGENTS.md` is written by `next dev` itself; committing it is what keeps the working tree clean.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Two things to know before changing it
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Panels are keyed on the selected relative.** `src/app/app/page.tsx` renders `<Dashboard key={selected} …>` so that
+changing relative remounts every panel. Without it a panel's in-flight request can answer after the switch and draw
+one relative's data under another's name. `useCarePlan` guards the same race with a request counter.
+
+**Nothing on screen may read as medical advice.** Wording that describes a medicine, a flag or a gap comes from the
+API, which has already passed it through the output guard. Do not write such sentences in the components.

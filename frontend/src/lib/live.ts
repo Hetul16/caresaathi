@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api";
 import type { CarePlan } from "./types";
 
@@ -19,10 +19,21 @@ export function usePatients() {
 export function useCarePlan(patientId: string | null) {
   const [plan, setPlan] = useState<CarePlan | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
+  // Switching relative starts a new request while the old one is still in flight. Without this counter the slower
+  // answer wins, and one relative's medicines are drawn under another relative's name. Drop anything that is no
+  // longer the current request.
+  const run = useRef(0);
   const reload = useCallback(async () => {
     if (!patientId) return;
-    try { setPlan(await api<CarePlan>(`/patients/${patientId}/care-plan`)); setError(null); }
-    catch (e) { setError(e instanceof ApiError ? e : null); }
+    const mine = ++run.current;
+    try {
+      const got = await api<CarePlan>(`/patients/${patientId}/care-plan`);
+      if (mine !== run.current) return;
+      setPlan(got); setError(null);
+    } catch (e) {
+      if (mine !== run.current) return;
+      setError(e instanceof ApiError ? e : null);
+    }
   }, [patientId]);
   useEffect(() => { setPlan(null); reload(); }, [reload]);
   return { plan, error, reload };
