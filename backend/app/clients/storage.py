@@ -60,8 +60,8 @@ class S3Storage:
         import boto3
         s = get_settings()
         self.bucket = s.s3_bucket
-        self.client = boto3.client("s3", endpoint_url=s.s3_endpoint, aws_access_key_id=s.s3_access_key,
-                                   aws_secret_access_key=s.s3_secret_key)
+        self.client = boto3.client("s3", endpoint_url=s.s3_endpoint, region_name=s.s3_region,
+                                   aws_access_key_id=s.s3_access_key, aws_secret_access_key=s.s3_secret_key)
 
     def put(self, key: str, data: bytes, content_type: str) -> None:
         self.client.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)

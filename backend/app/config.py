@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     s3_access_key: str = ""
     s3_secret_key: str = ""
     s3_bucket: str = "caresaathi"
+    # Cloudflare R2 documents "auto"; set a real AWS region if the bucket is on S3. Without it boto3 guesses us-east-1,
+    # which signs the request for the wrong region on a provider that checks (D-70).
+    s3_region: str = "auto"
 
     meta_api_base: str = "https://api.meta.ai/v1"
     meta_api_key: str = ""

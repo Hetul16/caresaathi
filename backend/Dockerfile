@@ -16,6 +16,7 @@ EOF
 
 COPY backend/ /srv/backend/
 COPY data/synthetic/ /srv/data/synthetic/
+COPY data/live_results/ /srv/data/live_results/
 RUN rm -rf /srv/backend/tests /srv/backend/.venv
 
 # Migrations run as the database owner (DATABASE_URL_ADMIN), then the API starts as an unprivileged user.
