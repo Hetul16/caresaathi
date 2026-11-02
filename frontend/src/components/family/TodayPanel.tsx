@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { TodayView, WellbeingHistory } from "@/lib/types";
 import { Icon } from "../Icon";
+import { afterCommit } from "@/lib/defer";
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   later: { label: "Later today", cls: "pill" }, due: { label: "Due now", cls: "pill pill-amber" }, not_marked: { label: "Not marked yet", cls: "pill pill-amber" },
@@ -22,7 +23,7 @@ export function TodayPanel({ patientId, toast, onChange }: { patientId: string; 
       setH(await api<WellbeingHistory>(`/patients/${patientId}/wellbeing?days=14`));
     } catch (e) { toast(e instanceof ApiError ? e.detail || e.title : "Could not load today"); }
   }, [patientId, toast]);
-  useEffect(() => { load(); const id = setInterval(load, 30000); return () => clearInterval(id); }, [load]);
+  useEffect(() => { afterCommit(load); const id = setInterval(load, 30000); return () => clearInterval(id); }, [load]);
 
   async function mark(item_key: string, slot: string, status: "taken" | "not_taken") {
     try { await api(`/patients/${patientId}/doses`, { method: "POST", json: { item_key, slot, status } }); toast(status === "taken" ? "Marked as taken, with your name." : "Marked as not taken. Ask the doctor or pharmacist what to do."); await load(); onChange(); }

@@ -34,14 +34,15 @@ export default async function EmergencyCardPage(props: PageProps<"/e/[token]">) 
   if (token === "demo-token") return <CardView c={mockCard} />;
 
   const h = await headers();
+  let card: EmergencyCardData | null = null;
   try {
     const res = await fetch(`${BACKEND}/api/v1/e/${encodeURIComponent(token)}`, {
       cache: "no-store",
       headers: { "user-agent": h.get("user-agent") ?? "", "x-forwarded-for": h.get("x-forwarded-for") ?? "" },
     });
-    if (!res.ok) return <Unavailable />;
-    return <CardView c={(await res.json()) as EmergencyCardData} />;
+    if (res.ok) card = (await res.json()) as EmergencyCardData;
   } catch {
-    return <Unavailable />;
+    /* unreachable API: the holder of the link is told no more than for an expired one */
   }
+  return card ? <CardView c={card} /> : <Unavailable />;
 }

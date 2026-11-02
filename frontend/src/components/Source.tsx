@@ -1,7 +1,6 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { SourceRef } from "@/lib/types";
-import { useI18n } from "@/lib/i18n";
 import { Icon } from "./Icon";
 
 const Ctx = createContext<(s: SourceRef) => void>(() => {});
@@ -23,7 +22,6 @@ export function SourceProvider({ children }: { children: ReactNode }) {
   const [src, setSrc] = useState<SourceRef | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const closeBtn = useRef<HTMLButtonElement>(null);
-  const { t } = useI18n();
 
   const open = useCallback((s: SourceRef) => {
     opener.current = document.activeElement as HTMLElement | null;
@@ -55,7 +53,7 @@ export function SourceProvider({ children }: { children: ReactNode }) {
           <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="src-title">
             <div className="drawer-head">
               <div>
-                <p className="eyebrow">{t("showSource")}</p>
+                <p className="eyebrow">Show source</p>
                 <h2 id="src-title">{src.kind === "document" ? src.document_title : src.kind === "visit_segment" ? "Doctor visit recording" : src.kind === "doctor_message" ? "The doctor's reply" : "Family input"}</h2>
               </div>
               <button ref={closeBtn} className="btn btn-quiet btn-sm" onClick={close} aria-label="Close">
@@ -103,11 +101,10 @@ export function SourceProvider({ children }: { children: ReactNode }) {
 
 export function SourceChip({ source, short = false }: { source: SourceRef; short?: boolean }) {
   const open = useOpenSource();
-  const { t } = useI18n();
   return (
-    <button type="button" className="source-chip" onClick={() => open(source)} aria-label={`${t("showSource")}: ${describe(source)}`}>
+    <button type="button" className="source-chip" onClick={() => open(source)} aria-label={`Show source: ${describe(source)}`}>
       <Icon name="quote" />
-      {short ? t("showSource") : describe(source)}
+      {short ? "Show source" : describe(source)}
     </button>
   );
 }

@@ -41,7 +41,7 @@ export function ChatPanel({ patientId }: { patientId: string }) {
 
   return (
     <div className="stack">
-      <div className="section-title"><h2>Ask</h2><span className="pill">Reads your care plan</span></div>
+      <div className="section-title"><h2>Ask</h2><span className="pill">Reads your care plan</span><span className="pill">Answers in {lang === "hi" ? "हिन्दी" : lang === "mr" ? "मराठी" : "English"}</span></div>
       <p style={{ color: "var(--ink-2)" }}>Ask about the medicines your family has confirmed, follow-ups, allergies or the warning signs in your own documents. CareSaathi will not say whether anything is safe, and will not tell anyone to stop, skip or change a medicine: for that, ask the doctor or pharmacist.</p>
       <div className="card card-pad" style={{ minHeight: 280, display: "grid", gap: 12, alignContent: "start" }} aria-live="polite">
         {lines.length === 0 && <p style={{ color: "var(--ink-3)" }}>Try one of these:</p>}

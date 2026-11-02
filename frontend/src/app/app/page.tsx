@@ -18,7 +18,7 @@ function Live() {
   const [joining, setJoining] = useState(() => pendingJoin() !== null);
   useEffect(() => {
     const code = pendingJoin();
-    if (!code) { setJoining(false); return; }
+    if (!code) return;   // nothing to join: the initial state is already false
     clearPendingJoin();
     api<{ patient_id: string }>("/invites/accept", { method: "POST", json: { code } })
       .then((r) => writeSelected(r.patient_id))

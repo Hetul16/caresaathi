@@ -4,6 +4,7 @@ import { api, ApiError } from "@/lib/api";
 import type { CrewRun, CrewStep } from "@/lib/types";
 import { Icon } from "../Icon";
 import { SourceChip } from "../Source";
+import { afterCommit } from "@/lib/defer";
 
 const TOOL: Record<string, string> = {
   read_care_plan: "Read the care plan", list_open_flags: "Collect open questions", list_pending: "Find what awaits confirmation",
@@ -53,7 +54,7 @@ export function CrewPanel({ patientId, canApprove, toast, onChange }: { patientI
     try { setRuns((await api<{ runs: CrewRun[] }>(`/patients/${patientId}/agent/runs`)).runs); }
     catch (e) { toast(e instanceof ApiError ? e.detail || e.title : "Could not load the care crew"); }
   }, [patientId, toast]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { afterCommit(load); }, [load]);
   const running = runs?.some((r) => r.status === "running");
   useEffect(() => { if (!running) return; const t = setInterval(load, 1200); return () => clearInterval(t); }, [running, load]);
 

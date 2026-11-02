@@ -4,6 +4,7 @@ import { api, ApiError } from "@/lib/api";
 import type { DoctorLink } from "@/lib/types";
 import { Field } from "../auth/Field";
 import { Icon } from "../Icon";
+import { afterCommit } from "@/lib/defer";
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 interface Created { id: string; url: string; hint: string; doctor_name: string; expires_at: string }
@@ -20,7 +21,7 @@ export function DoctorPanel({ patientId, canApprove, toast, onChange }: { patien
     try { setLinks((await api<{ links: DoctorLink[] }>(`/patients/${patientId}/doctor-links`)).links); }
     catch (e) { toast(e instanceof ApiError ? e.detail || e.title : "Could not load the doctor links"); }
   }, [patientId, toast]);
-  useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, [load]);
+  useEffect(() => { afterCommit(load); const t = setInterval(load, 8000); return () => clearInterval(t); }, [load]);
 
   const fail = (e: unknown, m: string) => toast(e instanceof ApiError ? e.detail || e.title : m);
   async function create() {

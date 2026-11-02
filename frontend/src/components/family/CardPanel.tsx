@@ -4,6 +4,7 @@ import { api, ApiError } from "@/lib/api";
 import type { CardLink, EmergencyCardData } from "@/lib/types";
 import { Field } from "../auth/Field";
 import { Icon } from "../Icon";
+import { afterCommit } from "@/lib/defer";
 
 interface CardList { cards: CardLink[]; preview: EmergencyCardData }
 interface Created { id: string; url: string; hint: string; expires_at: string | null }
@@ -21,7 +22,7 @@ export function CardPanel({ patientId, onChange, toast }: { patientId: string; o
     try { setData(await api<CardList>(`/patients/${patientId}/emergency-card`)); }
     catch (e) { toast(e instanceof ApiError ? e.detail || e.title : "Could not load the card"); }
   }, [patientId, toast]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { afterCommit(load); }, [load]);
 
   async function create() {
     setBusy(true);

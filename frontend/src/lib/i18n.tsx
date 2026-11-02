@@ -1,8 +1,11 @@
 "use client";
+import { afterCommit } from "./defer";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Lang } from "./types";
 
-// UI strings only. Medical content is never translated here: it comes from stored, guarded outputs.
+// The words CareSaathi says to the person being cared for: Elder mode, the spoken explanations and the printed
+// sheets. Family mode is written in English (see SiteHeader). Medical content is never translated here: it comes
+// from stored, guarded outputs.
 const dict = {
   appName: { en: "CareSaathi", hi: "केयरसाथी", mr: "केअरसाथी" },
   tagline: {
@@ -10,8 +13,6 @@ const dict = {
     hi: "हर निर्देश, उसके स्रोत के साथ।",
     mr: "प्रत्येक सूचना, तिच्या स्रोतासह.",
   },
-  elderMode: { en: "Elder mode", hi: "बुज़ुर्ग मोड", mr: "ज्येष्ठ मोड" },
-  familyMode: { en: "Family mode", hi: "परिवार मोड", mr: "कुटुंब मोड" },
   hello: { en: "Namaste", hi: "नमस्ते", mr: "नमस्कार" },
   tapToSpeak: { en: "Tap and speak", hi: "दबाइए और बोलिए", mr: "दाबा आणि बोला" },
   listening: { en: "Listening…", hi: "आपकी बात सुनी जा रही है…", mr: "ऐकत आहे…" },
@@ -26,15 +27,6 @@ const dict = {
   evening: { en: "Evening", hi: "शाम", mr: "संध्याकाळ" },
   night: { en: "Night", hi: "रात", mr: "रात्र" },
   tablet: { en: "tablet", hi: "गोली", mr: "गोळी" },
-  allergies: { en: "Allergies", hi: "एलर्जी", mr: "ॲलर्जी" },
-  allergyNotRecorded: { en: "Allergies not recorded", hi: "एलर्जी दर्ज नहीं है", mr: "ॲलर्जी नोंदलेली नाही" },
-  allergyNone: { en: "No known allergies, per document", hi: "कोई ज्ञात एलर्जी नहीं (दस्तावेज़ के अनुसार)", mr: "ज्ञात ॲलर्जी नाही (कागदपत्रानुसार)" },
-  showSource: { en: "Show source", hi: "स्रोत देखें", mr: "स्रोत पहा" },
-  confirm: { en: "Confirm", hi: "पुष्टि करें", mr: "पुष्टी करा" },
-  reject: { en: "Not right", hi: "सही नहीं", mr: "बरोबर नाही" },
-  approve: { en: "Approve", hi: "मंज़ूर करें", mr: "मंजूर करा" },
-  refuse: { en: "Decline", hi: "मना करें", mr: "नकार द्या" },
-  lastUpdated: { en: "Last updated", hi: "आखिरी अपडेट", mr: "शेवटचे अपडेट" },
 } as const;
 
 export type Key = keyof typeof dict;
@@ -50,13 +42,17 @@ const LangContext = createContext<Ctx | null>(null);
 export function LangProvider({ children, initial = "en" }: { children: ReactNode; initial?: Lang }) {
   const [lang, setLangState] = useState<Lang>(initial);
 
+  // The remembered language can only be read once the browser is there, so it cannot be the initial state without
+  // the server and the browser rendering different words. Applied just after the first commit instead.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("cs-lang") as Lang | null;
-      if (saved === "en" || saved === "hi" || saved === "mr") setLangState(saved);
-    } catch {
-      /* storage may be unavailable */
-    }
+    afterCommit(() => {
+      try {
+        const saved = localStorage.getItem("cs-lang") as Lang | null;
+        if (saved === "en" || saved === "hi" || saved === "mr") setLangState(saved);
+      } catch {
+        /* storage may be unavailable */
+      }
+    });
   }, []);
 
   const setLang = useCallback((l: Lang) => {

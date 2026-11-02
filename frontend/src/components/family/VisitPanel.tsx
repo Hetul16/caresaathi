@@ -5,6 +5,7 @@ import { MAX_SECONDS, useWavRecorder } from "@/lib/recorder";
 import type { VisitDetail, VisitRow } from "@/lib/types";
 import { Field } from "../auth/Field";
 import { Icon } from "../Icon";
+import { afterCommit } from "@/lib/defer";
 
 const CONSENT_VERSION = "visit-recording-v1";
 const ROLES = ["doctor", "patient", "family", "nurse", "other", "unknown"] as const;
@@ -20,24 +21,25 @@ const STATUS: Record<VisitRow["status"], [string, string]> = {
 };
 
 function useVisit(id: string | null) {
-  const [visit, setVisit] = useState<VisitDetail | null>(null);
-  const load = useCallback(async () => { if (id) setVisit(await api<VisitDetail>(`/visits/${id}`)); }, [id]);
+  // Held with the visit it belongs to, so opening a second visit cannot show the first one's transcript underneath
+  // the new heading while the new one is still loading.
+  const [got, setGot] = useState<{ id: string; visit: VisitDetail } | null>(null);
+  const load = useCallback(async () => { if (id) setGot({ id, visit: await api<VisitDetail>(`/visits/${id}`) }); }, [id]);
   useEffect(() => {
-    setVisit(null);
     if (!id) return;
     let alive = true, timer = 0;
     const tick = async () => {
       try {
         const v = await api<VisitDetail>(`/visits/${id}`);
         if (!alive) return;
-        setVisit(v);
+        setGot({ id, visit: v });
         if (v.status === "processing" || (v.status === "recording" && v.origin === "mock")) timer = window.setTimeout(tick, 1200);
       } catch { /* shown by the caller on the next action */ }
     };
-    tick();
+    afterCommit(tick);
     return () => { alive = false; window.clearTimeout(timer); };
   }, [id]);
-  return { visit, reload: load };
+  return { visit: got && got.id === id ? got.visit : null, reload: load };
 }
 
 export function VisitPanel({ patientId, canManage, onChange, toast }: { patientId: string; canManage: boolean; onChange: () => void; toast: (m: string) => void }) {
@@ -49,7 +51,7 @@ export function VisitPanel({ patientId, canManage, onChange, toast }: { patientI
   const loadRows = useCallback(async () => {
     try { setRows(await api<VisitRow[]>(`/patients/${patientId}/visits`)); } catch (e) { toast(errText(e)); }
   }, [patientId, toast]);
-  useEffect(() => { loadRows(); }, [loadRows]);
+  useEffect(() => { afterCommit(loadRows); }, [loadRows]);
 
   if (mode === "consent") {
     return <ConsentStep patientId={patientId} onCancel={() => setMode("list")} toast={toast}
@@ -178,7 +180,8 @@ function RecordStep({ visitId, onDone, toast }: { visitId: string; onDone: () =>
     } catch (e) { toast(errText(e)); stopped.current = false; } finally { setBusy(false); }
   }, [rec, visitId, onDone, toast]);
 
-  useEffect(() => { if (rec.state === "recording" && rec.seconds >= MAX_SECONDS) finish(); }, [rec.state, rec.seconds, finish]);
+  // Ten minutes reached: stop and send, after this render rather than inside it.
+  useEffect(() => { if (rec.state === "recording" && rec.seconds >= MAX_SECONDS) afterCommit(finish); }, [rec.state, rec.seconds, finish]);
 
   return (
     <div className="stack">
@@ -207,8 +210,9 @@ function VisitDetailView({ id, canManage, onBack, onChange, toast }: { id: strin
   const { visit: v, reload } = useVisit(id);
   const [roles, setRoles] = useState<Record<string, { role: string; name: string }>>({});
   const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
+  // Seeds the editable speaker form once the visit arrives. Deferred so the arrival and the seeding are two passes.
   useEffect(() => {
-    if (v) setRoles(Object.fromEntries(v.speakers.map((s) => [s.label, { role: s.role, name: s.name ?? "" }])));
+    if (v) afterCommit(() => setRoles(Object.fromEntries(v.speakers.map((s) => [s.label, { role: s.role, name: s.name ?? "" }]))));
   }, [v?.speakers.map((s) => `${s.label}${s.role}${s.name}`).join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (v && v.status !== "processing") onChange(); }, [v?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 

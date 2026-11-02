@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { clearPendingJoin, rememberJoin } from "@/lib/join";
 import { writeSelected } from "@/lib/live";
@@ -12,18 +12,16 @@ import { Icon } from "@/components/Icon";
 export function JoinClient({ code }: { code: string }) {
   const { status } = useAuth();
   const router = useRouter();
-  const [state, setState] = useState<"working" | "anon" | "bad">("working");
+  const [failed, setFailed] = useState(false);
+  // Signed out is read straight from the session rather than copied into state, so there is nothing to keep in step.
+  const state = failed ? "bad" : status === "anon" ? "anon" : "working";
 
   useEffect(() => {
     if (status === "loading") return;
-    if (status === "anon") {
-      rememberJoin(code);
-      setState("anon");
-      return;
-    }
+    if (status === "anon") { rememberJoin(code); return; }
     api<{ patient_id: string }>("/invites/accept", { method: "POST", json: { code } })
       .then((r) => { clearPendingJoin(); writeSelected(r.patient_id); router.replace("/app"); })
-      .catch((e) => { clearPendingJoin(); setState(e instanceof ApiError ? "bad" : "bad"); });
+      .catch(() => { clearPendingJoin(); setFailed(true); });
   }, [status, code, router]);
 
   return (

@@ -45,7 +45,11 @@ export function LabelPanel({ patientId, toast }: { patientId: string; toast: (m:
           <button className="btn btn-primary" disabled={busy} onClick={() => input.current?.click()}><Icon name="pill" /> {busy ? "Reading the label…" : "Take or choose a photo"}</button>
           <span style={{ color: "var(--ink-3)" }}>The photo is read once and not stored.</span>
         </div>
-        {preview && /* eslint-disable-next-line @next/next/no-img-element */ <img src={preview} alt="The photo you chose" style={{ maxWidth: 360, width: "100%", borderRadius: 14, border: "1px solid var(--line)" }} />}
+        {preview && (
+          // A data: URL straight from the camera, shown once and never stored: next/image has nothing to optimise here.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt="The photo you chose" style={{ maxWidth: 360, width: "100%", borderRadius: 14, border: "1px solid var(--line)" }} />
+        )}
       </div>
 
       {res?.products.map((p, i) => {

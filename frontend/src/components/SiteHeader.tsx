@@ -48,7 +48,7 @@ export function SiteHeader() {
         )}
         <div className="header-actions">
           {!elder && <Link href="/trust" className="btn btn-quiet btn-sm hide-sm">Trust</Link>}
-          <div className="lang-switch" role="group" aria-label="Language">
+          <div className="lang-switch" role="group" aria-label="Language CareSaathi speaks and writes in">
             {LANGS.map((l) => (
               <button key={l.code} type="button" aria-pressed={lang === l.code} aria-label={l.name} onClick={() => setLang(l.code)}>
                 {l.label}

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { TodayItem, TodayView } from "@/lib/types";
 import { Icon } from "@/components/Icon";
+import { afterCommit } from "@/lib/defer";
 
 type Lang = "en" | "hi" | "mr";
 
@@ -38,7 +39,7 @@ export function ElderCheckin({ patientId, lang, speak }: { patientId: string; la
   const [open, setOpen] = useState({ later: false, done: false, feel: false });
   const toggle = (k: "later" | "done" | "feel") => setOpen((o) => ({ ...o, [k]: !o[k] }));
   const load = useCallback(async () => { try { setV(await api<TodayView>(`/patients/${patientId}/today`)); } catch { /* the rest of the screen still works */ } }, [patientId]);
-  useEffect(() => { load(); const id = setInterval(load, 60000); return () => clearInterval(id); }, [load]);
+  useEffect(() => { afterCommit(load); const id = setInterval(load, 60000); return () => clearInterval(id); }, [load]);
 
   async function dose(item_key: string, slot: string, status: "taken" | "not_taken") {
     try { await api(`/patients/${patientId}/doses`, { method: "POST", json: { item_key, slot, status } }); setMsg(t.saved); await load(); }

@@ -5,6 +5,7 @@ import type { Invite, Member } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import { Field } from "../auth/Field";
 import { Icon } from "../Icon";
+import { afterCommit } from "@/lib/defer";
 
 const errText = (e: unknown) => (e instanceof ApiError ? e.detail || e.title : "Something went wrong. Please try again.");
 const ROLES: [string, string][] = [["patient", "The patient"], ["child", "Son or daughter"], ["spouse", "Husband or wife"], ["relative", "Other relative"], ["attendant", "Attendant"], ["nurse", "Nurse"], ["other", "Someone else"]];
@@ -28,7 +29,7 @@ export function FamilyPanel({ patientId, canManage, toast }: { patientId: string
       if (canManage) setInvites(await api<Invite[]>(`/patients/${patientId}/invites`));
     } catch (e) { toast(errText(e)); }
   }, [patientId, canManage, toast]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { afterCommit(load); }, [load]);
 
   async function patch(id: string, body: Record<string, unknown>, ok: string) {
     try { await api(`/members/${id}`, { method: "PATCH", json: body }); toast(ok); load(); } catch (e) { toast(errText(e)); }

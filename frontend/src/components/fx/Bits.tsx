@@ -1,5 +1,6 @@
 "use client";
 import { Fragment, useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
+import { afterCommit } from "@/lib/defer";
 
 // Splits a heading into words that rise out of a mask one after another. The full text stays in one
 // aria-label, so a screen reader hears the sentence, not the pieces.
@@ -24,11 +25,14 @@ export function CountUp({ to, suffix = "", duration = 1400 }: { to: number; suff
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (typeof IntersectionObserver === "undefined" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setN(to); return; }
+    // Nothing to animate: show the number, but after this commit rather than during it.
+    if (typeof IntersectionObserver === "undefined") { afterCommit(() => setN(to)); return; }
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let raf = 0;
     const io = new IntersectionObserver(([e]) => {
       if (!e.isIntersecting) return;
       io.disconnect();
+      if (still) { setN(to); return; }
       const t0 = performance.now();
       const tick = (t: number) => {
         const p = Math.min(1, (t - t0) / duration);

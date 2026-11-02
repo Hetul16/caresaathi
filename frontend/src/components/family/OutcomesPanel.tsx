@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { OutcomeItem, OutcomesBoard } from "@/lib/types";
 import { Icon } from "../Icon";
+import { afterCommit } from "@/lib/defer";
 
 const STATUS: Record<OutcomeItem["status"], { label: string; cls: string }> = {
   open: { label: "Waiting for an answer", cls: "pill pill-amber" },
@@ -30,7 +31,7 @@ export function OutcomesPanel({ patientId, canApprove, toast, onChange }: { pati
     try { setB(await api<OutcomesBoard>(`/patients/${patientId}/outcomes`)); }
     catch (e) { toast(e instanceof ApiError ? e.detail || e.title : "Could not load the outcomes board"); }
   }, [patientId, toast]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { afterCommit(load); }, [load]);
 
   function start(id: string) { setOpen(id); setReply(""); setText(""); setBy(""); }
   async function save(it: OutcomeItem) {

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { SecondRead, SecondReading } from "@/lib/types";
 import { Icon } from "../Icon";
+import { afterCommit } from "@/lib/defer";
 
 const FIELDS: { key: keyof SecondReading; field: string; label: string }[] = [
   { key: "title", field: "name", label: "Name" }, { key: "strength", field: "strength", label: "Strength" }, { key: "frequency", field: "frequency", label: "Schedule" },
@@ -39,7 +40,7 @@ export function ReadingChecks({ patientId, canApprove, toast, onChange }: { pati
   const load = useCallback(async () => {
     try { setReads((await api<{ reads: SecondRead[] }>(`/patients/${patientId}/second-reads`)).reads); } catch { /* the rest of the page still works */ }
   }, [patientId]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { afterCommit(load); }, [load]);
 
   async function choose(id: string, choice: "a" | "b" | "neither") {
     try {

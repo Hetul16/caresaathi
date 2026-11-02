@@ -24,14 +24,14 @@ import { TrackerPanel } from "./TrackerPanel";
 import { UploadPanel } from "./UploadPanel";
 import { VisitPanel } from "./VisitPanel";
 import { DemoLoader } from "../DemoLoader";
-import { writeSelected } from "@/lib/live";
+import { reloadApp, writeSelected } from "@/lib/live";
 
 type Tab = "overview" | "plan" | "documents" | "visits" | "tracker" | "ask" | "chat" | "timeline" | "today" | "tasks" | "outcomes" | "crew" | "doctor" | "label" | "card" | "family" | "approvals" | "history";
 
 export interface LiveCtx { patientId: string; reload: () => void }
 
 export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePath: "/demo" | "/app"; live?: LiveCtx }) {
-  const { t, lang } = useI18n();
+  const { lang } = useI18n();
   const [tab, setTab] = useState<Tab>("overview");
   // The demo keeps its choices in memory; a live plan is always re-read from the server after a decision.
   const [demoChanges, setDemoChanges] = useState<PendingChange[]>(p.pending_changes);
@@ -109,11 +109,11 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
               <h1>{p.patient.name}</h1>
               <div className="meta-row">
                 {p.patient.age != null && <><span>{p.patient.age} years</span><span aria-hidden="true">·</span></>}
-                {p.last_updated_at && <span>{t("lastUpdated")}: {new Date(p.last_updated_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>}
+                {p.last_updated_at && <span>Last updated: {new Date(p.last_updated_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>}
                 <span className="pill">Synthetic patient</span>
               </div>
             </div>
-            <Link href={`${basePath}/elder`} className="btn btn-quiet btn-sm"><Icon name="volume" /> {t("elderMode")}</Link>
+            <Link href={`${basePath}/elder`} className="btn btn-quiet btn-sm"><Icon name="volume" /> Elder mode</Link>
           </header>
 
           <div style={{ marginTop: 20 }} className="stack">
@@ -129,7 +129,7 @@ export function Dashboard({ plan: p, basePath, live }: { plan: CarePlan; basePat
                     <p>Upload a prescription or discharge summary. CareSaathi reads it, and every line it adds will point back to the exact text it came from.</p>
                     <div className="item-foot" style={{ justifyContent: "center" }}>
                       <button className="btn btn-primary" onClick={() => setTab(live ? "documents" : "overview")}><Icon name="file" /> Add a document</button>
-                      {live && <DemoLoader onReady={(id) => { writeSelected(id); window.location.assign("/app"); }} label="Or load the demo family" />}
+                      {live && <DemoLoader onReady={(id) => { writeSelected(id); reloadApp(); }} label="Or load the demo family" />}
                     </div>
                   </div>
                 )}

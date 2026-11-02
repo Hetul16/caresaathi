@@ -17,7 +17,7 @@ export function FxProvider() {
     let raf = 0;
     let ev: PointerEvent | null = null;
     let glowX = window.innerWidth / 2, glowY = window.innerHeight / 3, targetX = glowX, targetY = glowY, glowRaf = 0;
-    let lastFx: HTMLElement | null = null, lastTilt: HTMLElement | null = null, lastMag: HTMLElement | null = null;
+    let lastTilt: HTMLElement | null = null, lastMag: HTMLElement | null = null;
 
     const follow = () => {
       glowX += (targetX - glowX) * 0.12; glowY += (targetY - glowY) * 0.12;
@@ -34,7 +34,6 @@ export function FxProvider() {
 
       const fx = t?.closest?.<HTMLElement>(".card, .fx") ?? null;
       if (fx) { const r = fx.getBoundingClientRect(); fx.style.setProperty("--mx", `${ev.clientX - r.left}px`); fx.style.setProperty("--my", `${ev.clientY - r.top}px`); }
-      lastFx = fx;
 
       const tilt = t?.closest?.<HTMLElement>("[data-tilt], .trio-card") ?? null;
       if (lastTilt && lastTilt !== tilt) { lastTilt.style.removeProperty("--tx"); lastTilt.style.removeProperty("--ty"); }
@@ -59,7 +58,7 @@ export function FxProvider() {
     const onLeave = () => {
       lastTilt?.style.removeProperty("--tx"); lastTilt?.style.removeProperty("--ty");
       lastMag?.style.removeProperty("--mag-x"); lastMag?.style.removeProperty("--mag-y");
-      lastTilt = lastMag = lastFx = null;
+      lastTilt = lastMag = null;
     };
     root.classList.add("fx-on");
     window.addEventListener("pointermove", onMove, { passive: true });

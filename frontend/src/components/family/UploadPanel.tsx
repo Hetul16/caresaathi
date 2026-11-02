@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { api, ApiError } from "@/lib/api";
 import { Icon } from "../Icon";
+import { afterCommit } from "@/lib/defer";
 
 interface Doc { id: string; doc_type: string; status: string; original_filename: string | null; page_count: number | null; created_at: string }
 
@@ -27,7 +28,7 @@ export function UploadPanel({ patientId, onProcessed }: { patientId: string; onP
     try { setDocs(await api<Doc[]>(`/patients/${patientId}/documents`)); } catch { /* shown by empty state */ }
   }, [patientId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { afterCommit(load); }, [load]);
 
   // Poll while anything is still being read, then refresh the care plan once it settles.
   const inFlight = docs?.some((d) => d.status === "uploaded" || d.status === "processing") ?? false;

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { afterCommit } from "@/lib/defer";
 import { Icon } from "../Icon";
 
 const STAGES = [
@@ -27,14 +28,16 @@ const CAPTIONS = {
 } as const;
 
 function useTyped(text: string, active: boolean) {
-  const [n, setN] = useState(0);
+  // The cursor is stored with the sentence it was counting, so restarting on a new caption cannot briefly show the
+  // previous one at its full length.
+  const [cursor, setCursor] = useState({ text: "", n: 0 });
   useEffect(() => {
-    if (!active) { setN(0); return; }
-    setN(0);
-    const id = setInterval(() => setN((v) => (v >= text.length ? v : v + 1)), 34);
+    if (!active) return;
+    let i = 0;
+    const id = setInterval(() => { i = Math.min(text.length, i + 1); setCursor({ text, n: i }); }, 34);
     return () => clearInterval(id);
   }, [text, active]);
-  return text.slice(0, n);
+  return active && cursor.text === text ? text.slice(0, cursor.n) : "";
 }
 
 export function StoryDemo() {
@@ -47,8 +50,8 @@ export function StoryDemo() {
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
     const on = () => setReduced(mq.matches);
+    afterCommit(on);
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
   }, []);

@@ -8,14 +8,13 @@ import { useSpeech } from "../VoiceOrb";
 import { speechLocale } from "@/lib/i18n";
 
 export function AllergyBanner({ state, items, reviewed }: { state: AllergyState; items: Allergy[]; reviewed: boolean }) {
-  const { t } = useI18n();
   // The three states are rendered from the effective view only. An empty list is never "none".
   if (state === "listed") {
     return (
-      <section className="banner banner-listed" aria-label={t("allergies")}>
+      <section className="banner banner-listed" aria-label="Allergies">
         <span className="banner-ic"><Icon name="alert" /></span>
         <div>
-          <h2>{t("allergies")}: {items.map((a) => a.substance).join(", ")}</h2>
+          <h2>Allergies: {items.map((a) => a.substance).join(", ")}</h2>
           <div className="stack" style={{ marginTop: 8 }}>
             {items.map((a) => (
               <div key={a.allergy_key} className="item-foot">
@@ -38,7 +37,7 @@ export function AllergyBanner({ state, items, reviewed }: { state: AllergyState;
     return (
       <section className="banner banner-none">
         <span className="banner-ic"><Icon name="shield" /></span>
-        <div><h2>{t("allergyNone")}</h2></div>
+        <div><h2>No known allergies, per document</h2></div>
       </section>
     );
   }
@@ -46,7 +45,7 @@ export function AllergyBanner({ state, items, reviewed }: { state: AllergyState;
     <section className="banner banner-unknown">
       <span className="banner-ic"><Icon name="help" /></span>
       <div>
-        <h2>{t("allergyNotRecorded")}</h2>
+        <h2>Allergies not recorded</h2>
         <p>Ask the doctor and add it as soon as it is known. Not recorded does not mean none.</p>
       </div>
     </section>
@@ -108,7 +107,6 @@ export function OmissionCard({ o, onAsk, onState }: { o: OmissionFlag; onAsk: ()
 }
 
 export function ChangeCard({ c, onDecide }: { c: PendingChange; onDecide: (id: string, d: "confirm" | "reject") => void }) {
-  const { t } = useI18n();
   return (
     <article className="card item">
       <div className="item-top">
@@ -127,8 +125,8 @@ export function ChangeCard({ c, onDecide }: { c: PendingChange; onDecide: (id: s
         <SourceChip source={c.source} />
       </div>
       <div className="item-foot">
-        <button className="btn btn-leaf btn-sm" onClick={() => onDecide(c.id, "confirm")}><Icon name="check" /> {t("confirm")}</button>
-        <button className="btn btn-quiet btn-sm" onClick={() => onDecide(c.id, "reject")}><Icon name="x" /> {t("reject")}</button>
+        <button className="btn btn-leaf btn-sm" onClick={() => onDecide(c.id, "confirm")}><Icon name="check" /> Confirm</button>
+        <button className="btn btn-quiet btn-sm" onClick={() => onDecide(c.id, "reject")}><Icon name="x" /> Not right</button>
       </div>
     </article>
   );
@@ -228,7 +226,6 @@ const toolName: Record<string, string> = {
 };
 
 export function ApprovalCard({ a, onDecide }: { a: ApprovalAction; onDecide: (id: string, d: "approve" | "refuse") => void }) {
-  const { t } = useI18n();
   return (
     <article className="card item">
       <div className="item-top">
@@ -239,8 +236,8 @@ export function ApprovalCard({ a, onDecide }: { a: ApprovalAction; onDecide: (id
         <span className="pill pill-marigold">Awaiting approval</span>
       </div>
       <div className="item-foot">
-        <button className="btn btn-leaf btn-sm" onClick={() => onDecide(a.id, "approve")}><Icon name="check" /> {t("approve")}</button>
-        <button className="btn btn-quiet btn-sm" onClick={() => onDecide(a.id, "refuse")}><Icon name="x" /> {t("refuse")}</button>
+        <button className="btn btn-leaf btn-sm" onClick={() => onDecide(a.id, "approve")}><Icon name="check" /> Approve</button>
+        <button className="btn btn-quiet btn-sm" onClick={() => onDecide(a.id, "refuse")}><Icon name="x" /> Decline</button>
       </div>
     </article>
   );

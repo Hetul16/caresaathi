@@ -11,7 +11,7 @@ export function useMicLevel(active: boolean) {
   const [level, setLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    if (!active) { setLevel(0); return; }
+    if (!active) return;
     let raf = 0;
     let stream: MediaStream | undefined;
     let ctx: AudioContext | undefined;
@@ -45,7 +45,7 @@ export function useMicLevel(active: boolean) {
       ctx?.close();
     };
   }, [active]);
-  return { level, error };
+  return { level: active ? level : 0, error };
 }
 
 export function VoiceOrb({ state, onToggle, level }: { state: OrbState; onToggle: () => void; level: number }) {

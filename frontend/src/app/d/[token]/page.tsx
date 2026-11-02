@@ -25,13 +25,14 @@ function Unavailable() {
 export default async function DoctorLinkPage(props: PageProps<"/d/[token]">) {
   const { token } = await props.params;
   const h = await headers();
+  let page: DoctorPage | null = null;
   try {
     const res = await fetch(`${BACKEND}/api/v1/d/${encodeURIComponent(token)}`, {
       cache: "no-store", headers: { "user-agent": h.get("user-agent") ?? "", "x-forwarded-for": h.get("x-forwarded-for") ?? "" },
     });
-    if (!res.ok) return <Unavailable />;
-    return <DoctorView token={token} initial={(await res.json()) as DoctorPage} />;
+    if (res.ok) page = (await res.json()) as DoctorPage;
   } catch {
-    return <Unavailable />;
+    /* unreachable API: the doctor is told no more than for an expired link */
   }
+  return page ? <DoctorView token={token} initial={page} /> : <Unavailable />;
 }

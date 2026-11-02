@@ -4,6 +4,7 @@ import { api, ApiError } from "@/lib/api";
 import type { FollowUp, MedicineHistory, SupplyRow } from "@/lib/types";
 import { Icon } from "../Icon";
 import { SourceChip } from "../Source";
+import { afterCommit } from "@/lib/defer";
 
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 const errText = (e: unknown) => (e instanceof ApiError ? e.detail || e.title : "Something went wrong. Please try again.");
@@ -22,7 +23,7 @@ export function TrackerPanel({ patientId, canApprove, toast, onChange }: { patie
       setFu(a); setSupply(b); setHist(c);
     } catch (e) { toast(errText(e)); }
   }, [patientId, toast]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { afterCommit(load); }, [load]);
 
   async function decide(id: string, action: "confirm" | "done" | "dismiss") {
     try { await api(`/follow-ups/${id}/decision`, { method: "POST", json: { action } }); toast(action === "confirm" ? "Confirmed. A reminder was set for the morning of that day." : action === "done" ? "Marked done." : "Set aside."); load(); onChange(); }

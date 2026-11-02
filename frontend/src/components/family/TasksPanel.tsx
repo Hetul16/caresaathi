@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
+import { afterCommit } from "@/lib/defer";
 import type { CareTask, Member } from "@/lib/types";
 import { Icon } from "../Icon";
 
@@ -19,7 +20,7 @@ export function TasksPanel({ patientId, toast }: { patientId: string; toast: (m:
       setMembers(await api<Member[]>(`/patients/${patientId}/members`));
     } catch (e) { toast(e instanceof ApiError ? e.detail || e.title : "Could not load the tasks"); }
   }, [patientId, toast]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { afterCommit(load); }, [load]);
 
   async function add() {
     try { await api(`/patients/${patientId}/tasks`, { method: "POST", json: { title: title.trim(), ...(who ? { assigned_to: who } : {}), ...(due ? { due_date: due } : {}) } }); setTitle(""); setWho(""); setDue(""); toast("Task added."); await load(); }
