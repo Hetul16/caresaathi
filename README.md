@@ -117,6 +117,7 @@ on purpose, and they are on the `/trust` page too.
 | Adversarial safety suite, run offline | **222 / 227** -- five paraphrased reassurances the keyword guard cannot catch |
 | Backend tests against a real PostgreSQL | 447 passing |
 | The whole product end to end, over HTTP, invariants checked on real responses | 23 / 23 |
+| The same product in a real browser on a phone-sized screen, all 18 tabs | 20 / 20 |
 
 The five misses are one tuned paraphrase probe and four held-out ones: sentences that reassure without using a word a
 keyword list can catch. In live mode the suite runs 206 of 211 (it skips the 16 offline-reader cases), and those five
@@ -211,7 +212,10 @@ used). Marathi speech is experimental. No real-patient data, by design.
    `python data/synthetic/render.py` turns them into photographs and PDFs.
 6. Walk the whole product, the way a judge would, with both servers running:
    `backend/.venv/Scripts/python backend/scripts/walkthrough.py` (23 checks, including the safety invariants).
-7. Tests: `backend/.venv/Scripts/python -m pytest tests` (447) and
+7. And in a real browser: `.venv\Scripts\pip install -e ".[browser]"`, `.venv\Scripts\playwright install chromium`,
+   then `backend/.venv/Scripts/python backend/scripts/browser_check.py` (20 checks: sign-up, the demo family, every
+   tab, Elder mode in Hindi, the public card, and nothing in the browser console).
+8. Tests: `backend/.venv/Scripts/python -m pytest tests` (447) and
    `PGHOST=localhost PGUSER=postgres ./db/tests/run_tests.sh` (database constraints; it drops the `caresaathi_*`
    roles, so point it at a throwaway PostgreSQL).
 

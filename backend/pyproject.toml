@@ -21,6 +21,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "pillow>=10"]
+# scripts/browser_check.py drives a real browser; after installing, run `playwright install chromium`.
+browser = ["playwright>=1.47"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
