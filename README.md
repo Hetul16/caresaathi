@@ -9,7 +9,7 @@ Fictional patients and documents throughout: no real medical records touch it.
 
 | | |
 | --- | --- |
-| **Live site** | _fill in before submitting_ |
+| **Live site** | https://caresaathi-phi.vercel.app |
 | **Demo video, 3 minutes** | _fill in before submitting_ |
 | **Our own measurements, failures included** | `/trust` on the live site |
 
@@ -171,7 +171,9 @@ flowchart LR
   a -->|"every call priced and capped;<br/>the spend ledger is a table"| m
 ```
 
-One free plan per box: Vercel for the website, Render for the API, Neon for PostgreSQL, Cloudflare R2 for files.
+One free plan per box: Vercel for the website, Render for the API, Neon for PostgreSQL. Files are written to the
+container's own disk rather than object storage, because every S3 provider wanted a payment card and this build had to
+cost nothing (D-73); a restart therefore costs a visitor one press of "Load the demo family", and nothing else.
 Steps in `docs/19-deployment.md`; `PUBLIC_LAUNCH.md` is the order to flip it public.
 
 ## What is built, and what is not
