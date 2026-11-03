@@ -23,19 +23,13 @@ services:
         sync: false
       - key: DATABASE_URL_WORKER
         sync: false
-      # --- Cloudflare R2. A free web service has no persistent disk, so uploads cannot stay on it ---
+      # --- Files live on the container's own disk (D-73). Every S3-compatible provider wanted a card on file, and the
+      #     hackathon demo must cost nothing, so uploads are written locally and are lost whenever the container restarts.
+      #     Each visitor presses "Load the demo family", which writes that visitor's documents fresh, so a restart costs
+      #     them a click and nothing else. Keep the service warm during judging and it does not restart at all.
+      #     For anything beyond the demo, set STORAGE_BACKEND=s3 and fill S3_ENDPOINT/S3_ACCESS_KEY/S3_SECRET_KEY. ---
       - key: STORAGE_BACKEND
-        value: s3
-      - key: S3_ENDPOINT
-        sync: false
-      - key: S3_BUCKET
-        value: caresaathi
-      - key: S3_REGION
-        value: auto
-      - key: S3_ACCESS_KEY
-        sync: false
-      - key: S3_SECRET_KEY
-        sync: false
+        value: local
       # --- The live model. The spend ledger is a table now (D-68), so SPEND_LIMIT_USD survives a restart and really is the ceiling ---
       - key: MODEL_MODE
         value: live
@@ -54,7 +48,8 @@ services:
         generateValue: true
       - key: TOKEN_PEPPER
         generateValue: true
-      # --- Private until submission day (D-69). The SAME value goes in Vercel; clear it in BOTH places to go public ---
+      # --- Private until submission day (D-69). The SAME value goes in Vercel; clear it in BOTH places to go public.
+      #     Leave it blank for a demo judges must be able to open. ---
       - key: SITE_GATE_TOKEN
         sync: false
       # --- The address people open: the Vercel domain, not this service's. Emergency card links are built from it ---

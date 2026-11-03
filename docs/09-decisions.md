@@ -378,6 +378,13 @@ How to read this: **Accepted** means the owner confirmed it in chat. **Recommend
 - **One failure is correct, and is named rather than hidden:** a signed-out visitor holds no refresh cookie, so `POST /auth/refresh` is answered 401 on every public page, and the browser prints that in red. The request is the only way a client can ask whether an HttpOnly session exists, so the answer is not a defect. It is listed in the script as expected, alongside the deliberate 404 of an unknown card token.
 - **Also:** `playwright` is recorded as an optional `browser` extra in `backend/pyproject.toml` instead of being an undeclared thing installed on one laptop.
 
+### D-73 The deployed demo keeps files on its own disk, because object storage wanted a card
+- **Status:** Accepted (Nov 4, 2026)
+- **Decision:** The deployed service runs `STORAGE_BACKEND=local`, not `s3`. D-05 chose S3-compatible object storage and that is still right for a real deployment, but every provider we could use for it -- Cloudflare R2 included -- asks for a payment card before it will hand over a bucket, and this submission must cost nothing. The S3 client is untouched and still tested; only the deployed value changes, so turning it back on is one environment variable and three secrets.
+- **What it costs:** Render's free plan gives the container no persistent disk, so every uploaded or seeded file is lost when the container restarts. The database rows survive, which means a document row can outlive its bytes.
+- **Why that is acceptable here, and only here:** nobody shares data in this demo. Each visitor presses "Load the demo family", which writes that visitor's own synthetic documents at that moment and reads them back in the same session. A restart therefore costs a visitor one click, not their data. The keep-warm ping that already exists to avoid Render's one-minute cold start also stops the restarts, so during judging the question should not arise.
+- **What would make this wrong:** a real patient, a second person reading the first person's upload, or anything expected to be there tomorrow. All three are out of scope for the hackathon build and none of them may ship on this setting.
+
 ## Corrections ledger (changes to the original plan)
 
 | Where | Original | Corrected |
