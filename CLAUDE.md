@@ -41,6 +41,7 @@ If documents disagree, the higher one wins. Change a decision, then update `docs
 | 2 | `docs/23-pitch.md` | The pitch arranged around the Indie track criteria: the line, the opening, what to show for each criterion, the depth answers when a judge pushes, and what never to say |
 | 2 | `docs/22-remote-care-story.md` | The recommended demo story: Priya in Toronto caring for her mother in Pune, step by step, with the clicks and the words |
 | 2 | `docs/24-manual-test-walkthrough.md` | Click-by-click walkthrough of the whole app by hand, including the patient's own sign-in |
+| 2 | `docs/25-live-demo-run-sheet.md` | Recording the video against the deployment: the live-only traps (rate limit, sleeping API, files lost on restart), what is verified and what you must check by hand |
 | 2 | `db/schema.sql`, `db/roles_and_grants.sql`, `db/seed_drug_families.sql` | The pre-hackathon baseline schema. `db/tests/run_tests.sh` runs 69 checks. New tables arrive as migrations (`docs/16-database-design.md`, section 9) |
 
 The docs are long. Read only the section you need.
