@@ -82,15 +82,21 @@ Against the live site on Nov 4, 2026:
 | Emergency Card and doctor link revocation | by hand against the live API and the live page | the API answers 404, the page shows no patient |
 | Confirming a plan item, then recording a dose | by hand against the live API | the dose records and reads back "confirmed by <name>" |
 
-**Three things no script here can check, and you must do by hand before you film them:**
+**The microphone path is verified as far as a machine can take it.** Chromium was given a synthetic
+microphone and pointed at the live site: `getUserMedia` succeeded on the HTTPS origin, the
+`Permissions-Policy: microphone=(self)` header allows it, and a 440 Hz tone fed into the fake device read back
+a peak of 66 out of 127 through the page's own AudioContext and analyser. So permission, stream and level
+meter all work on the deployment. What that cannot prove is a real phone's hardware, so still do this once:
 
-1. **The microphone.** Nothing automated has ever exercised recording. Open the live site on your phone, go to Elder mode, and press the
-   button. The browser must ask for permission and the level meter must move.
-2. **Read-aloud in Hindi and Marathi.** The speech comes from the browser's own voices, not from the server, so it depends on the device.
-   Android usually has a Hindi voice; Marathi is often missing. Check on the exact device you will film, and if Marathi is silent, film
-   the Hindi one and say "Hindi" in the voice-over.
-3. **The four README diagrams.** They have never been rendered. Open the README on GitHub and look at them before the repository goes
-   public.
+1. **Open the live site on your phone, on mobile data, and press the Elder mode button.** The browser must ask
+   for permission and the meter must move. Five minutes, and it is the last thing standing between you and
+   filming that scene.
+2. **Check the Hindi and Marathi voices on the device you will film with.** The speech comes from the browser's
+   own voices, not from the server, so it is per-device. Android usually has Hindi; Marathi is often missing.
+   If Marathi is silent, film the Hindi one and say "Hindi" in the voice-over.
+
+The four README diagrams **have** now been rendered: all four parse with Mermaid 11 and read correctly, so the
+repository's front page will not show an error box.
 
 ## 5. Keep it awake for judging
 
