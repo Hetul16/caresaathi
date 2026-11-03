@@ -49,6 +49,26 @@ sitting, or press "Load the demo family" again and start that thread fresh.
    label-check pictures. If any are missing, run `python data\synthetic\render.py` and `python data\synthetic\render_labels.py`.
 7. **Screen:** 1920x1080, browser zoom 110-125%, bookmarks bar hidden, notifications off, one clean window per role.
 
+## 3b. Two orderings that decide whether a scene works
+
+Both were found by running the scenes on Nov 4, not by reading the code. Neither produces an error: the
+scene simply comes out weaker, and you would not notice until editing.
+
+**Create the doctor link before you run the care crew.** The crew has six registered tools and the sixth,
+`message_doctor_draft`, is the one that waits for approval. It needs a doctor link to draft to. Run the crew
+first and it stops after five steps, nothing lands in the approvals queue, and the whole point of the scene --
+the model reaching for the one tool it is not allowed to finish -- never appears. With the link already there,
+the trace ends `message_doctor_draft  awaiting_approval` and the queue holds one item.
+
+**The doctor cannot reply until you approve the question.** Sending a question answers 202, which means queued,
+not sent. Until a named member approves it, the doctor's page shows no question and a reply is refused outright
+by the database function. So the order on camera is: send the question, show the approvals queue, approve it
+with your name, *then* switch to the doctor window. Switch too early and the doctor window is empty, which looks
+like a bug and is actually the safety rule holding.
+
+That second one is worth saying out loud in the voice-over. It is the clearest demonstration in the whole product
+that the model cannot act by itself.
+
 ## 4. What is verified, and what you must check yourself
 
 Against the live site on Nov 4, 2026:
