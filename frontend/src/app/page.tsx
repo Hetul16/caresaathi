@@ -48,6 +48,10 @@ export default function Home() {
             <SplitText text="Every instruction," start={120} />
             <em><SplitText text="with its source." className="gradient" start={420} /></em>
           </h1>
+          <p className="saathi">
+            Not a medical adviser. <em>A care companion.</em>
+            <span>In Hindi and Marathi, <b>saathi</b> means the one who walks beside you.</span>
+          </p>
           <p className="lead">
             CareSaathi listens to the doctor visit, reads the prescriptions and turns them into one living care plan for your family.
             Every line points back to the page, or the doctor’s exact words. Then it explains the plan aloud in Hindi, Marathi or English.
