@@ -125,6 +125,84 @@ Do not run `browser_check.py` as well right before filming unless something look
 - **An uploaded document has vanished:** the container restarted. Press "Load the demo family" and film that thread instead.
 - **The model is slow on a photo:** this is normal, 17 to 50 seconds per page. Film it and speed it up 4x in editing, as `docs/20` says.
 
+## 7b. The read, in one piece
+
+The voice-over in `docs/20` lives inside a table, which is unreadable while you are also driving the mouse.
+Here it is as one continuous read. The bracketed lines are what you do, not what you say. It is 433 spoken
+words, which is 3:00 flat at about 145 words a minute and 3:12 at a slower 135. That is deliberately tight
+against the limit: read it aloud with a timer once, and if you are over, take a whole scene out using the cut
+list in `docs/20` rather than speaking faster.
+The product's whole claim is that it slows a family down at the right moment; the voice-over should sound
+like that.
+
+> **[0:00 - title card, then four papers, then the landing page]**
+>
+> Ramesh is seventy-two and just home from hospital with four papers and a new prescription. His daughter
+> Priya lives in another city. In one hospital study, almost all medication mix-ups at care transitions were
+> omissions -- something missing between two papers. This is CareSaathi. Everything you are about to see is
+> fictional.
+>
+> **[0:16 - fresh patient, Documents tab, upload three photos, speed up 4x, open Care plan, click a source]**
+>
+> Priya photographs each paper. Muse Spark reads them. Every line in the plan points back to its page and
+> line, or to the doctor's own words. A line that cannot be found on the page is dropped rather than guessed.
+>
+> **[0:36 - demo family, Overview, point at the Amoxicillin flag, then the missing medicine]**
+>
+> Amoxicillin from one doctor. A penicillin allergy on another paper. Code matches that against a vetted
+> drug-family list and drafts a question for the doctor. It never says whether it is safe. And here, a
+> medicine that was on the old list and is missing from the new one.
+>
+> **[0:56 - the two-readings card, choose one]**
+>
+> A smudged strength is read twice. When the two readings disagree, nothing is added. A person looks at the
+> paper and chooses.
+>
+> **[1:10 - Label check tab, upload a strip, then a loose pill]**
+>
+> Hold a strip to the camera. It reads the printed words and compares them with the papers. And a loose pill?
+> It refuses. It only reads print.
+>
+> **[1:25 - Care crew tab, run it, six steps appear, the sixth is waiting]**
+>
+> Priya asks the care crew to prepare for the visit. It can only use six registered tools, and the sixth --
+> sending the questions to the doctor -- stops and waits. Watch what happens if nobody approves it.
+>
+> **[1:40 - switch to the doctor window: it is empty. Switch back, approve with your name, switch again]**
+>
+> The doctor's page is empty. The question has not been sent, because the model cannot send it. Priya
+> approves it, with her name on it. Now it is there.
+>
+> **[1:55 - the doctor types a reply and sends; back on Priya's screen, Outcomes]**
+>
+> Dr Joshi opens a link with no sign-in, reads the question, and answers in his own words. Priya records it,
+> and the flag closes with his exact words, her name, and how long it took.
+>
+> **[2:15 - Visits tab: show the consent boxes, then the pending change with the doctor's quote, confirm it]**
+>
+> At the visit, with consent on screen, Muse Voice Transcribe hears who said what. The doctor halves a dose.
+> It arrives as a pending change carrying his exact words, and only Priya can confirm it.
+>
+> **[2:32 - Elder mode in Hindi: press the button; then the picture schedule]**
+>
+> For Ramesh, one big button. It reads his medicine aloud in Hindi, with the source. And a large-print
+> schedule he can keep on the fridge.
+>
+> **[2:45 - Emergency Card in a private window, then switch it off and reload]**
+>
+> A stranger sees only what the papers confirm, and when it was last updated. Priya switches the link off,
+> and it stops working.
+>
+> **[2:52 - the Trust page, scrolling through the results including the failures]**
+>
+> Every number here is public, failures included. CareSaathi never gives medical advice. It finds the mix-up
+> early, asks the doctor, and keeps the question open until somebody writes down the answer.
+
+**The sentence to land, if you only land one:** *the model reads and drafts; code decides; a person approves.*
+
+**Never say** that a medicine is safe or unsafe, that CareSaathi prevents emergency visits (not measured),
+that Marathi is solved, or that it replaces a doctor or a pharmacist.
+
 ## 8. After recording
 
 The submission checklist is in `docs/20-demo-video-script.md`, section "After recording". The three that are specific to the deployment:
