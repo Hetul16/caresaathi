@@ -79,8 +79,17 @@ Against the live site on Nov 4, 2026:
 | Every page in a real browser at phone size, all 18 tabs | `backend/scripts/browser_check.py` against the live URL | 20 / 20 |
 | Public reachability, headers, no login wall | `backend/scripts/launch_check.py` against the live URL | 9 / 9 |
 | Approvals, invitations, a second member's access, doctor links, tasks, check-ins, outcomes, tracking, second reads | a feature sweep over the live API | 51 passed |
-| Emergency Card and doctor link revocation | by hand against the live API and the live page | the API answers 404, the page shows no patient |
-| Confirming a plan item, then recording a dose | by hand against the live API | the dose records and reads back "confirmed by <name>" |
+| Every scene in the video: photo upload, label check, two-reader choice, care crew with its gate, the doctor's reply, confirming a change | `scene_check` against a local server | 28 / 28 |
+| Emergency Card and doctor link revocation | by hand, live | the API answers 404, the page shows no patient |
+| Confirming a plan item, then recording a dose | by hand, live | reads back "confirmed by <name>" |
+| The visit recording path and its consent gate | by hand, local | consent refused, stale consent and non-WAV all refused 422; a valid 16 kHz mono WAV processes to `completed` |
+| The microphone | Chromium with a synthetic device, against the live site | `getUserMedia` succeeds; a 440 Hz tone reads back peak 66 / 127 |
+| The four README diagrams | parsed and rendered with Mermaid 11 | 4 / 4, and they read correctly |
+| The backend test suite | `pytest` | 447 passed |
+
+Nothing in that list failed on the product. Three checks did fail first time and all three were the test being
+wrong rather than the app: `extracted` is the document reader's success state, the care crew needs a doctor
+link before it has anything to gate on, and a doctor cannot reply until the family approves the question.
 
 **The microphone path is verified as far as a machine can take it.** Chromium was given a synthetic
 microphone and pointed at the live site: `getUserMedia` succeeded on the HTTPS origin, the
