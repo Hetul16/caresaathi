@@ -39,27 +39,27 @@ person qualified to make it.
 
 ```mermaid
 flowchart LR
-  docs["Phone photos and PDFs<br/>prescriptions, discharge<br/>summaries, labels"]
-  room["The doctor's own words<br/>recorded after on-screen consent"]
+  docs["Phone photos and PDFs<br>prescriptions, discharge<br>summaries, labels"]
+  room["The doctor's own words<br>recorded after on-screen consent"]
 
-  read["<b>Read it</b><br/>Muse Spark reads the papers.<br/>Muse Voice Transcribe<br/>writes down the room."]
+  read["Read it<br>Muse Spark reads the papers.<br>Muse Voice Transcribe<br>writes down the room."]
 
-  allergy["Allergy conflict<br/>against a vetted<br/>drug-family list"]
-  omit["What the newest<br/>paper quietly dropped"]
-  dates["Follow-up dates and<br/>refill run-out, with<br/>their inputs shown"]
+  allergy["Allergy conflict<br>against a vetted<br>drug-family list"]
+  omit["What the newest<br>paper quietly dropped"]
+  dates["Follow-up dates and<br>refill run-out, with<br>their inputs shown"]
 
-  plan[("<b>The care plan</b><br/>every line carries its source:<br/>document and line, or the<br/>doctor's exact words")]
+  plan[("The care plan<br>every line carries its source:<br>document and line, or the<br>doctor's exact words")]
 
-  elder["<b>Elder mode</b><br/>big type, spoken aloud,<br/>Hindi / Marathi / English"]
-  fam["<b>Family mode</b><br/>sources, approvals,<br/>open questions, audit log"]
-  card["<b>Emergency Card</b><br/>one link, no login,<br/>revocable"]
+  elder["Elder mode<br>big type, spoken aloud,<br>Hindi / Marathi / English"]
+  fam["Family mode<br>sources, approvals,<br>open questions, audit log"]
+  card["Emergency Card<br>one link, no login,<br>revocable"]
 
   docs --> read
   room --> read
   read -->|"JSON that code validates"| allergy
   read --> omit
   read --> dates
-  allergy -->|"a flag is a question<br/>for the doctor,<br/>never an answer"| plan
+  allergy -->|"a flag is a question<br>for the doctor,<br>never an answer"| plan
   omit --> plan
   dates --> plan
   read --> plan
@@ -71,6 +71,51 @@ flowchart LR
 Nothing here decides whether a medicine is safe. It finds the place where two papers disagree, and it keeps that
 question open until a person writes down the answer.
 
+## The Meta models, and the job each one does
+
+Two models from the **Meta Model API** (`https://api.meta.ai/v1`) do every piece of machine work in this product.
+There is no second provider and no local model. Each call has one narrow job, and the result is handed straight to
+code that checks it.
+
+| # | The job | Model | What it is asked for | What code does with the answer |
+| --- | --- | --- | --- | --- |
+| 1 | Read a page | `muse-spark-1.3` | The text of a photographed or scanned page, numbered by line | Line numbers become the citation on every care-plan item |
+| 2 | Read it a second time | `muse-spark-1.3` | An independent second reading of an unclear page | The two readings are compared in code; a disagreement is shown, never resolved by a model |
+| 3 | Structure a document | `muse-spark-1.3` | `extract.v1` JSON only, never prose | Validated against a Pydantic schema. Fails validation, nothing is stored |
+| 4 | Structure a visit | `muse-spark-1.3` | `visit.v1` JSON from the diarized transcript | Same: validate first, store second |
+| 5 | Write down the room | `muse-voice-transcribe-1.0` | Speaker-separated transcript of the consultation | Turns are kept verbatim and quoted as the source for anything the doctor said |
+| 6 | Read a printed label | `muse-spark-1.3` | What is printed on medicine packaging | Compared against the plan in code |
+| 7 | Word a flag | `muse-spark-1.3` | The sentence for a conflict code already found, plus a question for the doctor | Must name a fact already stored, or the output guard blocks it |
+| 8 | Judge the wording | `muse-spark-1.3` | Whether a sentence reads like reassurance | Fails closed: an error or a timeout blocks the sentence |
+| 9 | Pick the next tool | `muse-spark-1.3` | Which tool to call next, from a fixed registry | Anything marked *asks first* is stored as pending. The model cannot approve its own step |
+
+**The model never has the last word.** It is given two kinds of job and no others: *turn this into structured JSON*,
+and *put this already-decided fact into a sentence*. It never decides whether an allergy conflicts, what a date is,
+whether a document is complete, or whether a change may be applied. Those are jobs 1-6 feeding code, and code
+deciding. The diagram in the next section is the whole rule.
+
+**How the calls are made.** `POST /chat/completions`, OpenAI-compatible, Bearer auth. Photographs go as
+`image_url` data URLs and PDFs as a `file` part. Structured jobs use `response_format: json_schema`, and the reply is
+then validated *again* in Python, because a schema-shaped answer can still be a wrong one. Speech goes to
+`POST /asr/transcribe` as multipart with `{"mode":"DIARIZATION"}`, mono 16-bit WAV at 16 or 24 kHz, up to 32 MB and
+10 minutes. The language hint is always sent, for the reason in the Marathi row of the table above.
+
+**Reasoning effort is tuned per job**, in `backend/app/config.py`: `low` for reading documents, `minimal` for the
+judge and for wording. Reasoning tokens bill as output, and leaving the judge on a higher setting made a single call
+take 37 seconds.
+
+**Every live call is priced and capped.** `backend/app/clients/spend.py` writes one row per call to the `model_spend`
+table with the model, the purpose, the tokens and the dollar cost. A hard limit (default $3.50 against the $150
+hackathon credit) refuses a live call BEFORE it is made once the total is reached -- and refuses it too if the ledger cannot be read at all, so a database problem can never quietly uncap spending. Audio is billed by
+the hour, text per million tokens, both from the published price list.
+
+**Offline mode is why the demo is free.** `model_mode=fake` swaps in a small rule-based reader that returns the same
+contracts, so the 447 backend tests, the 227-case adversarial suite and the one-click demo family all run without an
+API key and without spending anything. `live` is the same code path against the real API; the measurements in the
+previous section were produced in live mode.
+
+`sam-3.1` was scoped as a stretch item and was **not** used: nothing in this repository calls it.
+
 ## Model proposes, code decides
 
 The model never has the last word on anything that matters. It proposes structured JSON, and it writes sentences.
@@ -79,22 +124,22 @@ grounded in a fact already stored.
 
 ```mermaid
 flowchart TB
-  A["A document, or a recording of the visit"] --> B["<b>Muse Spark proposes</b><br/>structured JSON only, no prose"]
-  B --> C{"Does it validate?<br/>extract.v1 / visit.v1"}
-  C -->|"no"| X["Rejected. Nothing is stored,<br/>and nothing is shown."]
+  A["A document, or a recording of the visit"] --> B["Muse Spark proposes<br>structured JSON only, no prose"]
+  B --> C{"Does it validate?<br>extract.v1 / visit.v1"}
+  C -->|"no"| X["Rejected. Nothing is stored,<br>and nothing is shown."]
   C -->|"yes"| D["Stored with its source"]
 
-  D --> E1["Allergy match in code<br/>against the vetted list"]
-  D --> E2["Dates and arithmetic in code,<br/>shown with their inputs"]
-  D --> E3["Omission, and only when<br/>the document is complete"]
+  D --> E1["Allergy match in code<br>against the vetted list"]
+  D --> E2["Dates and arithmetic in code,<br>shown with their inputs"]
+  D --> E3["Omission, and only when<br>the document is complete"]
 
-  E1 --> F["<b>Now the model writes</b><br/>the wording of the flag and<br/>the question for the doctor"]
+  E1 --> F["Now the model writes<br>the wording of the flag and<br>the question for the doctor"]
   E2 --> F
   E3 --> F
 
-  F --> G{"Output guard, and in live mode<br/>a second-pass judge that fails closed"}
-  G -->|"ungrounded, or reads<br/>like reassurance"| Y["Blocked, and the block is logged"]
-  G -->|"every sentence names a stored fact,<br/>the doctor, or the pharmacist"| H["On the screen, with its source"]
+  F --> G{"Output guard, and in live mode<br>a second-pass judge that fails closed"}
+  G -->|"ungrounded, or reads<br>like reassurance"| Y["Blocked, and the block is logged"]
+  G -->|"every sentence names a stored fact,<br>the doctor, or the pharmacist"| H["On the screen, with its source"]
 ```
 
 An unresolved ingredient is shown as **could not check**, never as safe. An empty allergy list is shown as
@@ -145,13 +190,13 @@ be run against the deployment.
 
 ```mermaid
 flowchart LR
-  pt(["The patient"]) --> em["<b>Elder mode</b><br/>one mic button, tap to mark a dose,<br/>a pain number. No way out of it<br/>except the Emergency Card."]
-  fa(["Family, in the house or abroad"]) --> fm["<b>Family mode</b><br/>the plan with its sources, daily<br/>check-ins, a task board, and every<br/>flag held open as a question"]
-  dr(["The doctor"]) --> dl["<b>Doctor link</b><br/>reads the question, replies in their<br/>own words. The reply is quoted,<br/>never summarised."]
-  er(["Hospital, in an emergency"]) --> ec["<b>Emergency Card</b><br/>random token, no login, documented<br/>facts only, and the date it was<br/>last updated"]
+  pt(["The patient"]) --> em["Elder mode<br>one mic button, tap to mark a dose,<br>a pain number. No way out of it<br>except the Emergency Card."]
+  fa(["Family, in the house or abroad"]) --> fm["Family mode<br>the plan with its sources, daily<br>check-ins, a task board, and every<br>flag held open as a question"]
+  dr(["The doctor"]) --> dl["Doctor link<br>reads the question, replies in their<br>own words. The reply is quoted,<br>never summarised."]
+  er(["Hospital, in an emergency"]) --> ec["Emergency Card<br>random token, no login, documented<br>facts only, and the date it was<br>last updated"]
 
-  fm --> perm{"Every right is granted<br/>per person"}
-  perm -->|"a right that cannot be granted<br/>is shown as unavailable"| ask["Anything marked <b>asks first</b> waits as a<br/>pending change until a named person<br/>approves it. The model cannot bypass this."]
+  fm --> perm{"Every right is granted<br>per person"}
+  perm -->|"a right that cannot be granted<br>is shown as unavailable"| ask["Anything marked asks first waits as a<br>pending change until a named person<br>approves it. The model cannot bypass this."]
   ask --> audit[("Append-only audit log")]
 ```
 
@@ -159,16 +204,16 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  b["<b>Browser</b><br/>Next.js, mobile-first.<br/>HTTPS, because the mic needs it."]
-  a["<b>FastAPI</b><br/>agent, tools, safety engine,<br/>scheduled jobs"]
-  d[("<b>PostgreSQL</b><br/>row-level security,<br/>append-only audit log")]
-  f[("<b>Object storage</b><br/>the database keeps<br/>keys and SHA-256 only")]
-  m["<b>Meta Model API</b><br/>muse-spark-1.3<br/>muse-voice-transcribe-1.0"]
+  b["Browser<br>Next.js, mobile-first.<br>HTTPS, because the mic needs it."]
+  a["FastAPI<br>agent, tools, safety engine,<br>scheduled jobs"]
+  d[("PostgreSQL<br>row-level security,<br>append-only audit log")]
+  f[("Object storage<br>the database keeps<br>keys and SHA-256 only")]
+  m["Meta Model API<br>muse-spark-1.3<br>muse-voice-transcribe-1.0"]
 
-  b -->|"same-origin proxy, so the refresh<br/>cookie stays first-party"| a
+  b -->|"same-origin proxy, so the refresh<br>cookie stays first-party"| a
   a --> d
   a --> f
-  a -->|"every call priced and capped;<br/>the spend ledger is a table"| m
+  a -->|"every call priced and capped;<br>the spend ledger is a table"| m
 ```
 
 One free plan per box: Vercel for the website, Render for the API, Neon for PostgreSQL. Files are written to the
