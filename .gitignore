@@ -30,3 +30,6 @@ dist/
 data/live_runs/
 data/synthetic/rendered/
 demo_uploads/
+
+# Word leaves a lock file beside any open .docx; it must never reach a public repo
+~$*
