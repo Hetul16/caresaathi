@@ -10,7 +10,7 @@ Fictional patients and documents throughout: no real medical records touch it.
 | | |
 | --- | --- |
 | **Live site** | https://caresaathi-phi.vercel.app |
-| **Demo video, 3 minutes** | _fill in before submitting_ |
+| **Demo video** | https://youtu.be/bQ7cFe-k5nM |
 | **Our own measurements, failures included** | `/trust` on the live site |
 
 ## Why this exists
