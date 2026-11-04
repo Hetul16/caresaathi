@@ -79,7 +79,7 @@ Against the live site on Nov 4, 2026:
 | Every page in a real browser at phone size, all 18 tabs | `backend/scripts/browser_check.py` against the live URL | 20 / 20 |
 | Public reachability, headers, no login wall | `backend/scripts/launch_check.py` against the live URL | 9 / 9 |
 | Approvals, invitations, a second member's access, doctor links, tasks, check-ins, outcomes, tracking, second reads | a feature sweep over the live API | 51 passed |
-| Every scene in the video: photo upload, label check, two-reader choice, care crew with its gate, the doctor's reply, confirming a change | `scene_check` against a local server | 28 / 28 |
+| Every scene in the video: photo upload, label check, two-reader choice, care crew with its gate, the doctor's reply, confirming a change | a scene sweep against the **live site**, with the live model | 28 / 28 |
 | Emergency Card and doctor link revocation | by hand, live | the API answers 404, the page shows no patient |
 | Confirming a plan item, then recording a dose | by hand, live | reads back "confirmed by <name>" |
 | The visit recording path and its consent gate | by hand, local | consent refused, stale consent and non-WAV all refused 422; a valid 16 kHz mono WAV processes to `completed` |
