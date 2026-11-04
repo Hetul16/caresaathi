@@ -13,7 +13,7 @@ const STAGES = [
 
 const LINES = [
   "CITY HOSPITAL, PUNE · DISCHARGE SUMMARY",
-  "Patient: Ramesh Kulkarni, 74 y",
+  "Patient: Ramesh Kulkarni, 72 y",
   "Allergic to penicillin (rash)",
   "Tab Metformin 500 mg 1-0-1 after food",
   "Tab Amlodipine 5 mg 1-0-0",
