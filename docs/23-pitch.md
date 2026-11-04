@@ -38,7 +38,7 @@ What a judge must be able to do: open the link, press one button, and watch a re
 - Open the public link. Sign up. Press **Load the demo family**. No file hunting, no setup.
 - Upload the real photographs from `demo_uploads/Sunita_Deshmukh/` in order. They are tilted and shadowed on purpose: they are phone pictures, not clean scans.
 - Show `/trust`: the safety suite with its **failures listed**, and live Meta-model measurements on documents, labels, visits and speech.
-- Say the number out loud: **422 backend tests, 26 browser checks, and the five adversarial cases we still fail are named on that page.**
+- Say the number out loud: **447 backend tests, 19 browser checks, and the five adversarial cases we still fail are named on that page.**
 
 Rehearse this path three times on the real link, on a phone and a laptop, before recording.
 
@@ -79,7 +79,7 @@ Yes, and it did not use to. Processing an allergy card and a prescription in par
 The WHO ATC classification says it is M01AB, inside M01A. We look every substance up through the US National Library of Medicine and commit the answer as a dated file. Two of seventeen came back unconfirmed and we show that on screen rather than hiding it: the WHO puts aspirin in N02BA, not with the other NSAIDs, and bare "penicillin" is a class name with no code of its own. It is still not a pharmacist review, and the banner says so.
 
 **"Is this medical advice?"**
-No, and it is engineered not to be. It never says a medicine is safe, never tells anyone to stop or change anything, never diagnoses. It flags gaps between documents and ends every flag with a question for the doctor. The adversarial suite tries to make it break that rule 220 times and the failures are published.
+No, and it is engineered not to be. It never says a medicine is safe, never tells anyone to stop or change anything, never diagnoses. It flags gaps between documents and ends every flag with a question for the doctor. The adversarial suite tries to make it break that rule 211 times and the failures are published.
 
 **"What about security?"**
 Argon2 passwords, HttpOnly rotating refresh tokens, row-level security in the database, an append-only audit log, random revocable tokens on shared links, rate limiting on login with the same reply for a locked account as a wrong password, and CSP and HSTS headers. Nothing is encrypted at rest by the application and no penetration test has been done. Real patient data would need a compliance review first. That is why the hackathon build uses fictional patients only.
